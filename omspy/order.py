@@ -1,10 +1,13 @@
 from dataclasses import dataclass, field
 from datetime import timezone
 from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
-from fastbt.Meta import Broker
 import uuid
 import pendulum
 from collections import Counter, defaultdict
+
+
+class Broker:
+    pass
 
 
 def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
@@ -22,6 +25,7 @@ def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
     """
     v = round(spot / step)
     return v * (step + num)
+
 
 @dataclass
 class Order:
@@ -185,6 +189,7 @@ class Order:
         Cancel an existing order
         """
         broker.order_cancel(order_id=self.order_id)
+
 
 @dataclass
 class CompoundOrder:
@@ -381,205 +386,3 @@ class CompoundOrder:
     @property
     def pending_orders(self) -> List[Order]:
         return [order for order in self.orders if order.is_pending]
-
-
-    def __init__(
-        self,
-        symbol: str,
-        side: str,
-        trigger_price: float,
-        price: float = 0.0,
-        quantity: int = 1,
-        order_type="MARKET",
-        disclosed_quantity: int = 0,
-        order_args: Optional[Dict] = None,
-        **kwargs,
-    ):
-        super(StopOrder, self).__init__(**kwargs)
-        side2 = "sell" if side.lower() == "buy" else "buy"
-        self.add_order(
-            symbol=symbol,
-            side=side,
-            price=price,
-            quantity=quantity,
-            order_type=order_type,
-            disclosed_quantity=disclosed_quantity,
-        )
-        self.add_order(
-            symbol=symbol,
-            side=side2,
-            price=0,
-            trigger_price=trigger_price,
-            quantity=quantity,
-            order_type="SL-M",
-            disclosed_quantity=disclosed_quantity,
-        )
-
-class OptionStrategy:
-    """
-    Option Strategy is a list of compound orders
-    """
-
-    def __init__(self, broker: Type[Broker], profit=1e100, loss=-1e100) -> None:
-        self._orders: List[CompoundOrder] = []
-        self._broker: Type[Broker] = broker
-        self._ltp: defaultdict = defaultdict()
-        self.profit: float = profit
-        self.loss: float = loss
-
-    @property
-    def broker(self) -> Type[Broker]:
-        return self._broker
-
-    @property
-    def orders(self) -> List[CompoundOrder]:
-        return self._orders
-
-    def add_order(self, order: CompoundOrder) -> None:
-        """
-        Add a compound order
-        broker is overriden
-        """
-        order.broker = self.broker
-        self._orders.append(order)
-
-    @property
-    def all_orders(self) -> List[Order]:
-        """
-        Get the list of all orders
-        """
-        orders = []
-        for order in self.orders:
-            orders.extend(order.orders)
-        return orders
-
-    def update_ltp(self, last_price: Dict[str, float]) -> List[Any]:
-        """
-        Update ltp for the given symbols
-        last_price
-            dictionary with symbol as key and last price as value
-        """
-        return self._call("update_ltp", last_price=last_price)
-
-    def _call(self, attribute: str, **kwargs) -> List[Any]:
-        """
-        Call the given method or property on each of the compound orders
-        attribute
-            property or method
-        kwargs
-            keyword arguments to be called in case of a method
-        returns a list of the return values
-        Note
-        -----
-        1) An attribtute is considered to be a method if callable returns True
-        """
-        responses = []
-        for order in self.orders:
-            attr = getattr(order, attribute, None)
-            if callable(attr):
-                responses.append(attr(**kwargs))
-            else:
-                responses.append(attr)
-        return responses
-
-    def update_orders(self, data: Dict[str, Dict[str, Any]]) -> List[Any]:
-        """
-        Update all orders
-        data
-            data as dictionary with key as broker order_id
-        returns a dictionary with order_id and update status as boolean
-        for all compound orders
-        """
-        return self._call("update_orders", data=data)
-
-    def execute_all(self) -> List[Any]:
-        """
-        Execute all orders in all compound orders
-        """
-        return self._call("execute_all")
-
-    @property
-    def total_mtm(self) -> float:
-        """
-        Returns the total mtm for this strategy
-        """
-        mtm = self._call("total_mtm")
-        return sum([x for x in mtm if x is not None])
-
-    @property
-    def positions(self) -> Counter:
-        """
-        Return the combined positions for this strategy
-        """
-        c: Counter = Counter()
-        positions = self._call("positions")
-        for position in positions:
-            c.update(position)
-        return c
-
-    @property
-    def is_profit_hit(self) -> bool:
-        return True if self.total_mtm > self.profit else False
-
-    @property
-    def is_loss_hit(self) -> bool:
-        return True if self.total_mtm < self.loss else False
-
-    @property
-    def can_exit_strategy(self) -> bool:
-        """
-        Check whether we can exit from the strategy
-        We can exit from the strategy if either of the following
-        conditions is met
-        1) Profit is hit
-        2) Loss is hit
-        """
-        if self.is_profit_hit:
-            return True
-        elif self.is_loss_hit:
-            return True
-        else:
-            return False
-
-    """
-    Trailing stop order
-    """
-    def __init__(self, trail_by:Tuple[float, float],**kwargs):
-        self.trail_big:float = trail_by[0]
-        self.trail_small:float = trail_by[-1]
-        super(TrailingStopOrder, self).__init__(**kwargs)
-        self._maxmtm:float = 0
-        self._stop:float = kwargs.get('trigger_price', 0)
-        self.initial_stop = self._stop
-        self.symbol:str = kwargs.get('symbol')
-        self.quantity:int = kwargs.get('quantity',1)
-
-    @property
-    def stop(self):
-        return self._stop
-
-    @property
-    def maxmtm(self):
-        return self._maxmtm
-    
-    def _update_maxmtm(self):
-        self._maxmtm = max(self.total_mtm, self._maxmtm)
-
-    def _update_stop(self):
-        mtm_per_unit = self.maxmtm/self.quantity
-        multiplier = self.trail_small/self.trail_big
-        self._stop = self.initial_stop + (mtm_per_unit*multiplier)
-        
-    def watch(self):
-        self._update_maxmtm()
-        self._update_stop()
-        ltp = self.ltp.get(self.symbol)
-        if ltp:
-            #TODO: Implement for sell also
-            if ltp < self.stop:
-                order = self.orders[-1]
-                order.order_type = "MARKET"
-                order.modify(broker=self.broker)
-
-
-
