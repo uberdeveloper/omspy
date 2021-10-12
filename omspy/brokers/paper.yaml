@@ -1,5 +1,7 @@
 orders:
   order_timestamp: order_timestamp
   qty : quantity
+positions:
+  qty: quantity
 order_place:
   qty: quantity

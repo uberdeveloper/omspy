@@ -16,13 +16,13 @@ class Paper(Broker):
         positions
             list of positions
         """
-        if orders:
-            self.__orders = orders
-        if trades:
-            self.__trades = trades
-        if positions:
-            self.__positions = positions
+        self.__orders = orders
+        self.__trades = trades
+        self.__positions = positions
         super(Paper, self).__init__()
+
+    def authenticate(self):
+        return True
 
     @property
     @post
@@ -42,12 +42,11 @@ class Paper(Broker):
     @pre
     def order_place(self, **kwargs):
         return kwargs
-        pass
 
     @pre
-    def order_modify(self, order_id, **kwargs):
+    def order_modify(self, order_id: str, **kwargs):
         return kwargs
 
     @pre
-    def order_cancel(self, order_id):
+    def order_cancel(self, order_id: str):
         pass
