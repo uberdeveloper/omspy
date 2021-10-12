@@ -83,8 +83,13 @@ def test_order_simple():
     assert order.pending_quantity == 10
     assert order.filled_quantity == 0
     assert order.timestamp is not None
-    assert order.internal_id is not None
+    assert order.id is not None
     assert order.timezone == "Europe/Paris"
+
+
+def test_order_id_custom():
+    order = Order(symbol="aapl", side="buy", quantity=10, id="some_hex_digit")
+    assert order.id == "some_hex_digit"
 
 
 def test_order_is_complete():
@@ -158,6 +163,13 @@ def test_order_update_do_not_update_when_complete():
     assert order.filled_quantity == 7
 
 
+def test_compound_order_id_custom():
+    order = CompoundOrder(broker=Paper(), id="some_id")
+    order.add_order(symbol="aapl", quantity=5, side="buy", filled_quantity=5)
+    assert order.id == "some_id"
+    assert order.orders[0].parent_id == "some_id"
+
+
 def test_compound_order_count(simple_compound_order):
     order = simple_compound_order
     assert order.count == 3
@@ -171,7 +183,7 @@ def test_compound_order_positions(simple_compound_order):
 
 
 def test_compound_order_add_order():
-    order = CompoundOrder(broker=Broker())
+    order = CompoundOrder(broker=Paper())
     order.add_order(symbol="aapl", quantity=5, side="buy", filled_quantity=5)
     order.add_order(symbol="aapl", quantity=4, side="buy", filled_quantity=4)
     assert order.count == 2

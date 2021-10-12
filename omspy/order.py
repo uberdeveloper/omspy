@@ -30,7 +30,7 @@ class Order:
     symbol: str
     side: str
     quantity: int = 1
-    internal_id: Optional[str] = None
+    id: Optional[str] = None
     parent_id: Optional[str] = None
     timestamp: Optional[pendulum.DateTime] = None
     order_type: str = "MARKET"
@@ -57,7 +57,8 @@ class Order:
     tag: Optional[str] = None
 
     def __post_init__(self, **data) -> None:
-        self.internal_id = uuid.uuid4().hex
+        if not (self.id):
+            self.id = uuid.uuid4().hex
         tz = self.timezone
         self.timestamp = pendulum.now(tz=tz)
         self.pending_quantity = self.quantity
@@ -201,12 +202,13 @@ class Order:
 @dataclass
 class CompoundOrder:
     broker: Any
-    internal_id: Optional[str] = None
+    id: Optional[str] = None
     ltp: defaultdict = Field(default_factory=defaultdict)
     orders: List[Order] = Field(default_factory=list)
 
     def __post_init__(self) -> None:
-        self.internal_id = uuid.uuid4().hex
+        if not (self.id):
+            self.id = uuid.uuid4().hex
 
     @property
     def count(self) -> int:
@@ -231,10 +233,10 @@ class CompoundOrder:
         return c
 
     def add_order(self, **kwargs) -> Optional[str]:
-        kwargs["parent_id"] = self.internal_id
+        kwargs["parent_id"] = self.id
         order = Order(**kwargs)
         self.orders.append(order)
-        return order.internal_id
+        return order.id
 
     def _average_price(self, side: str = "buy") -> Dict[str, float]:
         """
