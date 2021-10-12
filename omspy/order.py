@@ -1,13 +1,11 @@
-from dataclasses import dataclass, field
+from pydantic import BaseModel, validator, ValidationError, Field, PrivateAttr
+from pydantic.dataclasses import dataclass
 from datetime import timezone
 from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
 import uuid
 import pendulum
 from collections import Counter, defaultdict
-
-
-class Broker:
-    pass
+from omspy.base import Broker
 
 
 def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
@@ -58,12 +56,21 @@ class Order:
     exchange: Optional[str] = None
     tag: Optional[str] = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, **data) -> None:
         self.internal_id = uuid.uuid4().hex
         tz = self.timezone
         self.timestamp = pendulum.now(tz=tz)
         self.pending_quantity = self.quantity
-        self._attrs: List[str] = [
+        if self.expires_in == 0:
+            self.expires_in = (
+                pendulum.today(tz=tz).end_of("day") - pendulum.now(tz=tz)
+            ).seconds
+        else:
+            self.expires_in = abs(self.expires_in)
+
+    @property
+    def _attrs(self):
+        return (
             "exchange_timestamp",
             "exchange_order_id",
             "status",
@@ -71,13 +78,13 @@ class Order:
             "pending_quantity",
             "disclosed_quantity",
             "average_price",
-        ]
-        if self.expires_in == 0:
-            self.expires_in = (
-                pendulum.today(tz=tz).end_of("day") - pendulum.now(tz=tz)
-            ).seconds
-        else:
-            self.expires_in = abs(self.expires_in)
+        )
+
+    @validator("quantity", always=True)
+    def quantity_not_negative(cls, v):
+        if v < 0:
+            raise ValueError("quantity must be positive")
+        return v
 
     @property
     def is_complete(self) -> bool:
@@ -140,7 +147,7 @@ class Order:
         else:
             return False
 
-    def execute(self, broker: Broker, **kwargs) -> Optional[str]:
+    def execute(self, broker: Type[Broker], **kwargs) -> Optional[str]:
         """
         Execute an order on a broker, place a new order
         kwargs
@@ -193,17 +200,13 @@ class Order:
 
 @dataclass
 class CompoundOrder:
-    broker: Type[Broker]
+    broker: Any
     internal_id: Optional[str] = None
+    ltp: defaultdict = Field(default_factory=defaultdict)
+    orders: List[Order] = Field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.internal_id = uuid.uuid4().hex
-        self._ltp: defaultdict = defaultdict()
-        self._orders: List[Order] = []
-
-    @property
-    def orders(self) -> List[Order]:
-        return self._orders
 
     @property
     def count(self) -> int:
@@ -211,10 +214,6 @@ class CompoundOrder:
         return the number of orders
         """
         return len(self.orders)
-
-    @property
-    def ltp(self) -> defaultdict:
-        return self._ltp
 
     @property
     def positions(self) -> Counter:
@@ -234,7 +233,7 @@ class CompoundOrder:
     def add_order(self, **kwargs) -> Optional[str]:
         kwargs["parent_id"] = self.internal_id
         order = Order(**kwargs)
-        self._orders.append(order)
+        self.orders.append(order)
         return order.internal_id
 
     def _average_price(self, side: str = "buy") -> Dict[str, float]:
@@ -329,7 +328,7 @@ class CompoundOrder:
         orders placed
         """
         for symbol, ltp in last_price.items():
-            self._ltp[symbol] = ltp
+            self.ltp[symbol] = ltp
         return self.ltp
 
     @property

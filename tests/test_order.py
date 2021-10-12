@@ -1,18 +1,15 @@
 import pytest
 from unittest.mock import patch, call
 from omspy.order import *
+from omspy.brokers.paper import Paper
 from collections import Counter
 import pendulum
 from copy import deepcopy
 
 
-class Broker:
-    pass
-
-
 @pytest.fixture
 def simple_compound_order():
-    com = CompoundOrder(broker=Broker())
+    com = CompoundOrder(broker=Paper())
     com.add_order(
         symbol="aapl",
         quantity=20,
@@ -44,7 +41,7 @@ def simple_compound_order():
 
 @pytest.fixture
 def compound_order_average_prices():
-    com = CompoundOrder(broker=Broker())
+    com = CompoundOrder(broker=Paper())
     com.add_order(
         symbol="aapl",
         quantity=20,
@@ -242,7 +239,7 @@ def test_compound_order_update_ltp(simple_compound_order):
 def test_compound_order_net_value(simple_compound_order, compound_order_average_prices):
     order = simple_compound_order
     order2 = compound_order_average_prices
-    order._orders.extend(order2.orders)
+    order.orders.extend(order2.orders)
     assert order.net_value == Counter({"aapl": 47625, "goog": -26380})
 
 
