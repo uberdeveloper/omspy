@@ -2,4 +2,4 @@ orders:
   order_timestamp: order_timestamp
   qty : quantity
 order_place:
-  quantity: qty
+  qty: quantity

@@ -24,7 +24,8 @@ def post(func: Callable) -> Callable:
     """
     Decorator to run after a function call
     """
-    name = func.__name__
+    if "__name__" in dir(func):
+        name = func.__name__
 
     def f(*args, **kwargs):
         self = args[0]

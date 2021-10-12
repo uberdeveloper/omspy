@@ -24,29 +24,30 @@ class Paper(Broker):
             self.__positions = positions
         super(Paper, self).__init__()
 
-    @post
     @property
+    @post
     def orders(self):
         return self.__orders if self.__orders else [{}]
 
-    @post
     @property
+    @post
     def trades(self):
         return self.__trades if self.__trades else [{}]
 
-    @post
     @property
+    @post
     def positions(self):
         return self.__positions if self.__positions else [{}]
 
     @pre
     def order_place(self, **kwargs):
+        return kwargs
         pass
 
     @pre
-    def order_modify(self, **kwargs):
-        pass
+    def order_modify(self, order_id, **kwargs):
+        return kwargs
 
     @pre
-    def order_cancel(self, **kwargs):
+    def order_cancel(self, order_id):
         pass
