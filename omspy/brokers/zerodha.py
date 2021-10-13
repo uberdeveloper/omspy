@@ -1,5 +1,6 @@
 import pyotp
 from omspy.base import Broker, pre, post
+from typing import Optional, List, Dict
 
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
@@ -19,7 +20,7 @@ from kiteconnect.exceptions import (
 )
 
 
-def get_key(url, key="request_token"):
+def get_key(url, key="request_token") -> Optional[str]:
     """
     Get the required key from the query parameter
     """
@@ -62,7 +63,7 @@ class Zerodha(Broker):
         self._store_access_token = True
         super(Zerodha, self).__init__()
 
-    def _shortcuts(self):
+    def _shortcuts(self) -> None:
         """
         Provides shortcuts to kite functions by mapping functions.
         Instead of calling at.kite.quote, you would directly call
@@ -79,7 +80,7 @@ class Zerodha(Broker):
         self.ohlc = self.kite.ohlc
         self.holdings = self.kite.holdings
 
-    def authenticate(self):
+    def authenticate(self) -> None:
         """
         Authenticates a kite session if access token is already available
         Looks up token in token.tok file
@@ -110,7 +111,7 @@ class Zerodha(Broker):
                 api_key=self._api_key, access_token=self.kite.access_token
             )
 
-    def _login(self):
+    def _login(self) -> None:
         import time
 
         self.kite = KiteConnect(api_key=self._api_key)
@@ -150,7 +151,7 @@ class Zerodha(Broker):
 
     @property
     @post
-    def orders(self):
+    def orders(self) -> List[Dict]:
         status_map = {
             "OPEN": "PENDING",
             "COMPLETE": "COMPLETE",
@@ -171,7 +172,7 @@ class Zerodha(Broker):
 
     @property
     @post
-    def positions(self):
+    def positions(self) -> List[Dict]:
         """
         Return only the positions for the day
         """
@@ -185,31 +186,30 @@ class Zerodha(Broker):
 
     @property
     @post
-    def trades(self):
+    def trades(self) -> List[Dict]:
         """
         Return all the trades
         """
         return self.kite.trades()
 
     @pre
-    def order_place(self, **kwargs):
+    def order_place(self, **kwargs) -> str:
         """
         Place an order
         """
         return self.kite.place_order(**kwargs)
 
-    def order_cancel(self, order_id):
+    def order_cancel(self, order_id: str, **kwargs) -> str:
         """
         Cancel an existing order
         """
-        return self.kite.cancel_order(order_id=order_id)
+        return self.kite.cancel_order(order_id=order_id, **kwargs)
 
-    def order_modify(self, order_id, **kwargs):
+    def order_modify(self, order_id: str, **kwargs) -> str:
         """
         Modify an existing order
         Note
         ----
-        This is just a basic implementation
-        So, all changes must be passed as keyword arguments
+        All changes must be passed as keyword arguments
         """
         return self.kite.modify_order(order_id=order_id, **kwargs)
