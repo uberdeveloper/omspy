@@ -272,7 +272,7 @@ def test_compound_order_total_mtm(simple_compound_order):
 
 
 def test_simple_order_execute():
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
             symbol="aapl", side="buy", quantity=10, order_type="LIMIT", price=650
         )
@@ -291,7 +291,7 @@ def test_simple_order_execute():
 
 
 def test_simple_order_execute_kwargs():
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
             symbol="aapl", side="buy", quantity=10, order_type="LIMIT", price=650
         )
@@ -312,7 +312,7 @@ def test_simple_order_execute_kwargs():
 
 
 def test_simple_order_execute_do_not_update_existing_kwargs():
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
             symbol="aapl", side="buy", quantity=10, order_type="LIMIT", price=650
         )
@@ -338,7 +338,7 @@ def test_simple_order_execute_do_not_update_existing_kwargs():
 
 
 def test_simple_order_modify():
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
             symbol="aapl",
             side="buy",
@@ -362,7 +362,7 @@ def test_simple_order_modify():
 
 
 def test_simple_order_cancel():
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
             symbol="aapl",
             side="buy",
@@ -379,7 +379,7 @@ def test_simple_order_cancel():
 
 
 def test_simple_order_do_not_execute_more_than_once():
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.return_value = "aaabbb"
         order = Order(
             symbol="aapl", side="buy", quantity=10, order_type="LIMIT", price=650
@@ -390,7 +390,7 @@ def test_simple_order_do_not_execute_more_than_once():
 
 
 def test_simple_order_do_not_execute_completed_order():
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
             symbol="aapl",
             side="buy",
@@ -455,7 +455,7 @@ def test_order_has_parent():
 def test_compound_order_check_flags_convert_to_market_after_expiry():
     known = pendulum.datetime(2021, 1, 1, 10)
     pendulum.set_test_now(known)
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         com = CompoundOrder(broker=broker)
         com.add_order(
             symbol="aapl",
@@ -479,7 +479,7 @@ def test_compound_order_check_flags_convert_to_market_after_expiry():
 def test_compound_order_check_flags_cancel_after_expiry():
     known = pendulum.datetime(2021, 1, 1, 10)
     pendulum.set_test_now(known)
-    with patch("fastbt.brokers.zerodha.Zerodha") as broker:
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
         com = CompoundOrder(broker=broker)
         com.add_order(
             symbol="aapl",
