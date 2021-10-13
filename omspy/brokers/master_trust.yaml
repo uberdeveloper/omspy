@@ -1,0 +1,25 @@
+orders:
+  oms_order_id: order_id
+  order_timestamp: order_entry_time
+  trading_symbol: symbol
+  order_side: side
+  order_status: status
+completed_orders:
+  oms_order_id: order_id
+  order_timestamp: order_entry_time
+  trading_symbol: symbol
+  order_side: side
+  order_status: status
+pending_orders:
+  order_id: oms_order_id
+  order_timestamp: order_entry_time
+  trading_symbol: symbol
+  order_side: side
+  order_status: status
+positions:
+   trading_symbol: symbol
+   net_quantity: quantity
+   average_price: average_price
+order_place:
+  symbol: tradingsymbol
+  side: order_side
