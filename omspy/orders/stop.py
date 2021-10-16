@@ -110,103 +110,6 @@ class BracketOrder(StopOrder):
             order.order_type = "MARKET"
             order.modify(broker=self.broker)
 
-    def __init__(
-        self,
-        symbol: str,
-        spot: float,
-        expiry: str,
-        contracts: List[Tuple[int, str, str, int]],
-        step: float = 100,
-        fmt: Optional[Callable] = None,
-        **kwargs,
-    ):
-        """
-        Initialize your option order
-        symbol
-            base symbol to be used
-        spot
-            spot price of the underlying
-        expiry
-            expiry of the contract
-        contracts
-            list of contracts to be entered into, the contracts
-            should be a list of 4-tuples with the elements being
-            the (atm, buy or sell, put or call, qty)
-            To buy the atm call and buy option, this should be
-            [(0,c,b,1), (0,p,b,1)]
-        step
-            step size to calculate the strike prices
-        fmt
-            format to generate the option symbol as a function
-            This function takes the symbol,expiry,strike,option_type and
-            generates a option contract name
-        """
-        self.symbol = symbol
-        self.spot = spot
-        self.expiry = expiry
-        self._contracts = contracts
-        self.step = step
-        if fmt:
-            self._fmt_function = fmt
-        else:
-
-            def _format_function(symbol, expiry, strike, option_type):
-                return f"{symbol}{expiry}{strike}{option_type}E".upper()
-
-            self._fmt_function = _format_function
-        super(OptionOrder, self).__init__(**kwargs)
-
-    def _generate_strikes(self) -> List[Union[int, float]]:
-        """
-        Generate strikes for the contracts
-        """
-        strikes = []
-        sign = {"C": 1, "P": -1}
-        for c in self._contracts:
-            strk = c[0]
-            opt = c[1][0].upper()
-            strike = (
-                get_option(self.spot, step=self.step) + strk * sign[opt] * self.step
-            )
-            strikes.append(strike)
-        return strikes
-
-    def _generate_contract_names(self) -> List[str]:
-        """
-        Generate the list of contract names
-        """
-        strikes = self._generate_strikes()
-        contract_names = []
-        for c, s in zip(self._contracts, strikes):
-            opt = c[1][0].upper()
-            name = self._fmt_function(self.symbol, self.expiry, s, opt)
-            contract_names.append(name)
-        return contract_names
-
-    def generate_orders(self, **kwargs) -> List[Order]:
-        """
-        Generate the list of orders to be placed
-        kwargs
-            other arguments to be added to the order
-        """
-        orders = []
-        symbols = self._generate_contract_names()
-        order_map = {"b": "buy", "s": "sell"}
-        for symbol, contract in zip(symbols, self._contracts):
-            side = order_map[contract[2][0].lower()]
-            qty = contract[3]
-            order = Order(symbol=symbol, side=side, quantity=qty, **kwargs)
-            orders.append(order)
-        return orders
-
-    def add_all_orders(self, **kwargs):
-        """
-        Generate and add all the orders given in contracts
-        """
-        gen = self.generate_orders(**kwargs)
-        for g in gen:
-            self._orders.append(g)
-
 
 class TrailingStopOrder(StopLimitOrder):
     """
@@ -214,9 +117,9 @@ class TrailingStopOrder(StopLimitOrder):
     """
 
     def __init__(self, trail_by: Tuple[float, float], **kwargs):
+        super(TrailingStopOrder, self).__init__(**kwargs)
         self.trail_big: float = trail_by[0]
         self.trail_small: float = trail_by[-1]
-        super(TrailingStopOrder, self).__init__(**kwargs)
         self._maxmtm: float = 0
         self._stop: float = kwargs.get("trigger_price", 0)
         self.initial_stop = self._stop
