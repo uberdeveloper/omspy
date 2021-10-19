@@ -22,7 +22,8 @@ pytest-watch = "^4.2.0"
 [tool.poetry.group.brokers.dependencies]
 pyotp = "^2.6.0"
 kiteconnect = "^3.9.4"
-requests = "^2.26.0"
+requests = "^2.25.0"
+fyers-apiv2 = "^2.0.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
