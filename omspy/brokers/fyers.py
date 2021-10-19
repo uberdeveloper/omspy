@@ -82,3 +82,7 @@ class Fyers(Broker):
             f.write(token)
         self.fyers = fyersModel.FyersModel(client_id=self._app_id, token=token)
         driver.close()
+
+    @property
+    def profile(self) -> Dict:
+        return self.fyers.get_profile()
