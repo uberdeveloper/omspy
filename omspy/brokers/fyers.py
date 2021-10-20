@@ -86,3 +86,7 @@ class Fyers(Broker):
     @property
     def profile(self) -> Dict:
         return self.fyers.get_profile()
+
+    @property
+    def funds(self) -> Dict:
+        return self.fyers.funds()

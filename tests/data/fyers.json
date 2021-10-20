@@ -1,0 +1,321 @@
+{
+  "profile": {
+   "s": "ok",
+   "code": 200,
+   "message": "",
+   "data": {
+             "name": "XASHXX G H",
+             "image": "https://fyers-user-details.s3.amazonaws.com/image/FK6107548224?X-Amz-Algorithm=AWS4-HMAC",
+             "display_name":"Y2K",
+             "email_id":"xashxx.ghang@gmail.com",
+             "PAN": "EXXXXXXXXE",
+             "fy_id": "FX0011",
+             "pwd_change_date": "19-08-2020 14:58:41",
+             "pwd_to_expire": 42
+           }
+ },
+ "funds":
+ {
+   "s": "ok",
+   "code": 200,
+   "message": "",
+   "fund_limit":
+               [{
+                 "id":9,
+                 "title":"Limit at start of the day",
+                 "equityAmount":-132253.4,
+                 "commodityAmount": -37393.81
+               },
+               {
+                 "id":8,
+                 "title":"Adhoc Limit",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "0.0"
+               },
+               {
+                 "id":7,
+                 "title":"Receivables",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "0.0"
+               },
+               {
+                 "id":6,
+                 "title":"Fund Transfer",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "100000.0"
+               },
+               {
+                 "id":5,
+                 "title":"Collaterals",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "0.0"
+               },
+               {
+                 "id":4,
+                 "title":"Realized Profit and Loss",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "0.0"
+               },
+               {
+                 "id":2,
+                 "title":"Utilized Amount",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "0.0"
+               },
+               {
+                 "id":3,
+                 "title":"Clear Balance",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "0.0"
+               },
+               {
+                 "id":3,
+                 "title":"Clear Balance",
+                 "equityAmount": "0.0",
+                 "commodityAmount": 62606.19
+               },
+               {
+                 "id":1,
+                 "title":"Total Balance",
+                 "equityAmount": -132253.4,
+                 "commodityAmount": 62606.19
+               },
+               {
+                 "id":10,
+                 "title":"Available Balance",
+                 "equityAmount": -132253.4,
+                 "commodityAmount": 62606.19
+               },
+               {
+                 "id":11,
+                 "title":"Available Balance",
+                 "equityAmount": "A",
+                 "commodityAmount": "M"
+               },
+               {
+                 "id":12,
+                 "title":"Available Balance",
+                 "equityAmount": "0.0",
+                 "commodityAmount": "0.0"
+               }]
+ },
+ "holdings":
+  {
+        "s": "ok",
+        "code": 200,
+        "message": "",
+        "holdings":
+                    [{
+                      "holdingType":"HLD",
+                      "quantity":1,
+                      "costPrice":1.55,
+                      "marketVal": 3.75,
+                      "remainingQuantity":1,
+                      "pl":2.2,
+                      "ltp":3.75,
+                      "id":1,
+                      "fyToken":101000000011460,
+                      "exchange":10,
+                      "symbol":"NSE:JPASSOCIAT-EQ"
+                    },
+                    {
+                      "holdingType":"HLD",
+                      "quantity":1,
+                      "costPrice":192.6,
+                      "marketVal": 149.70,
+                      "remainingQuantity":1,
+                      "pl":-42.9,
+                      "ltp":149.7,
+                      "id":2,
+                      "fyToken":10100000003812,
+                      "exchange":10,
+                      "symbol":"NSE:ZEEL-EQ"
+                    }],
+          "overall":
+                    {
+                      "count_total":2,
+                      "total_investment":194.15,
+                      "total_current_value":153.45,
+                      "total_pl": -40.7,
+                      "pnl_perc":-10.48
+                    }
+   },
+   "orders":{
+   "s": "ok",
+   "code": 200,
+   "message": "",
+   "orderBook":
+               [{
+                 "orderDateTime":"07-Aug-2020 13:43:08",
+                 "id":"1200807100672",
+                 "exchOrdId":"1300000010289593",
+                 "side": 1,
+                 "segment":10,
+                 "instrument":0,
+                 "productType":"CNC",
+                 "status":2,
+                 "qty":20,
+                 "remainingQuantity":0,
+                 "filledQty":20,
+                 "limitPrice":0.0,
+                 "stopPrice":0.0,
+                 "type":2,
+                 "discloseQty":0,
+                 "dqQtyRem":0,
+                 "orderValidity":"DAY",
+                 "source":"W",
+                 "slNo":1,
+                 "fyToken":"101000000013188",
+                 "offlineOrder":"False",
+                 "message":"TRADE CONFIRMED",
+                 "orderNumStatus":"1200807100672:2",
+                 "tradedPrice":2.65,
+                 "exchange":10,
+                 "pan":"AXXXXXXXN",
+                 "clientId":"FXXXXX",
+                 "symbol":"NSE:RCOM-BE"
+               },
+               {
+                 "orderDateTime":"07-Aug-2020 13:09:23",
+                 "id":"120080789053",
+                 "exchOrdId":"1300000009419529",
+                 "side": 1,
+                 "segment":10,
+                 "instrument":0,
+                 "productType":"INTRADAY",
+                 "status":2,
+                 "qty":1,
+                 "remainingQuantity":0,
+                 "filledQty":1,
+                 "limitPrice":191.0,
+                 "stopPrice":0.0,
+                 "type":1,
+                 "discloseQty":0,
+                 "dqQtyRem":0,
+                 "orderValidity":"DAY",
+                 "source":"ITS",
+                 "slNo":2,
+                 "fyToken":"10100000003045",
+                 "offlineOrder":"False",
+                 "message":"TRADE CONFIRMED",
+                 "orderNumStatus":"120080789053:2",
+                 "tradedPrice":191.0,
+                 "exchange":10,
+                 "pan":"AXXXXXXXXN",
+                 "clientId":"FXXXXX2",
+                 "symbol":"NSE:SBIN-EQ",
+                 "ch":0.65,
+                 "chp":0.35,
+                 "lp":185.25,
+                 "ex_sym":"SBIN",
+                 "description":"STATE BANK OF INDIA"
+               }]
+ },
+"positions":
+{
+    "s": "ok",
+    "code": 200,
+    "message": "",
+    "netPositions":
+                [{
+                  "netQty":1,
+                  "qty":1,
+                  "avgPrice":72256.0,
+                  "netAvg": 71856.0,
+                  "side":1,
+                  "productType":"MARGIN",
+                  "realized_profit":400.0,
+                  "unrealized_profit":461.0,
+                  "pl":861.0,
+                  "ltp":72717.0,
+                  "buyQty":2,
+                  "buyAvg":72256.0,
+                  "buyVal":144512.0,
+                  "sellQty":1,
+                  "sellAvg":72656.0,
+                  "sellVal":72656.0,
+                  "slNo":0,
+                  "fyToken":"1120200831217406",
+                  "dummy":"",
+                  "crossCurrency":"N",
+                  "rbiRefRate":1.0,
+                  "qtyMulti_com":1.0,
+                  "segment":20,
+                  "symbol":"MCX:SILVERMIC20AUGFUT",
+                  "id":"MCX:SILVERMIC20AUGFUT-MARGIN"
+                }],
+     "overall":
+                {
+                  "count_total":1,
+                  "count_open":1,
+                  "pl_total":861.0,
+                  "pl_realized":400.0,
+                  "pl_unrealized":461.0
+                }
+  } ,
+  "trades":
+{
+  "s": "ok",
+  "code": 200,
+  "message": "",
+  "tradeBook":
+              [{
+                "clientId":"FXXXXX",
+                "orderDateTime":"07-Aug-2020 13:51:12",
+                "orderNumber":"120080789075",
+                "exchangeOrderNo": "1200000009204725",
+                "exchange":10,
+                "side":1,
+                "segment":10,
+                "orderType":2,
+                "fyToken":"101000000010666",
+                "productType":"CNC",
+                "tradedQty":10,
+                "tradePrice":32.7,
+                "tradeValue":327.0,
+                "tradeNumber":"52605023",
+                "id":"52605023",
+                "row":1,
+                "symbol":"NSE:PNB-EQ"
+              },
+              {
+                "clientId":"FXXXXX",
+                "orderDateTime":"07-Aug-2020 13:48:12",
+                "orderNumber":"120080789139",
+                "exchangeOrderNo": "1000000012031528",
+                "exchange":10,
+                "side":1,
+                "segment":10,
+                "orderType":2,
+                "fyToken":"101000000010454",
+                "productType":"CNC",
+                "tradedQty":19,
+                "tradePrice":14.1,
+                "tradeValue":267.9,
+                "tradeNumber":"3281523",
+                "id":"3281523",
+                "row":3,
+                "symbol":"NSE:CENTRUM-EQ"
+              },
+              {
+                "clientId":"FXXXXX1",
+                "orderDateTime":"07-Aug-2020 13:47:22",
+                "orderNumber":"120080797993",
+                "exchangeOrderNo": "1100000008047027",
+                "exchange":10,
+                "side":1,
+                "segment":10,
+                "orderType":2,
+                "fyToken":"101000000018783",
+                "productType":"CNC",
+                "tradedQty":4,
+                "tradePrice":115.5,
+                "tradeValue":462.0,
+                "tradeNumber":"27945307",
+                "id":"27945307",
+                "row":4,
+                "symbol":"NSE:IDFNIFTYET-EQ"
+              }]
+}
+
+}
