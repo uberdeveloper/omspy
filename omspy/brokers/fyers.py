@@ -90,3 +90,12 @@ class Fyers(Broker):
     @property
     def funds(self) -> Dict:
         return self.fyers.funds()
+
+    @property
+    @post
+    def orders(self) -> List[Dict]:
+        ords = self.fyers.orderbook()
+        if ords.get("orderBook"):
+            return ords["orderBook"]
+        else:
+            return [{}]
