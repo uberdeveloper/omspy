@@ -166,4 +166,25 @@ class Fyers(Broker):
             if k not in order_args:
                 order_args[k] = v
         response = self.fyers.place_order(order_args)
-        return response.get("id")
+        return response
+
+    @pre
+    def order_modify(self, **kwargs) -> Dict:
+        """
+        Modify an actual order with the broker
+        """
+        # Reverse look up map
+        rev_order_types = {v: k for k, v in ORDER_TYPES.items()}
+        if kwargs.get("type"):
+            order_type = kwargs.get("type", "market").upper()
+            order_type = rev_order_types.get(order_type)
+            kwargs.update({"type": order_type})
+        response = self.fyers.modify_order(kwargs)
+        return response
+
+    def order_cancel(self, order_id: str) -> Dict:
+        """
+        Cancel an actual order with the broker
+        """
+        response = self.fyers.cancel_order({"id": order_id})
+        return response

@@ -322,6 +322,17 @@
   "code": 1101,
   "message": "Order submitted successfully. Your Order Ref. No.808058117761",
   "id":"808058117761"
+},
+"modify_order":{
+  "s": "ok",
+  "code": 1101,
+  "message": "Successfully modified order', 'id': '808058117761"
+},
+"cancel_order": {
+  "s": "ok",
+  "code": 1103,
+  "message": "Successfully cancelled order",
+  "id": "808058117761"
 }
 
 

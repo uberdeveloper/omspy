@@ -19,3 +19,9 @@ order_place:
   quantity: qty
   order_type: type
   disclosed_quantity: disclosedQty
+order_modify:
+  order_id: id
+  price: limitPrice
+  trigger_price: stopLoss
+  quantity: qty
+  order_type: type

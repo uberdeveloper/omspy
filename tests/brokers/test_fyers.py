@@ -180,3 +180,43 @@ def test_order_place_kwargs(mock_fyers):
         "disclosedQty": 10,
     }
     assert broker.fyers.place_order.call_args_list[-1] == call(kwargs)
+
+
+def test_modify_order(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.modify_order.return_value = mock_data.get("modify_order")
+    order_id = "8102710298291"
+    broker.order_modify(order_id=order_id, price=150)
+    broker.fyers.modify_order.assert_called_once()
+    kwargs = {"id": "8102710298291", "limitPrice": 150}
+    assert broker.fyers.modify_order.call_args_list[-1] == call(kwargs)
+
+
+def test_modify_order_kwargs(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.modify_order.return_value = mock_data.get("modify_order")
+    order_id = "8102710298291"
+    broker.order_modify(
+        order_id=order_id,
+        price=150,
+        trigger_price=151,
+        order_type="market",
+        quantity=10,
+    )
+    broker.fyers.modify_order.assert_called_once()
+    kwargs = {
+        "id": "8102710298291",
+        "limitPrice": 150,
+        "stopLoss": 151,
+        "type": 2,
+        "qty": 10,
+    }
+    assert broker.fyers.modify_order.call_args_list[-1] == call(kwargs)
+
+
+def test_cancel_order(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.cancel_order.return_value = mock_data.get("cancel_order")
+    broker.order_cancel("808058117761")
+    broker.fyers.cancel_order.assert_called_once()
+    broker.fyers.cancel_order.assert_called_with({"id": "808058117761"})
