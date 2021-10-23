@@ -1,6 +1,7 @@
 import pyotp
 from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict
+from copy import deepcopy
 
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
@@ -74,7 +75,6 @@ class Zerodha(Broker):
         1) Not all functions are supported
         """
         self.margins = self.kite.margins
-        self.profile = self.kite.profile
         self.ltp = self.kite.ltp
         self.quote = self.kite.quote
         self.ohlc = self.kite.ohlc
@@ -91,7 +91,6 @@ class Zerodha(Broker):
             with open("token.tok") as f:
                 access_token = f.read()
             self.kite.set_access_token(access_token)
-            self.kite.profile()
             self.ticker = KiteTicker(
                 api_key=self._api_key, access_token=self.kite.access_token
             )
@@ -164,11 +163,14 @@ class Zerodha(Broker):
             "AMO_REQ_RECEIVED": "PENDING",
             "TRIGGER_PENDING": "PENDING",
         }
-        ords = self.kite.orders()
-        # Update status
-        for o in ords:
-            o["status"] = status_map.get(o["status"], "PENDING")
-        return ords
+        orderbook = self.kite.orders().get("data")
+        orderbook = deepcopy(orderbook)
+        if orderbook:
+            for order in orderbook:
+                order["status"] = status_map.get(order["status"])
+            return orderbook
+        else:
+            return [{}]
 
     @property
     @post
@@ -176,13 +178,17 @@ class Zerodha(Broker):
         """
         Return only the positions for the day
         """
-        pos = self.kite.positions()["day"]
-        for p in pos:
-            if p["quantity"] > 0:
-                p["side"] = "BUY"
-            else:
-                p["side"] = "SELL"
-        return pos
+        position_book = self.kite.positions().get("data").get("day")
+        position_book = deepcopy(position_book)
+        if position_book:
+            for position in position_book:
+                if position["quantity"] > 0:
+                    position["side"] = "BUY"
+                else:
+                    position["side"] = "SELL"
+            return position_book
+        else:
+            return [{}]
 
     @property
     @post
@@ -190,7 +196,11 @@ class Zerodha(Broker):
         """
         Return all the trades
         """
-        return self.kite.trades()
+        tradebook = self.kite.trades().get("data")
+        if tradebook:
+            return tradebook
+        else:
+            return [{}]
 
     @pre
     def order_place(self, **kwargs) -> str:
@@ -213,3 +223,7 @@ class Zerodha(Broker):
         All changes must be passed as keyword arguments
         """
         return self.kite.modify_order(order_id=order_id, **kwargs)
+
+    @property
+    def profile(self):
+        return self.kite.profile()

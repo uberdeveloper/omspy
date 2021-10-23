@@ -1,18 +1,10 @@
 orders:
-  order_id: order_id
-  order_timestamp: order_timestamp
   tradingsymbol: symbol
-  price: price
-  quantity: quantity
-  order_type: order_type
   transaction_type: side
-  filled_quantity: filled_quantity
-  status: status
 positions:
   tradingsymbol: symbol
-  quantity: quantity
-  side: side
-  average_price: average_price
+trades:
+  tradingsymbol: symbol
 order_place:
-  symbol: tradingsymbol
-  side: transaction_type
+  tradingsymbol: symbol
+  transaction_type: side
