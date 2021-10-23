@@ -11,6 +11,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+# Constant dictionaries
+EXCHANGES = {10: "NSE", 11: "MCX", 12: "BSE"}
+SEGMENTS = {10: "capital", 11: "equity", 12: "currency", 20: "commodity"}
+ORDER_TYPES = {1: "LIMIT", 2: "MARKET", 3: "SL-M", 4: "SL"}
+STATUS = {1: "CANCELED", 2: "COMPLETE", 4: "PENDING", 5: "REJECTED", 6: "PENDING"}
+SIDES = {1: "buy", -1: "sell"}
+
 
 def get_key(url, key="request_token") -> Optional[str]:
     """
