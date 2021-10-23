@@ -203,7 +203,7 @@ class Zerodha(Broker):
             return [{}]
 
     @pre
-    def order_place(self, **kwargs) -> str:
+    def order_place(self, **kwargs) -> Dict:
         """
         Place an order
         """

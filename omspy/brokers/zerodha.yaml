@@ -6,5 +6,5 @@ positions:
 trades:
   tradingsymbol: symbol
 order_place:
-  tradingsymbol: symbol
-  transaction_type: side
+  symbol: tradingsymbol
+  side: transaction_type

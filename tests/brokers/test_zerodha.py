@@ -104,3 +104,47 @@ def test_positions_side(mock_kite):
     assert positions[0]["side"] == "SELL"
     assert positions[1]["side"] == "BUY"
     assert positions[2]["side"] == "SELL"
+
+
+def test_order_place(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/order_response.json") as f:
+        mock_data = json.load(f)
+    broker.kite.place_order.return_value = mock_data
+    broker.order_place(symbol="goog", side="BUY", quantity=1, order_type="MARKET")
+    broker.kite.place_order.assert_called_once()
+    kwargs = {
+        "tradingsymbol": "goog",
+        "transaction_type": "BUY",
+        "quantity": 1,
+        "order_type": "MARKET",
+    }
+    print(broker.kite.place_order.call_args_list)
+    assert broker.kite.place_order.call_args_list[-1] == call(**kwargs)
+
+
+def test_order_place_kwargs(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/order_response.json") as f:
+        mock_data = json.load(f)
+    broker.kite.place_order.return_value = mock_data
+    broker.order_place(
+        symbol="goog",
+        side="BUY",
+        quantity=1,
+        order_type="MARKET",
+        variety="regular",
+        exchange="nse",
+        validity="day",
+    )
+    broker.kite.place_order.assert_called_once()
+    kwargs = {
+        "tradingsymbol": "goog",
+        "transaction_type": "BUY",
+        "quantity": 1,
+        "order_type": "MARKET",
+        "variety": "regular",
+        "exchange": "nse",
+        "validity": "day",
+    }
+    assert broker.kite.place_order.call_args_list[-1] == call(**kwargs)
