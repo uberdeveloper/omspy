@@ -114,3 +114,29 @@ class Fyers(Broker):
             return orderbook
         else:
             return [{}]
+
+    @property
+    @post
+    def positions(self) -> List[Dict]:
+        position_book = self.fyers.positions().get("netPositions")
+        position_book = deepcopy(position_book)
+        if position_book:
+            for position in position_book:
+                position["side"] = SIDES.get(position["side"])
+            return position_book
+        else:
+            return [{}]
+
+    @property
+    @post
+    def trades(self) -> List[Dict]:
+        tradebook = self.fyers.tradebook().get("tradeBook")
+        tradebook = deepcopy(tradebook)
+        if tradebook:
+            for trade in tradebook:
+                trade["side"] = SIDES.get(trade["side"])
+                trade["exchange"] = EXCHANGES.get(trade["exchange"])
+                trade["segment"] = SEGMENTS.get(trade["segment"])
+            return tradebook
+        else:
+            return [{}]

@@ -84,3 +84,55 @@ def test_orders_mappings(mock_fyers):
     assert orders[1]["order_type"] == "LIMIT"
     assert orders[1]["side"] == "buy"
     assert orders[1]["status"] == "COMPLETE"
+
+
+def test_positions(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.positions.return_value = mock_data.get("positions")
+    positions = broker.positions
+    broker.fyers.positions.assert_called_once()
+    keys_in = ["quantity", "average_price"]
+    keys_not_in = ["netQty", "avgPrice"]
+    for position in positions:
+        # assert keys are in dictionary, overriden keys
+        for key in keys_in:
+            assert key in position
+        # assert keys not in dictionary, original keys
+        for key in keys_not_in:
+            assert key not in position
+
+
+def test_positions_mappings(mock_fyers):
+    # Test whether constants are matched correctly
+    broker = mock_fyers
+    broker.fyers.positions.return_value = mock_data.get("positions")
+    positions = broker.positions
+    assert positions[0]["side"] == "buy"
+    assert positions[0]["quantity"] == 1
+    assert positions[0]["average_price"] == 72256
+
+
+def test_trades(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.trades.return_value = mock_data.get("trades")
+    trades = broker.trades
+    broker.fyers.tradebook.assert_called_once()
+    keys_in = ["trade_id", "quantity", "order_id"]
+    keys_not_in = ["id", "tradedQty", "orderNumber"]
+    for trade in trades:
+        # assert keys are in dictionary, overriden keys
+        for key in keys_in:
+            assert key in trade
+        # assert keys not in dictionary, original keys
+        for key in keys_not_in:
+            assert key not in trade
+
+
+def test_trades_mappings(mock_fyers):
+    # Test whether constants are matched correctly
+    broker = mock_fyers
+    broker.fyers.tradebook.return_value = mock_data.get("trades")
+    trades = broker.trades
+    assert trades[0]["side"] == "buy"
+    assert trades[1]["exchange"] == "NSE"
+    assert trades[1]["segment"] == "capital"

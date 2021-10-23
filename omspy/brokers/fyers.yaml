@@ -12,7 +12,6 @@ trades:
   orderNumber: order_id
 positions:
   netQty : quantity
-  side: side
   avgPrice : average_price
 order_place:
   symbol: symbol
