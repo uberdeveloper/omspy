@@ -316,6 +316,13 @@
                 "row":4,
                 "symbol":"NSE:IDFNIFTYET-EQ"
               }]
+},
+"place_order": {
+  "s": "ok",
+  "code": 1101,
+  "message": "Order submitted successfully. Your Order Ref. No.808058117761",
+  "id":"808058117761"
 }
+
 
 }

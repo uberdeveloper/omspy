@@ -1,5 +1,5 @@
 from omspy.brokers.fyers import Fyers
-from unittest.mock import patch
+from unittest.mock import patch, call
 import pytest
 import json
 from copy import deepcopy
@@ -136,3 +136,47 @@ def test_trades_mappings(mock_fyers):
     assert trades[0]["side"] == "buy"
     assert trades[1]["exchange"] == "NSE"
     assert trades[1]["segment"] == "capital"
+
+
+def test_order_place(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.place_order.return_value = mock_data.get("place_order")
+    broker.order_place(symbol="goog", side="buy")
+    broker.fyers.place_order.assert_called_once()
+    kwargs = {"symbol": "goog", "side": 1, "qty": 1, "type": 2}
+    assert broker.fyers.place_order.call_args_list[-1] == call(kwargs)
+
+
+def test_order_place_arguments(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.place_order.return_value = mock_data.get("place_order")
+    broker.order_place(
+        symbol="goog", side="sell", order_type="LIMIT", quantity=10, price=380
+    )
+    broker.fyers.place_order.assert_called_once()
+    kwargs = {"symbol": "goog", "side": -1, "qty": 10, "type": 1, "limitPrice": 380}
+
+
+def test_order_place_kwargs(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.place_order.return_value = mock_data.get("place_order")
+    broker.order_place(
+        symbol="goog",
+        side="sell",
+        order_type="SL-M",
+        quantity=50,
+        price=380,
+        trigger_price=379,
+        disclosed_quantity=10,
+    )
+    broker.fyers.place_order.assert_called_once()
+    kwargs = {
+        "symbol": "goog",
+        "side": -1,
+        "qty": 50,
+        "type": 3,
+        "limitPrice": 380,
+        "stopPrice": 379,
+        "disclosedQty": 10,
+    }
+    assert broker.fyers.place_order.call_args_list[-1] == call(kwargs)

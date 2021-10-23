@@ -14,8 +14,8 @@ positions:
   netQty : quantity
   avgPrice : average_price
 order_place:
-  symbol: symbol
   price: limitPrice
   trigger_price: stopPrice
   quantity: qty
   order_type: type
+  disclosed_quantity: disclosedQty

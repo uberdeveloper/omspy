@@ -140,3 +140,30 @@ class Fyers(Broker):
             return tradebook
         else:
             return [{}]
+
+    @pre
+    def order_place(
+        self,
+        symbol: str,
+        side: str,
+        quantity: int = 1,
+        order_type: str = "MARKET",
+        **kwargs
+    ) -> Dict:
+        """
+        Place an actual order with broker
+        """
+        # Reverse look up maps
+        rev_sides = {v: k for k, v in SIDES.items()}
+        rev_order_types = {v: k for k, v in ORDER_TYPES.items()}
+        side = rev_sides.get(side.lower())
+        order_type = kwargs.pop("type", "market").upper()
+        order_type = rev_order_types.get(order_type)
+        if "qty" not in kwargs:
+            kwargs["qty"] = 1
+        order_args = {"side": side, "type": order_type, "symbol": symbol}
+        for k, v in kwargs.items():
+            if k not in order_args:
+                order_args[k] = v
+        response = self.fyers.place_order(order_args)
+        return response.get("id")
