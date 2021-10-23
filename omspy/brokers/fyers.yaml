@@ -3,9 +3,7 @@ orders:
   orderDateTime : order_timestamp
   tradedPrice : price
   qty : quantity
-  transaction_type: side
   filledQty : filled_quantity
-  status: status
   exchOrdId: exchange_order_id
   type: order_type
 trades:

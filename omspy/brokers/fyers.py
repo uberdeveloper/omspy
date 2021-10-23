@@ -2,7 +2,7 @@ from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict
 from urllib.parse import urlparse, parse_qs
 from fyers_api import fyersModel, accessToken
-
+from copy import deepcopy
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -101,8 +101,16 @@ class Fyers(Broker):
     @property
     @post
     def orders(self) -> List[Dict]:
-        ords = self.fyers.orderbook()
-        if ords.get("orderBook"):
-            return ords["orderBook"]
+        orderbook = self.fyers.orderbook().get("orderBook")
+        orderbook = deepcopy(orderbook)
+        if orderbook:
+            for order in orderbook:
+                order["exchange"] = EXCHANGES.get(order["exchange"])
+                order["segment"] = SEGMENTS.get(order["segment"])
+                order["side"] = SIDES.get(order["side"])
+                order["status"] = STATUS.get(order["status"])
+                order["type"] = ORDER_TYPES.get(order["type"])
+
+            return orderbook
         else:
             return [{}]

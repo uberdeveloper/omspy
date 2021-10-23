@@ -37,8 +37,25 @@ def test_orders(mock_fyers):
     broker.fyers.orderbook.return_value = mock_data.get("orders")
     orders = broker.orders
     broker.fyers.orderbook.assert_called_once()
-    keys_in = ["order_timestamp", "quantity"]
-    keys_not_in = ["orderDateTime", "qty"]
+    keys_in = [
+        "order_id",
+        "order_timestamp",
+        "price",
+        "quantity",
+        "filled_quantity",
+        "status",
+        "exchange_order_id",
+        "order_type",
+    ]
+    keys_not_in = [
+        "id",
+        "orderDateTime",
+        "tradedPrice",
+        "qty",
+        "filledQty",
+        "exchOrdId",
+        "type",
+    ]
     for order in orders:
         # assert keys are in dictionary, overriden keys
         for key in keys_in:
@@ -46,3 +63,24 @@ def test_orders(mock_fyers):
         # assert keys not in dictionary, original keys
         for key in keys_not_in:
             assert key not in order
+
+
+def test_orders_empty_orderbook(mock_fyers):
+    broker = mock_fyers
+    broker.fyers.orderbook.return_value = {}
+    orders = broker.orders
+    assert orders == [{}]
+
+
+def test_orders_mappings(mock_fyers):
+    # Test whether constants are matched correctly
+    broker = mock_fyers
+    broker.fyers.orderbook.return_value = mock_data.get("orders")
+    orders = broker.orders
+    assert orders[0]["status"] == "COMPLETE"
+    assert orders[0]["exchange"] == "NSE"
+    assert orders[0]["side"] == "buy"
+    assert orders[0]["order_type"] == "MARKET"
+    assert orders[1]["order_type"] == "LIMIT"
+    assert orders[1]["side"] == "buy"
+    assert orders[1]["status"] == "COMPLETE"
