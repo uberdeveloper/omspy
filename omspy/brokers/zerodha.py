@@ -209,20 +209,28 @@ class Zerodha(Broker):
         """
         return self.kite.place_order(**kwargs)
 
-    def order_cancel(self, order_id: str, **kwargs) -> str:
+    def order_cancel(self, **kwargs) -> Dict:
         """
         Cancel an existing order
         """
-        return self.kite.cancel_order(order_id=order_id, **kwargs)
+        order_id = kwargs.pop("order_id", None)
+        if not (order_id):
+            return {"error": "No order_id"}
+        else:
+            return self.kite.cancel_order(order_id=order_id, **kwargs)
 
-    def order_modify(self, order_id: str, **kwargs) -> str:
+    def order_modify(self, **kwargs) -> Dict:
         """
         Modify an existing order
         Note
         ----
         All changes must be passed as keyword arguments
         """
-        return self.kite.modify_order(order_id=order_id, **kwargs)
+        order_id = kwargs.pop("order_id", None)
+        if not (order_id):
+            return {"error": "No order_id"}
+        else:
+            return self.kite.modify_order(order_id=order_id, **kwargs)
 
     @property
     def profile(self):

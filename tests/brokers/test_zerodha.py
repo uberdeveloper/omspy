@@ -148,3 +148,46 @@ def test_order_place_kwargs(mock_kite):
         "validity": "day",
     }
     assert broker.kite.place_order.call_args_list[-1] == call(**kwargs)
+
+
+def test_order_modify(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/order_response.json") as f:
+        mock_data = json.load(f)
+    broker.kite.modify_order.return_value = mock_data
+    broker.order_modify(order_id="abcde12345", quantity=100, order_type="market")
+    broker.kite.modify_order.assert_called_once()
+    kwargs = {"order_id": "abcde12345", "quantity": 100, "order_type": "market"}
+    assert broker.kite.modify_order.call_args_list[-1] == call(**kwargs)
+
+
+def test_order_modify_return_error(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/order_response.json") as f:
+        mock_data = json.load(f)
+    broker.kite.modify_order.return_value = mock_data
+    response = broker.order_modify(quantity=100, order_type="market")
+    broker.kite.modify_order.assert_not_called()
+    kwargs = {"order_id": "abcde12345", "quantity": 100, "order_type": "market"}
+    assert response == {"error": "No order_id"}
+
+
+def test_order_cancel(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/order_response.json") as f:
+        mock_data = json.load(f)
+    broker.kite.cancel_order.return_value = mock_data
+    broker.order_cancel(order_id="abcde12345", variety="regular")
+    broker.kite.cancel_order.assert_called_once()
+    kwargs = {"order_id": "abcde12345", "variety": "regular"}
+    assert broker.kite.cancel_order.call_args_list[-1] == call(**kwargs)
+
+
+def test_order_cancel_return_error(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/order_response.json") as f:
+        mock_data = json.load(f)
+    broker.kite.cancel_order.return_value = mock_data
+    response = broker.order_cancel(order_type="market")
+    broker.kite.cancel_order.assert_not_called()
+    assert response == {"error": "No order_id"}
