@@ -1,7 +1,8 @@
-from typing import Callable, Optional, List, Dict
+from typing import Callable, Optional, List, Dict, Tuple
 import inspect
 import yaml
 import logging
+from copy import deepcopy
 
 
 def pre(func: Callable) -> Callable:
@@ -181,3 +182,71 @@ class Broker:
             else:
                 new_dct[k] = v
         return new_dct
+
+    def close_all_positions(
+        self,
+        keys_to_copy: Optional[Tuple] = None,
+        keys_to_add: Optional[Dict] = None,
+        **kwargs,
+    ):
+        """
+        Close all existing positions.
+        For all existing positions, a MARKET order in
+        the opposite side is placed to force exit
+        Note
+        ----
+        Use this only if you want to close all orders in a
+        panic situation or you have orders not controlled
+        by the system. Do not forget to cancel the existing
+        open orders
+        """
+        STATIC_KEYS = ["quantity", "side", "symbol", "order_type"]
+        if not (keys_to_copy):
+            keys_to_copy = ()
+        if not (keys_to_add):
+            keys_to_add = {}
+        for position in self.positions:
+            quantity = position.get("quantity")
+            symbol = position.get("symbol")
+            if quantity:
+                if quantity > 0:
+                    side = "sell"
+                elif quantity < 0:
+                    side = "buy"
+                order_args = {
+                    "quantity": abs(quantity),
+                    "side": side,
+                    "symbol": symbol,
+                    "order_type": "MARKET",
+                }
+                for key in keys_to_copy:
+                    if key not in STATIC_KEYS:
+                        if position.get(key):
+                            order_args[key] = position[key]
+                final_args = {}
+                final_args.update(keys_to_add)
+                final_args.update(order_args)
+                self.order_place(**final_args)
+
+    def cancel_all_orders(
+        self,
+        keys_to_copy: Optional[Tuple] = None,
+        keys_to_add: Optional[Dict] = None,
+        **kwargs,
+    ):
+        """
+        Cancel all existing open orders
+        """
+        if not (keys_to_copy):
+            keys_to_copy = ()
+        if not (keys_to_add):
+            keys_to_add = {}
+        for order in self.orders:
+            order_id = order.get("order_id")
+            if order_id:
+                final_args = {}
+                for key in keys_to_copy:
+                    final_args[key] = order.get(key)
+                final_args.update(keys_to_add)
+                final_args.update({"order_id": order_id})
+                self.order_cancel(**final_args)

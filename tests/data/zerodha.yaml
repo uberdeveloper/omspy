@@ -1,0 +1,10 @@
+orders:
+  tradingsymbol: symbol
+  transaction_type: side
+positions:
+  tradingsymbol: symbol
+trades:
+  tradingsymbol: symbol
+order_place:
+  symbol: tradingsymbol
+  side: transaction_type
