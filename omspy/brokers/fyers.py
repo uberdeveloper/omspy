@@ -32,13 +32,14 @@ def get_key(url, key="request_token") -> Optional[str]:
 
 
 class Fyers(Broker):
-    def __init__(self, app_id, secret, user_id, password, pan):
+    def __init__(self, app_id, secret, user_id, password, pan, log_path="."):
         self._app_id = app_id
         self._secret = secret
         self._user_id = user_id
         self._password = password
         self._pan = pan
         self._store_access_token = True
+        self._log_path = log_path
         super(Fyers, self).__init__()
 
     def authenticate(self) -> None:
@@ -52,8 +53,9 @@ class Fyers(Broker):
             with open("fyers_token.tok") as f:
                 access_token = f.read()
             self.fyers = fyersModel.FyersModel(
-                client_id=self._app_id, token=access_token
+                client_id=self._app_id, token=access_token, log_path=self._log_path
             )
+            self.quote = self.fyers.quotes
         except:
             print("Unknown Exception")
             self._login()
@@ -88,6 +90,7 @@ class Fyers(Broker):
         with open("fyers_token.tok", "w") as f:
             f.write(token)
         self.fyers = fyersModel.FyersModel(client_id=self._app_id, token=token)
+        self.quote = self.fyers.quotes
         driver.close()
 
     @property
