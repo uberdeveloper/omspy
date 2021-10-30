@@ -241,9 +241,15 @@ class Broker:
             keys_to_copy = ()
         if not (keys_to_add):
             keys_to_add = {}
+        statuses = ("complete",)
         for order in self.orders:
+            status = order.get("status")
+            if not (status):
+                status == "pending"
+            else:
+                status = str(status).lower()
             order_id = order.get("order_id")
-            if order_id:
+            if order_id and status not in statuses:
                 final_args = {}
                 for key in keys_to_copy:
                     final_args[key] = order.get(key)

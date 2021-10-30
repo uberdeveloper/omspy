@@ -8,6 +8,8 @@ from omspy.base import Broker, pre, post
 # Load some mock data
 with open("tests/data/kiteconnect/orders.json") as f:
     orders = json.load(f)["data"]
+    for order in orders:
+        order["status"] = "pending"
 with open("tests/data/kiteconnect/trades.json") as f:
     trades = json.load(f)["data"]
 with open("tests/data/kiteconnect/positions.json") as f:

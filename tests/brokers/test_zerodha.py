@@ -119,7 +119,6 @@ def test_order_place(mock_kite):
         "quantity": 1,
         "order_type": "MARKET",
     }
-    print(broker.kite.place_order.call_args_list)
     assert broker.kite.place_order.call_args_list[-1] == call(**kwargs)
 
 
@@ -191,3 +190,92 @@ def test_order_cancel_return_error(mock_kite):
     response = broker.order_cancel(order_type="market")
     broker.kite.cancel_order.assert_not_called()
     assert response == {"error": "No order_id"}
+
+
+def test_close_all_positions(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/positions.json") as f:
+        mock_data = json.load(f)
+    broker.kite.positions.return_value = mock_data
+    broker.close_all_positions()
+    assert broker.kite.place_order.call_count == 2
+    call_args = [
+        dict(
+            tradingsymbol="GOLDGUINEA17DECFUT",
+            order_type="MARKET",
+            quantity=3,
+            transaction_type="buy",
+        ),
+        dict(
+            tradingsymbol="LEADMINI17DECFUT",
+            order_type="MARKET",
+            quantity=1,
+            transaction_type="sell",
+        ),
+    ]
+    order_args = broker.kite.place_order.call_args_list
+    assert order_args[0] == call(**call_args[0])
+    assert order_args[1] == call(**call_args[1])
+
+
+def test_close_all_positions(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/positions.json") as f:
+        mock_data = json.load(f)
+    broker.kite.positions.return_value = mock_data
+    broker.close_all_positions(
+        keys_to_copy=("exchange", "product"), keys_to_add={"variety": "regular"}
+    )
+    assert broker.kite.place_order.call_count == 2
+    call_args = [
+        dict(
+            tradingsymbol="GOLDGUINEA17DECFUT",
+            order_type="MARKET",
+            quantity=3,
+            transaction_type="buy",
+            exchange="MCX",
+            product="NRML",
+            variety="regular",
+        ),
+        dict(
+            tradingsymbol="LEADMINI17DECFUT",
+            order_type="MARKET",
+            quantity=1,
+            transaction_type="sell",
+            exchange="MCX",
+            product="NRML",
+            variety="regular",
+        ),
+    ]
+    order_args = broker.kite.place_order.call_args_list
+    assert order_args[0] == call(**call_args[0])
+    assert order_args[1] == call(**call_args[1])
+
+
+def test_cancel_all_orders(mock_kite):
+    broker = mock_kite
+    with open("tests/data/kiteconnect/orders.json") as f:
+        mock_data = json.load(f)
+        mock_data["data"][3]["status"] = "pending"
+    broker.kite.orders.return_value = mock_data
+    broker.cancel_all_orders(
+        keys_to_copy=("product", "instrument_token"), keys_to_add={"variety": "regular"}
+    )
+    assert broker.kite.cancel_order.call_count == 2
+    call_args = [
+        dict(
+            order_id="100000000000000",
+            instrument_token=412675,
+            product="NRML",
+            variety="regular",
+        ),
+        dict(
+            order_id="700000000000000",
+            instrument_token=58424839,
+            product="NRML",
+            variety="regular",
+        ),
+    ]
+    order_args = broker.kite.cancel_order.call_args_list
+    assert order_args[0] == call(**call_args[0])
+    assert order_args[1] == call(**call_args[1])
