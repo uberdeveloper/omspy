@@ -90,3 +90,77 @@ def test_cancel_all_orders(broker):
     broker.cancel_all_orders()
     for a, e in zip(broker._cancel_orders, call_args):
         assert a == e
+
+
+def test_close_all_positions_copy_keys(broker):
+    call_args = [
+        dict(
+            symbol="GOLDGUINEA17DECFUT",
+            order_type="MARKET",
+            quantity=3,
+            side="buy",
+            product="NRML",
+            exchange="MCX",
+        ),
+        dict(
+            symbol="LEADMINI17DECFUT",
+            order_type="MARKET",
+            quantity=1,
+            side="sell",
+            product="NRML",
+            exchange="MCX",
+        ),
+    ]
+    broker.close_all_positions(keys_to_copy=("exchange", "product"))
+    assert broker._place_orders[0] == call_args[0]
+    assert broker._place_orders[1] == call_args[1]
+
+
+def test_close_all_positions_add_keys(broker):
+    call_args = [
+        dict(
+            symbol="GOLDGUINEA17DECFUT",
+            order_type="MARKET",
+            quantity=3,
+            side="buy",
+            variety="regular",
+        ),
+        dict(
+            symbol="LEADMINI17DECFUT",
+            order_type="MARKET",
+            quantity=1,
+            side="sell",
+            variety="regular",
+        ),
+    ]
+    broker.close_all_positions(keys_to_add={"variety": "regular"})
+    assert broker._place_orders[0] == call_args[0]
+    assert broker._place_orders[1] == call_args[1]
+
+
+def test_close_all_positions_copy_and_add_keys(broker):
+    call_args = [
+        dict(
+            symbol="GOLDGUINEA17DECFUT",
+            order_type="MARKET",
+            quantity=3,
+            side="buy",
+            product="NRML",
+            exchange="MCX",
+            validity="day",
+        ),
+        dict(
+            symbol="LEADMINI17DECFUT",
+            order_type="MARKET",
+            quantity=1,
+            side="sell",
+            product="NRML",
+            exchange="MCX",
+            validity="day",
+        ),
+    ]
+    broker.close_all_positions(
+        keys_to_copy=("exchange", "product"), keys_to_add={"validity": "day"}
+    )
+    assert broker._place_orders[0] == call_args[0]
+    assert broker._place_orders[1] == call_args[1]
