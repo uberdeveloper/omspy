@@ -5,6 +5,7 @@ from omspy.brokers.paper import Paper
 from collections import Counter
 import pendulum
 from copy import deepcopy
+import sqlite3
 
 
 @pytest.fixture
@@ -510,3 +511,17 @@ def test_compound_order_completed_orders(simple_compound_order):
 def test_compound_order_pending_orders(simple_compound_order):
     order = simple_compound_order
     assert len(order.pending_orders) == 1
+
+
+def test_simple_order_create_db():
+    order = Order(symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris")
+    con = order._create_db()
+    assert type(con) == sqlite3.Connection
+    with con:
+        for i in range(10):
+            con.execute(
+                "insert into orders (symbol,quantity) values (?,?)", ("aapl", i)
+            )
+
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 10
