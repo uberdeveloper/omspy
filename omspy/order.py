@@ -26,6 +26,37 @@ def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
     return v * (step + num)
 
 
+def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
+    """
+    Create a sqlite3 database for the orders and return the connection
+    dbname
+        name of the database
+        default in-memory database
+    """
+    try:
+        con = sqlite3.connect(dbname)
+        with con:
+            con.execute(
+                """create table orders
+                           (symbol text, side text, quantity integer,
+                           id text, parent_id text, timestamp text,
+                           order_type text, broker_timestamp text,
+                           exchange_timestamp text, order_id text,
+                           exchange_order_id text, price real,
+                           trigger_price real, average_price real,
+                           pending_quantity integer, filled_quantity integer,
+                           cancelled_quantity integer, disclosed_quantity integer,
+                           validity text, status text,
+                           expires_in integer, timezone text,
+                           client_id text, convert_to_market_after_expiry text,
+                           cancel_after_expiry text, retries integer,
+                           exchange text, tag string)"""
+            )
+            return con
+    except Exception as e:
+        return None
+
+
 @dataclass
 class Order:
     symbol: str
@@ -56,6 +87,7 @@ class Order:
     retries: int = 0
     exchange: Optional[str] = None
     tag: Optional[str] = None
+    connection: Type[sqlite3.Connection] = None
 
     def __post_init__(self, **data) -> None:
         if not (self.id):
@@ -198,36 +230,6 @@ class Order:
         Cancel an existing order
         """
         broker.order_cancel(order_id=self.order_id)
-
-    def _create_db(self, dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
-        """
-        Create a sqlite3 database for the orders and returns the connection
-        dbname
-            name of the database
-            default in memory database
-        """
-        try:
-            con = sqlite3.connect(dbname)
-            with con:
-                con.execute(
-                    """create table orders
-                               (symbol text, side text, quantity integer,
-                               id text, parent_id text, timestamp text,
-                               order_type text, broker_timestamp text,
-                               exchange_timestamp text, order_id text,
-                               exchange_order_id text, price real,
-                               trigger_price real, average_price real,
-                               pending_quantity integer, filled_quantity integer,
-                               cancelled_quantity integer, disclosed_quantity integer,
-                               validity text, status text,
-                               expires_in integer, timezone text,
-                               client_id text, convert_to_market_after_expiry text,
-                               cancel_after_expiry text, retries integer,
-                               exchange text, tag string)"""
-                )
-                return con
-        except Exception as e:
-            return None
 
 
 @dataclass
