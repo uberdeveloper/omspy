@@ -5,6 +5,7 @@ from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
 import uuid
 import pendulum
 import sqlite3
+import logging
 from collections import Counter, defaultdict
 from omspy.base import Broker
 
@@ -88,7 +89,7 @@ class Order:
     retries: int = 0
     exchange: Optional[str] = None
     tag: Optional[str] = None
-    connection: Type[sqlite3.Connection] = None
+    connection: Optional[Any] = None
 
     def __post_init__(self, **data) -> None:
         if not (self.id):
@@ -231,6 +232,76 @@ class Order:
         Cancel an existing order
         """
         broker.order_cancel(order_id=self.order_id)
+
+    def save_to_db(self) -> bool:
+        """
+        save or update the order to db
+        """
+        if self.connection:
+            sql = """insert or replace into orders
+            values (:symbol, :side, :quantity, :id,
+            :parent_id, :timestamp, :order_type,
+            :broker_timestamp, :exchange_timestamp, :order_id,
+            :exchange_order_id, :price, :trigger_price,
+            :average_price,:pending_quantity,:filled_quantity,
+            :cancelled_quantity,:disclosed_quantity,:validity,
+            :status,:expires_in,:timezone,:client_id,
+            :convert_to_market_after_expiry,
+            :cancel_after_expiry, :retries, :exchange, :tag)
+            """
+            values = dict(
+                symbol=self.symbol,
+                side=self.side,
+                quantity=self.quantity,
+                id=self.id,
+                parent_id=self.parent_id,
+                timestamp=str(self.timestamp),
+                order_type=self.order_type,
+                broker_timestamp=str(self.broker_timestamp),
+                exchange_timestamp=str(self.exchange_timestamp),
+                order_id=self.order_id,
+                exchange_order_id=self.exchange_order_id,
+                price=self.price,
+                trigger_price=self.trigger_price,
+                average_price=self.average_price,
+                pending_quantity=self.pending_quantity,
+                filled_quantity=self.filled_quantity,
+                cancelled_quantity=self.cancelled_quantity,
+                disclosed_quantity=self.disclosed_quantity,
+                validity=self.validity,
+                status=self.status,
+                expires_in=self.expires_in,
+                timezone=self.timezone,
+                client_id=self.client_id,
+                convert_to_market_after_expiry=self.convert_to_market_after_expiry,
+                cancel_after_expiry=self.cancel_after_expiry,
+                retries=self.retries,
+                exchange=self.exchange,
+                tag=self.tag,
+            )
+            with self.connection:
+                self.connection.execute(sql, values)
+                return True
+
+        else:
+            logging.info("No valid database connection")
+            return False
+
+    def save_to_db2(self) -> bool:
+        """
+        save or update the order to db
+        """
+        if self.connection:
+            sql = """insert or replace into orders
+            (symbol, side, quantity, id)
+            values (:symbol, :side, :quantity, :id)
+            """
+            values = dict(
+                symbol=self.symbol, side=self.side, quantity=self.quantity, id=self.id
+            )
+            print(values)
+            with self.connection:
+                self.connection.execute(sql, values)
 
 
 @dataclass

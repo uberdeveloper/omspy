@@ -539,3 +539,81 @@ def test_order_create_db_primary_key_duplicate_error():
                     "insert into orders (symbol,quantity,id) values (?,?,?)",
                     ("aapl", i, order.id),
                 )
+
+
+def test_order_save_to_db():
+    con = create_db()
+    con.row_factory = sqlite3.Row
+    order = Order(
+        symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris", connection=con
+    )
+    order.save_to_db()
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 1
+    for row in result:
+        assert row["symbol"] == "aapl"
+
+
+def test_order_save_to_db():
+    con = create_db()
+    con.row_factory = sqlite3.Row
+    order = Order(
+        symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris", connection=con
+    )
+    commit = order.save_to_db()
+    assert commit is True
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 1
+    for row in result:
+        assert row["symbol"] == "aapl"
+
+
+def test_order_do_not_save_to_db_if_no_connection():
+    order = Order(symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris")
+    commit = order.save_to_db()
+    assert commit is False
+
+
+def test_order_save_to_db_update():
+    con = create_db()
+    con.row_factory = sqlite3.Row
+    order = Order(
+        symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris", connection=con
+    )
+    order.save_to_db()
+    for i in range(1, 8):
+        order.filled_quantity = i
+        order.save_to_db()
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 1
+    for row in result:
+        assert row["filled_quantity"] == 7
+
+
+def test_order_save_to_db_multiple_orders():
+    con = create_db()
+    con.row_factory = sqlite3.Row
+    order1 = Order(
+        symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris", connection=con
+    )
+    order2 = Order(
+        symbol="goog",
+        side="sell",
+        quantity=20,
+        timezone="Europe/Paris",
+        connection=con,
+        tag="short",
+    )
+    order1.save_to_db()
+    order2.save_to_db()
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 2
+    for i in range(10):
+        order1.save_to_db()
+        order2.save_to_db()
+    for row in result:
+        if row["symbol"] == "aapl":
+            assert row["quantity"] == 10
+            assert row["tag"] is None
+        elif row["symbol"] == "goog":
+            assert row["tag"] == "short"
