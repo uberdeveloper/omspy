@@ -163,7 +163,7 @@ class Order:
     def has_parent(self) -> bool:
         return True if self.parent_id else False
 
-    def update(self, data: Dict[str, Any]) -> bool:
+    def update(self, data: Dict[str, Any], save: bool = True) -> bool:
         """
         Update order based on information received from broker
         data
@@ -179,6 +179,8 @@ class Order:
                 val = data.get(att)
                 if val:
                     setattr(self, att, val)
+            if self.connection and save:
+                self.save_to_db()
             return True
         else:
             return False
@@ -286,22 +288,6 @@ class Order:
         else:
             logging.info("No valid database connection")
             return False
-
-    def save_to_db2(self) -> bool:
-        """
-        save or update the order to db
-        """
-        if self.connection:
-            sql = """insert or replace into orders
-            (symbol, side, quantity, id)
-            values (:symbol, :side, :quantity, :id)
-            """
-            values = dict(
-                symbol=self.symbol, side=self.side, quantity=self.quantity, id=self.id
-            )
-            print(values)
-            with self.connection:
-                self.connection.execute(sql, values)
 
 
 @dataclass

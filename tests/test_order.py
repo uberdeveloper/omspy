@@ -617,3 +617,25 @@ def test_order_save_to_db_multiple_orders():
             assert row["tag"] is None
         elif row["symbol"] == "goog":
             assert row["tag"] == "short"
+
+
+def test_order_save_to_db_update_order():
+    con = create_db()
+    con.row_factory = sqlite3.Row
+    order = Order(
+        symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris", connection=con
+    )
+    for i in range(3):
+        order.update({"filled_quantity": 7, "average_price": 780})
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 1
+    for row in result:
+        assert row["filled_quantity"] == 7
+        assert row["average_price"] == 780
+
+
+def test_order_save_to_db_dont_update_order_no_connection():
+    order = Order(symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris")
+    for i in range(3):
+        order.update({"filled_quantity": 7, "average_price": 780})
+    order.save_to_db()
