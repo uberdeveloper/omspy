@@ -39,7 +39,7 @@ def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
             con.execute(
                 """create table orders
                            (symbol text, side text, quantity integer,
-                           id text, parent_id text, timestamp text,
+                           id text primary key, parent_id text, timestamp text,
                            order_type text, broker_timestamp text,
                            exchange_timestamp text, order_id text,
                            exchange_order_id text, price real,
@@ -54,6 +54,7 @@ def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
             )
             return con
     except Exception as e:
+        print("error is", e)
         return None
 
 

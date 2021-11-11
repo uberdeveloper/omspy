@@ -525,3 +525,17 @@ def test_order_create_db():
 
     result = con.execute("select * from orders").fetchall()
     assert len(result) == 10
+
+
+def test_order_create_db_primary_key_duplicate_error():
+    order = Order(
+        symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris", id="primary_id"
+    )
+    con = create_db()
+    with pytest.raises(sqlite3.IntegrityError):
+        with con:
+            for i in range(3):
+                con.execute(
+                    "insert into orders (symbol,quantity,id) values (?,?,?)",
+                    ("aapl", i, order.id),
+                )
