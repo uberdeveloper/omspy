@@ -10,7 +10,8 @@ import sqlite3
 
 @pytest.fixture
 def simple_compound_order():
-    com = CompoundOrder(broker=Paper())
+    con = create_db()
+    com = CompoundOrder(broker=Paper(), connection=con)
     com.add_order(
         symbol="aapl",
         quantity=20,
@@ -223,7 +224,7 @@ def test_compound_order_update_orders(simple_compound_order):
         },
     }
     updates = order.update_orders(order_data)
-    assert updates == {"aaaaaa": False, "bbbbbb": False, "cccccc": True}
+    assert updates == {"cccccc": True}
     assert order.orders[-1].filled_quantity == 12
     assert order.orders[-1].status == "COMPLETE"
     assert order.orders[-1].average_price == 180
@@ -639,3 +640,89 @@ def test_order_save_to_db_dont_update_order_no_connection():
     for i in range(3):
         order.update({"filled_quantity": 7, "average_price": 780})
     order.save_to_db()
+
+
+def test_compound_order_save_to_db(simple_compound_order):
+    order = simple_compound_order
+    con = order.connection
+    con.row_factory = sqlite3.Row
+    result = con.execute("select * from orders").fetchall()
+    print(result)
+    assert len(result) == 3
+    for q, row in zip((20, 10, 12), result):
+        assert row["quantity"] == q
+
+
+def test_compound_order_save_to_db_add_order(simple_compound_order):
+    order = simple_compound_order
+    con = order.connection
+    order.add_order(symbol="beta", quantity=17, side="buy")
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 4
+    print(result)
+    assert result[-1][0] == "beta"
+
+
+def test_compound_order_update_orders(simple_compound_order):
+    order = simple_compound_order
+    con = order.connection
+    con.row_factory = sqlite3.Row
+    order.add_order(symbol="beta", quantity=17, side="buy", order_id="dddddd")
+    order_data = {
+        "cccccc": {
+            "order_id": "cccccc",
+            "filled_quantity": 12,
+            "status": "COMPLETE",
+            "average_price": 180,
+            "exchange_order_id": "some_exchange_id",
+        },
+        "dddddd": {
+            "order_id": "dddddd",
+            "exchange_order_id": "some_hex_id",
+            "disclosed_quantity": 5,
+        },
+    }
+    updates = order.update_orders(order_data)
+    result = con.execute("select * from orders").fetchall()
+    for i, row in enumerate(result):
+        if i == 2:
+            assert row["average_price"] == 180
+        elif i == 3:
+            assert row["disclosed_quantity"] == 5
+            assert row["exchange_order_id"] == "some_hex_id"
+
+
+def test_compound_order_update_orders_multiple_connections(simple_compound_order):
+    order = simple_compound_order
+    con = order.connection
+    con.row_factory = sqlite3.Row
+    con2 = create_db()
+    con2.row_factory = sqlite3.Row
+    order.add_order(
+        symbol="beta", quantity=17, side="buy", order_id="dddddd", connection=con2
+    )
+    order_data = {
+        "cccccc": {
+            "order_id": "cccccc",
+            "filled_quantity": 12,
+            "status": "COMPLETE",
+            "average_price": 180,
+            "exchange_order_id": "some_exchange_id",
+        },
+        "dddddd": {
+            "order_id": "dddddd",
+            "exchange_order_id": "some_hex_id",
+            "disclosed_quantity": 5,
+        },
+    }
+    updates = order.update_orders(order_data)
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 3
+    for i, row in enumerate(result):
+        if i == 2:
+            assert row["average_price"] == 180
+    result = con2.execute("select * from orders").fetchall()
+    assert len(result) == 1
+    for row in result:
+        assert row["exchange_order_id"] == "some_hex_id"
+        assert row["disclosed_quantity"] == 5

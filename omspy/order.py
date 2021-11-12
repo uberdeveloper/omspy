@@ -296,6 +296,7 @@ class CompoundOrder:
     id: Optional[str] = None
     ltp: defaultdict = Field(default_factory=defaultdict)
     orders: List[Order] = Field(default_factory=list)
+    connection: Optional[Any] = None
 
     def __post_init__(self) -> None:
         if not (self.id):
@@ -325,7 +326,10 @@ class CompoundOrder:
 
     def add_order(self, **kwargs) -> Optional[str]:
         kwargs["parent_id"] = self.id
+        if not (kwargs.get("connection")):
+            kwargs["connection"] = self.connection
         order = Order(**kwargs)
+        order.save_to_db()
         self.orders.append(order)
         return order.id
 
@@ -371,10 +375,10 @@ class CompoundOrder:
         returns a dictionary with order_id and update status as boolean
         """
         dct: Dict[str, bool] = {}
-        for order in self.orders:
+        for order in self.pending_orders:
             order_id = str(order.order_id)
             status = order.status
-            if (order_id in data) and (status != "COMPLETE"):
+            if order_id in data:
                 d = data.get(order_id)
                 if d:
                     order.update(d)
