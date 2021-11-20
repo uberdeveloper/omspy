@@ -14,7 +14,6 @@ class StopOrder(CompoundOrder):
         quantity: int = 1,
         order_type="MARKET",
         disclosed_quantity: int = 0,
-        order_args: Optional[Dict] = None,
         **kwargs,
     ):
         super(StopOrder, self).__init__(**kwargs)
@@ -49,7 +48,6 @@ class StopLimitOrder(CompoundOrder):
         quantity: int = 1,
         order_type="MARKET",
         disclosed_quantity: int = 0,
-        order_args: Optional[Dict] = None,
         **kwargs,
     ):
         super(StopLimitOrder, self).__init__(**kwargs)

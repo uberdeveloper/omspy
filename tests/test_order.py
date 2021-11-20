@@ -9,6 +9,17 @@ import sqlite3
 
 
 @pytest.fixture
+def compound_order():
+    con = create_db()
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        com = CompoundOrder(broker=broker, connection=con)
+        com.add_order(symbol="aapl", quantity=20, side="buy")
+        com.add_order(symbol="goog", quantity=10, side="sell", average_price=338)
+        com.add_order(symbol="aapl", quantity=12, side="sell", average_price=975)
+        return com
+
+
+@pytest.fixture
 def simple_compound_order():
     con = create_db()
     com = CompoundOrder(broker=Paper(), connection=con)
@@ -403,7 +414,7 @@ def test_simple_order_do_not_execute_completed_order():
         )
         for i in range(10):
             order.execute(broker=broker, exchange="NSE", variety="regular")
-        broker.order_place.call_count == 0
+        assert broker.order_place.call_count == 0
 
 
 def test_order_expires():
@@ -726,3 +737,39 @@ def test_compound_order_update_orders_multiple_connections(simple_compound_order
     for row in result:
         assert row["exchange_order_id"] == "some_hex_id"
         assert row["disclosed_quantity"] == 5
+
+
+def test_compound_order_execute_all_default(compound_order):
+    order = compound_order
+    order.execute_all()
+    assert order.broker.order_place.call_count == 3
+
+
+def test_compound_order_execute_all_order_args(compound_order):
+    order = compound_order
+    order.execute_all(variety="regular", exchange="NSE")
+    call_args = order.broker.order_place.call_args_list
+    for arg in call_args:
+        assert arg.kwargs.get("variety") == "regular"
+        assert arg.kwargs.get("exchange") == "NSE"
+
+
+def test_compound_order_execute_all_order_args_class(compound_order):
+    order = compound_order
+    order.order_args = {"variety": "regular", "exchange": "NSE", "product": "MIS"}
+    order.execute_all()
+    call_args = order.broker.order_place.call_args_list
+    for arg in call_args:
+        assert arg.kwargs.get("variety") == "regular"
+        assert arg.kwargs.get("exchange") == "NSE"
+
+
+def test_compound_order_execute_all_order_args_override(compound_order):
+    order = compound_order
+    order.order_args = {"variety": "regular", "exchange": "NSE", "product": "MIS"}
+    order.execute_all(product="CNC")
+    call_args = order.broker.order_place.call_args_list
+    for arg in call_args:
+        assert arg.kwargs.get("variety") == "regular"
+        assert arg.kwargs.get("exchange") == "NSE"
+        assert arg.kwargs.get("product") == "CNC"

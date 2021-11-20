@@ -8,6 +8,7 @@ import sqlite3
 import logging
 from collections import Counter, defaultdict
 from omspy.base import Broker
+from copy import deepcopy
 
 
 def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
@@ -297,10 +298,13 @@ class CompoundOrder:
     ltp: defaultdict = Field(default_factory=defaultdict)
     orders: List[Order] = Field(default_factory=list)
     connection: Optional[Any] = None
+    order_args: Optional[Dict] = None
 
     def __post_init__(self) -> None:
         if not (self.id):
             self.id = uuid.uuid4().hex
+        if self.order_args is None:
+            self.order_args = {}
 
     @property
     def count(self) -> int:
@@ -459,9 +463,11 @@ class CompoundOrder:
     def total_mtm(self) -> float:
         return sum(self.mtm.values())
 
-    def execute_all(self):
+    def execute_all(self, **kwargs):
         for order in self.orders:
-            order.execute(broker=self.broker)
+            order_args = deepcopy(self.order_args)
+            order_args.update(kwargs)
+            order.execute(broker=self.broker, **order_args)
 
     def check_flags(self):
         """
