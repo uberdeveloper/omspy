@@ -91,6 +91,7 @@ class Zerodha(Broker):
             with open("token.tok") as f:
                 access_token = f.read()
             self.kite.set_access_token(access_token)
+            self.profile
             self.ticker = KiteTicker(
                 api_key=self._api_key, access_token=self.kite.access_token
             )
