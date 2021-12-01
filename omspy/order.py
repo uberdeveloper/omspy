@@ -210,6 +210,8 @@ class Order:
             order_args.update(dct)
             order_id = broker.order_place(**order_args)
             self.order_id = order_id
+            if self.connection:
+                self.save_to_db()
             return order_id
         else:
             return self.order_id
