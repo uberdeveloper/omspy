@@ -229,7 +229,7 @@ class Order:
             "disclosed_quantity": self.disclosed_quantity,
         }
         dct = {k: v for k, v in kwargs.items() if k not in order_args.keys()}
-        order_args.update(dct)
+        order_args.update(**kwargs)
         broker.order_modify(**order_args)
 
     def cancel(self, broker: Broker):
