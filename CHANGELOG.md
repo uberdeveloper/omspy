@@ -1,3 +1,6 @@
+## 0.1.4
+* modify order to accept any parameter
+
 ## 0.1.3
 * save to database on execution
 
