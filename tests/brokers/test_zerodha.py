@@ -26,7 +26,7 @@ def test_profile(mock_kite):
 def test_orders(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/orders.json") as f:
-        mock_data = json.load(f)
+        mock_data = json.load(f).get("data")
     broker.kite.orders.return_value = mock_data
     orders = broker.orders
     broker.kite.orders.assert_called_once()
@@ -62,7 +62,7 @@ def test_orders_empty_orderbook(mock_kite):
 def test_trades(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/trades.json") as f:
-        mock_data = json.load(f)
+        mock_data = json.load(f).get("data")
     broker.kite.trades.return_value = mock_data
     trades = broker.trades
     broker.kite.trades.assert_called_once()
@@ -80,7 +80,7 @@ def test_trades(mock_kite):
 def test_positions(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/positions.json") as f:
-        mock_data = json.load(f)
+        mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
     positions = broker.positions
     broker.kite.positions.assert_called_once()
@@ -98,7 +98,7 @@ def test_positions(mock_kite):
 def test_positions_side(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/positions.json") as f:
-        mock_data = json.load(f)
+        mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
     positions = broker.positions
     assert positions[0]["side"] == "SELL"
@@ -195,7 +195,7 @@ def test_order_cancel_return_error(mock_kite):
 def test_close_all_positions(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/positions.json") as f:
-        mock_data = json.load(f)
+        mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
     broker.close_all_positions()
     assert broker.kite.place_order.call_count == 2
@@ -221,7 +221,7 @@ def test_close_all_positions(mock_kite):
 def test_close_all_positions(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/positions.json") as f:
-        mock_data = json.load(f)
+        mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
     broker.close_all_positions(
         keys_to_copy=("exchange", "product"), keys_to_add={"variety": "regular"}
@@ -255,8 +255,8 @@ def test_close_all_positions(mock_kite):
 def test_cancel_all_orders(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/orders.json") as f:
-        mock_data = json.load(f)
-        mock_data["data"][3]["status"] = "pending"
+        mock_data = json.load(f).get("data")
+        mock_data[3]["status"] = "pending"
     broker.kite.orders.return_value = mock_data
     broker.cancel_all_orders(
         keys_to_copy=("product", "instrument_token"), keys_to_add={"variety": "regular"}

@@ -164,7 +164,7 @@ class Zerodha(Broker):
             "AMO_REQ_RECEIVED": "PENDING",
             "TRIGGER_PENDING": "PENDING",
         }
-        orderbook = self.kite.orders().get("data")
+        orderbook = self.kite.orders()
         orderbook = deepcopy(orderbook)
         if orderbook:
             for order in orderbook:
@@ -179,7 +179,7 @@ class Zerodha(Broker):
         """
         Return only the positions for the day
         """
-        position_book = self.kite.positions().get("data").get("day")
+        position_book = self.kite.positions().get("day")
         position_book = deepcopy(position_book)
         if position_book:
             for position in position_book:
@@ -197,7 +197,7 @@ class Zerodha(Broker):
         """
         Return all the trades
         """
-        tradebook = self.kite.trades().get("data")
+        tradebook = self.kite.trades()
         if tradebook:
             return tradebook
         else:
