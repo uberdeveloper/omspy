@@ -60,8 +60,7 @@ def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
         return None
 
 
-@dataclass
-class Order:
+class Order(BaseModel):
     symbol: str
     side: str
     quantity: int = 1
@@ -91,8 +90,21 @@ class Order:
     exchange: Optional[str] = None
     tag: Optional[str] = None
     connection: Optional[Any] = None
+    _attrs: Tuple[str] = (
+        "exchange_timestamp",
+        "exchange_order_id",
+        "status",
+        "filled_quantity",
+        "pending_quantity",
+        "disclosed_quantity",
+        "average_price",
+    )
 
-    def __post_init__(self, **data) -> None:
+    class Config:
+        underscore_attrs_are_private = True
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
         if not (self.id):
             self.id = uuid.uuid4().hex
         tz = self.timezone
@@ -106,7 +118,7 @@ class Order:
             self.expires_in = abs(self.expires_in)
 
     @property
-    def _attrs(self):
+    def attrs(self):
         return (
             "exchange_timestamp",
             "exchange_order_id",
