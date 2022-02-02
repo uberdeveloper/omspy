@@ -29,7 +29,7 @@ def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
     return v * (step + num)
 
 
-def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
+def create_db(dbname: str = ":memory:") -> Union[Database, None]:
     """
     Create a sqlite3 database for the orders and return the connection
     dbname
@@ -55,9 +55,9 @@ def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
                            cancel_after_expiry text, retries integer,
                            exchange text, tag string)"""
             )
-            return con
+            return Database(con)
     except Exception as e:
-        print("error is", e)
+        logging.error(e)
         return None
 
 
@@ -90,8 +90,7 @@ class Order(BaseModel):
     retries: int = 0
     exchange: Optional[str] = None
     tag: Optional[str] = None
-    connection: Optional[Union[str, sqlite3.Connection]] = None
-    _db: Optional[Database] = None
+    connection: Optional[Database] = None
     _attrs: Tuple[str] = (
         "exchange_timestamp",
         "exchange_order_id",
@@ -119,8 +118,6 @@ class Order(BaseModel):
             ).seconds
         else:
             self.expires_in = abs(self.expires_in)
-        if self.connection:
-            self._db = Database(self.connection)
 
     @property
     def attrs(self):
@@ -261,21 +258,24 @@ class Order(BaseModel):
         """
         if self.connection:
             values = self.dict(exclude={"connection"})
-            self._db["orders"].insert(values)
+            self.connection["orders"].upsert(values, pk="id")
             return True
         else:
             logging.info("No valid database connection")
             return False
 
 
-@dataclass
 class CompoundOrder(BaseModel):
     broker: Any
     id: Optional[str] = None
     ltp: defaultdict = Field(default_factory=defaultdict)
     orders: List[Order] = Field(default_factory=list)
-    connection: Optional[Any] = None
+    connection: Optional[Database] = None
     order_args: Optional[Dict] = None
+
+    class Config:
+        underscore_attrs_are_private = True
+        arbitrary_types_allowed = True
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
