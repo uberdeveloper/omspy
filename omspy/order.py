@@ -9,6 +9,7 @@ import logging
 from collections import Counter, defaultdict
 from omspy.base import Broker
 from copy import deepcopy
+from sqlite_utils import Database
 
 
 def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
@@ -89,7 +90,8 @@ class Order(BaseModel):
     retries: int = 0
     exchange: Optional[str] = None
     tag: Optional[str] = None
-    connection: Optional[Any] = None
+    connection: Optional[Union[str, sqlite3.Connection]] = None
+    _db: Optional[Database] = None
     _attrs: Tuple[str] = (
         "exchange_timestamp",
         "exchange_order_id",
@@ -102,6 +104,7 @@ class Order(BaseModel):
 
     class Config:
         underscore_attrs_are_private = True
+        arbitrary_types_allowed = True
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
@@ -116,6 +119,8 @@ class Order(BaseModel):
             ).seconds
         else:
             self.expires_in = abs(self.expires_in)
+        if self.connection:
+            self._db = Database(self.connection)
 
     @property
     def attrs(self):
@@ -255,58 +260,16 @@ class Order(BaseModel):
         save or update the order to db
         """
         if self.connection:
-            sql = """insert or replace into orders
-            values (:symbol, :side, :quantity, :id,
-            :parent_id, :timestamp, :order_type,
-            :broker_timestamp, :exchange_timestamp, :order_id,
-            :exchange_order_id, :price, :trigger_price,
-            :average_price,:pending_quantity,:filled_quantity,
-            :cancelled_quantity,:disclosed_quantity,:validity,
-            :status,:expires_in,:timezone,:client_id,
-            :convert_to_market_after_expiry,
-            :cancel_after_expiry, :retries, :exchange, :tag)
-            """
-            values = dict(
-                symbol=self.symbol,
-                side=self.side,
-                quantity=self.quantity,
-                id=self.id,
-                parent_id=self.parent_id,
-                timestamp=str(self.timestamp),
-                order_type=self.order_type,
-                broker_timestamp=str(self.broker_timestamp),
-                exchange_timestamp=str(self.exchange_timestamp),
-                order_id=self.order_id,
-                exchange_order_id=self.exchange_order_id,
-                price=self.price,
-                trigger_price=self.trigger_price,
-                average_price=self.average_price,
-                pending_quantity=self.pending_quantity,
-                filled_quantity=self.filled_quantity,
-                cancelled_quantity=self.cancelled_quantity,
-                disclosed_quantity=self.disclosed_quantity,
-                validity=self.validity,
-                status=self.status,
-                expires_in=self.expires_in,
-                timezone=self.timezone,
-                client_id=self.client_id,
-                convert_to_market_after_expiry=self.convert_to_market_after_expiry,
-                cancel_after_expiry=self.cancel_after_expiry,
-                retries=self.retries,
-                exchange=self.exchange,
-                tag=self.tag,
-            )
-            with self.connection:
-                self.connection.execute(sql, values)
-                return True
-
+            values = self.dict(exclude={"connection"})
+            self._db["orders"].insert(values)
+            return True
         else:
             logging.info("No valid database connection")
             return False
 
 
 @dataclass
-class CompoundOrder:
+class CompoundOrder(BaseModel):
     broker: Any
     id: Optional[str] = None
     ltp: defaultdict = Field(default_factory=defaultdict)
@@ -314,7 +277,8 @@ class CompoundOrder:
     connection: Optional[Any] = None
     order_args: Optional[Dict] = None
 
-    def __post_init__(self) -> None:
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
         if not (self.id):
             self.id = uuid.uuid4().hex
         if self.order_args is None:
