@@ -746,3 +746,27 @@ def test_compound_order_execute_all_order_args_override(compound_order):
         assert arg.kwargs.get("variety") == "regular"
         assert arg.kwargs.get("exchange") == "NSE"
         assert arg.kwargs.get("product") == "CNC"
+
+
+def test_compound_order_add_as_order():
+    con = create_db()
+    com = CompoundOrder(broker=Paper())
+    order = Order(symbol="beta", side="sell", quantity=10)
+    assert len(com.orders) == 0
+    com.add(order)
+    assert len(com.orders) == 1
+    assert com.id == com.orders[0].parent_id
+    assert com.connection == com.orders[0].connection
+
+
+def test_compound_order_add_as_order_multiple_connections():
+    con = create_db()
+    con1 = create_db()
+    com = CompoundOrder(broker=Paper())
+    order1 = Order(symbol="beta", side="sell", quantity=10)
+    order2 = Order(symbol="alphabet", side="buy", quantity=10, connection=con1)
+    com.add(order1)
+    com.add(order2)
+    assert len(com.orders) == 2
+    assert com.orders[0].connection == com.connection
+    assert com.orders[1].connection == con1

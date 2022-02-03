@@ -466,3 +466,14 @@ class CompoundOrder(BaseModel):
     @property
     def pending_orders(self) -> List[Order]:
         return [order for order in self.orders if order.is_pending]
+
+    def add(self, order: Order) -> Optional[str]:
+        """
+        Add an order to the existing compound order
+        """
+        order.parent_id = self.id
+        if not (order.connection):
+            connection = self.connection
+        order.save_to_db()
+        self.orders.append(order)
+        return order.id
