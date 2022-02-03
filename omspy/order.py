@@ -119,18 +119,6 @@ class Order(BaseModel):
         else:
             self.expires_in = abs(self.expires_in)
 
-    @property
-    def attrs(self):
-        return (
-            "exchange_timestamp",
-            "exchange_order_id",
-            "status",
-            "filled_quantity",
-            "pending_quantity",
-            "disclosed_quantity",
-            "average_price",
-        )
-
     @validator("quantity", always=True)
     def quantity_not_negative(cls, v):
         if v < 0:
