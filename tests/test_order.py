@@ -762,7 +762,7 @@ def test_compound_order_add_as_order():
 def test_compound_order_add_as_order_multiple_connections():
     con = create_db()
     con1 = create_db()
-    com = CompoundOrder(broker=Paper())
+    com = CompoundOrder(broker=Paper(), connection=con)
     order1 = Order(symbol="beta", side="sell", quantity=10)
     order2 = Order(symbol="alphabet", side="buy", quantity=10, connection=con1)
     com.add(order1)
@@ -770,3 +770,24 @@ def test_compound_order_add_as_order_multiple_connections():
     assert len(com.orders) == 2
     assert com.orders[0].connection == com.connection
     assert com.orders[1].connection == con1
+
+
+def test_compound_order_save():
+    con = create_db()
+    com = CompoundOrder(broker=Paper(), connection=con)
+    order1 = Order(symbol="beta", side="sell", quantity=10)
+    order2 = Order(symbol="alphabet", side="buy", quantity=10)
+    com.add(order1)
+    com.add(order2)
+    result = con.execute("select * from orders").fetchall()
+    assert len(result) == 2
+    order1.quantity = 5
+    order2.quantity = 7
+    result = list(con.query("select * from orders"))
+    # Result not saved to database since we are editing directly
+    assert result[0]["quantity"] == 10
+    com.save()
+    # Result should now change since we have saved it to database
+    result = list(con.query("select * from orders"))
+    assert result[0]["quantity"] == 5
+    assert result[1]["quantity"] == 7

@@ -473,7 +473,16 @@ class CompoundOrder(BaseModel):
         """
         order.parent_id = self.id
         if not (order.connection):
-            connection = self.connection
+            order.connection = self.connection
         order.save_to_db()
         self.orders.append(order)
         return order.id
+
+    def save(self):
+        """
+        Save all orders to database
+        """
+        if self.count > 0:
+            for order in self.orders:
+                order.save_to_db()
+        pass
