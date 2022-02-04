@@ -4,7 +4,6 @@ import yaml
 import logging
 from copy import deepcopy
 
-
 def pre(func: Callable) -> Callable:
     """
     Decorator to run before a function call
@@ -215,7 +214,7 @@ class Broker:
                     side = "buy"
                 order_args = {
                     "quantity": abs(quantity),
-                    "side": side,
+                    "side": side.upper(),
                     "symbol": symbol,
                     "order_type": "MARKET",
                 }
@@ -241,13 +240,13 @@ class Broker:
             keys_to_copy = ()
         if not (keys_to_add):
             keys_to_add = {}
-        statuses = ("complete",)
+        statuses = ("COMPLETE", 'CANCELED', 'REJECTED')
         for order in self.orders:
             status = order.get("status")
             if not (status):
-                status == "pending"
+                status == "PENDING"
             else:
-                status = str(status).lower()
+                status = str(status).upper()
             order_id = order.get("order_id")
             if order_id and status not in statuses:
                 final_args = {}
