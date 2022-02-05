@@ -52,7 +52,7 @@ def create_db(dbname: str = ":memory:") -> Union[Database, None]:
                            validity text, status text,
                            expires_in integer, timezone text,
                            client_id text, convert_to_market_after_expiry text,
-                           cancel_after_expiry text, retries integer,
+                           cancel_after_expiry text, retries integer, max_modifications integer,
                            exchange text, tag string)"""
             )
             return Database(con)
@@ -88,9 +88,11 @@ class Order(BaseModel):
     convert_to_market_after_expiry: bool = False
     cancel_after_expiry: bool = True
     retries: int = 0
+    max_modifications: int = 10
     exchange: Optional[str] = None
     tag: Optional[str] = None
     connection: Optional[Database] = None
+    _num_modifications: int = 0
     _attrs: Tuple[str] = (
         "exchange_timestamp",
         "exchange_order_id",
@@ -232,7 +234,11 @@ class Order(BaseModel):
         }
         dct = {k: v for k, v in kwargs.items() if k not in order_args.keys()}
         order_args.update(**kwargs)
-        broker.order_modify(**order_args)
+        if self._num_modifications < self.max_modifications:
+            broker.order_modify(**order_args)
+            self._num_modifications += 1
+        else:
+            logging.info(f"Maximum number of modifications exceeded")
 
     def cancel(self, broker: Broker):
         """

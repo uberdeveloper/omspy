@@ -791,3 +791,43 @@ def test_compound_order_save():
     result = list(con.query("select * from orders"))
     assert result[0]["quantity"] == 5
     assert result[1]["quantity"] == 7
+
+
+def test_order_max_modifications():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order = Order(
+            symbol="aapl",
+            side="buy",
+            quantity=10,
+            order_type="LIMIT",
+            price=650,
+            order_id="abcdef",
+        )
+        order.price = 630
+        order.modify(broker=broker)
+        assert order._num_modifications == 1
+        for i in range(100):
+            order.modify(broker=broker)
+        assert order._num_modifications == 10
+        assert order.max_modifications == order._num_modifications
+
+
+def test_order_max_modifications_change_default():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order = Order(
+            symbol="aapl",
+            side="buy",
+            quantity=10,
+            order_type="LIMIT",
+            price=650,
+            order_id="abcdef",
+            max_modifications=3,
+        )
+        order.price = 630
+        for i in range(10):
+            order.modify(broker=broker)
+        assert order._num_modifications == 3
+        order.max_modifications = 5
+        for i in range(10):
+            order.modify(broker=broker)
+        assert order._num_modifications == 5

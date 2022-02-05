@@ -5,6 +5,11 @@
 * database class changed to sqlite_utils from native python sqlite3 for better reading and writing, connection now returns `sqlite_utils.Database` instead of `sqlite3.Connection`.
 * #3 `Order` could now be directly added using the `add` method and this inherits the sqlite3 database from the compound order if no connection is specified
 * #8 save method added to save orders to database in bulk
+* #6 maximum limit for modifications to an order added
+
+### Fixes
+* close_all_positions bug fixed by changing status to upper case and including canceled and rejected orders in completed orders
+* cancel_all_orders do not cancel already completed orders
 
 ### Internals
 
