@@ -9,6 +9,7 @@ import logging
 from collections import Counter, defaultdict
 from omspy.base import Broker
 from copy import deepcopy
+from sqlite_utils import Database
 
 
 def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
@@ -28,7 +29,7 @@ def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
     return v * (step + num)
 
 
-def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
+def create_db(dbname: str = ":memory:") -> Union[Database, None]:
     """
     Create a sqlite3 database for the orders and return the connection
     dbname
@@ -51,17 +52,16 @@ def create_db(dbname: str = ":memory:") -> Union[sqlite3.Connection, None]:
                            validity text, status text,
                            expires_in integer, timezone text,
                            client_id text, convert_to_market_after_expiry text,
-                           cancel_after_expiry text, retries integer,
+                           cancel_after_expiry text, retries integer, max_modifications integer,
                            exchange text, tag string)"""
             )
-            return con
+            return Database(con)
     except Exception as e:
-        print("error is", e)
+        logging.error(e)
         return None
 
 
-@dataclass
-class Order:
+class Order(BaseModel):
     symbol: str
     side: str
     quantity: int = 1
@@ -88,11 +88,27 @@ class Order:
     convert_to_market_after_expiry: bool = False
     cancel_after_expiry: bool = True
     retries: int = 0
+    max_modifications: int = 10
     exchange: Optional[str] = None
     tag: Optional[str] = None
-    connection: Optional[Any] = None
+    connection: Optional[Database] = None
+    _num_modifications: int = 0
+    _attrs: Tuple[str] = (
+        "exchange_timestamp",
+        "exchange_order_id",
+        "status",
+        "filled_quantity",
+        "pending_quantity",
+        "disclosed_quantity",
+        "average_price",
+    )
 
-    def __post_init__(self, **data) -> None:
+    class Config:
+        underscore_attrs_are_private = True
+        arbitrary_types_allowed = True
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
         if not (self.id):
             self.id = uuid.uuid4().hex
         tz = self.timezone
@@ -104,18 +120,6 @@ class Order:
             ).seconds
         else:
             self.expires_in = abs(self.expires_in)
-
-    @property
-    def _attrs(self):
-        return (
-            "exchange_timestamp",
-            "exchange_order_id",
-            "status",
-            "filled_quantity",
-            "pending_quantity",
-            "disclosed_quantity",
-            "average_price",
-        )
 
     @validator("quantity", always=True)
     def quantity_not_negative(cls, v):
@@ -230,7 +234,11 @@ class Order:
         }
         dct = {k: v for k, v in kwargs.items() if k not in order_args.keys()}
         order_args.update(**kwargs)
-        broker.order_modify(**order_args)
+        if self._num_modifications < self.max_modifications:
+            broker.order_modify(**order_args)
+            self._num_modifications += 1
+        else:
+            logging.info(f"Maximum number of modifications exceeded")
 
     def cancel(self, broker: Broker):
         """
@@ -243,66 +251,28 @@ class Order:
         save or update the order to db
         """
         if self.connection:
-            sql = """insert or replace into orders
-            values (:symbol, :side, :quantity, :id,
-            :parent_id, :timestamp, :order_type,
-            :broker_timestamp, :exchange_timestamp, :order_id,
-            :exchange_order_id, :price, :trigger_price,
-            :average_price,:pending_quantity,:filled_quantity,
-            :cancelled_quantity,:disclosed_quantity,:validity,
-            :status,:expires_in,:timezone,:client_id,
-            :convert_to_market_after_expiry,
-            :cancel_after_expiry, :retries, :exchange, :tag)
-            """
-            values = dict(
-                symbol=self.symbol,
-                side=self.side,
-                quantity=self.quantity,
-                id=self.id,
-                parent_id=self.parent_id,
-                timestamp=str(self.timestamp),
-                order_type=self.order_type,
-                broker_timestamp=str(self.broker_timestamp),
-                exchange_timestamp=str(self.exchange_timestamp),
-                order_id=self.order_id,
-                exchange_order_id=self.exchange_order_id,
-                price=self.price,
-                trigger_price=self.trigger_price,
-                average_price=self.average_price,
-                pending_quantity=self.pending_quantity,
-                filled_quantity=self.filled_quantity,
-                cancelled_quantity=self.cancelled_quantity,
-                disclosed_quantity=self.disclosed_quantity,
-                validity=self.validity,
-                status=self.status,
-                expires_in=self.expires_in,
-                timezone=self.timezone,
-                client_id=self.client_id,
-                convert_to_market_after_expiry=self.convert_to_market_after_expiry,
-                cancel_after_expiry=self.cancel_after_expiry,
-                retries=self.retries,
-                exchange=self.exchange,
-                tag=self.tag,
-            )
-            with self.connection:
-                self.connection.execute(sql, values)
-                return True
-
+            values = self.dict(exclude={"connection"})
+            self.connection["orders"].upsert(values, pk="id")
+            return True
         else:
             logging.info("No valid database connection")
             return False
 
 
-@dataclass
-class CompoundOrder:
+class CompoundOrder(BaseModel):
     broker: Any
     id: Optional[str] = None
     ltp: defaultdict = Field(default_factory=defaultdict)
     orders: List[Order] = Field(default_factory=list)
-    connection: Optional[Any] = None
+    connection: Optional[Database] = None
     order_args: Optional[Dict] = None
 
-    def __post_init__(self) -> None:
+    class Config:
+        underscore_attrs_are_private = True
+        arbitrary_types_allowed = True
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
         if not (self.id):
             self.id = uuid.uuid4().hex
         if self.order_args is None:
@@ -490,3 +460,23 @@ class CompoundOrder:
     @property
     def pending_orders(self) -> List[Order]:
         return [order for order in self.orders if order.is_pending]
+
+    def add(self, order: Order) -> Optional[str]:
+        """
+        Add an order to the existing compound order
+        """
+        order.parent_id = self.id
+        if not (order.connection):
+            order.connection = self.connection
+        order.save_to_db()
+        self.orders.append(order)
+        return order.id
+
+    def save(self):
+        """
+        Save all orders to database
+        """
+        if self.count > 0:
+            for order in self.orders:
+                order.save_to_db()
+        pass
