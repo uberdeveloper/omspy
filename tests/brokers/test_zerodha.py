@@ -256,12 +256,12 @@ def test_cancel_all_orders(mock_kite):
     broker = mock_kite
     with open("tests/data/kiteconnect/orders.json") as f:
         mock_data = json.load(f).get("data")
-        mock_data[3]["status"] = "pending"
+        mock_data[3]["status"] = "PENDING"
     broker.kite.orders.return_value = mock_data
     broker.cancel_all_orders(
         keys_to_copy=("product", "instrument_token"), keys_to_add={"variety": "regular"}
     )
-    assert broker.kite.cancel_order.call_count == 2
+    assert broker.kite.cancel_order.call_count == 1
     call_args = [
         dict(
             order_id="100000000000000",
@@ -277,5 +277,4 @@ def test_cancel_all_orders(mock_kite):
         ),
     ]
     order_args = broker.kite.cancel_order.call_args_list
-    assert order_args[0] == call(**call_args[0])
-    assert order_args[1] == call(**call_args[1])
+    assert order_args[0] == call(**call_args[1])

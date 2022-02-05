@@ -214,7 +214,7 @@ class Broker:
                     side = "buy"
                 order_args = {
                     "quantity": abs(quantity),
-                    "side": side.upper(),
+                    "side": side,
                     "symbol": symbol,
                     "order_type": "MARKET",
                 }
