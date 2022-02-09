@@ -29,7 +29,7 @@ class BasicPosition(BaseModel):
     sell_value: float = 0.0
 
     @property
-    def net_quantity(self):
+    def net_quantity(self) -> int:
         return self.buy_quantity - self.sell_quantity
 
     @property
