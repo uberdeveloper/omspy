@@ -38,6 +38,9 @@ class PegMarket(BasicPeg):
         self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
         self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
 
+    def execute(self):
+        self.orders[0].execute(broker=self.broker, **self.order_args)
+
     @property
     def next_peg(self):
         return self._next_peg
@@ -45,3 +48,19 @@ class PegMarket(BasicPeg):
     @property
     def num_pegs(self):
         return self._num_pegs
+
+    @property
+    def ref_price(self):
+        return self.ltp.get(self.symbol)
+
+    def run(self):
+        order = self.orders[0]
+        now = pendulum.now(self.timezone)
+        if now > self.next_peg:
+            self._next_peg = now.add(seconds=self.peg_every)
+            order.modify(broker=self.broker, price=self.ref_price, **self.order_args)
+        if now > self._expire_at:
+            if self.convert_to_market_after_expiry:
+                order.modify(broker=self.broker, order_type="MARKET", **self.order_args)
+            else:
+                order.cancel(self.broker)

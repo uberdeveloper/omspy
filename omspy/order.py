@@ -7,7 +7,7 @@ import pendulum
 import sqlite3
 import logging
 from collections import Counter, defaultdict
-from omspy.base import Broker
+from omspy.base import *
 from copy import deepcopy
 from sqlite_utils import Database
 
@@ -109,6 +109,7 @@ class Order(BaseModel):
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
+        from omspy.base import Broker
         if not (self.id):
             self.id = uuid.uuid4().hex
         tz = self.timezone
@@ -121,7 +122,7 @@ class Order(BaseModel):
         else:
             self.expires_in = abs(self.expires_in)
 
-    @validator("quantity", always=True)
+    @validator("quantity", always=True,allow_reuse=True)
     def quantity_not_negative(cls, v):
         if v < 0:
             raise ValueError("quantity must be positive")
@@ -190,7 +191,7 @@ class Order(BaseModel):
         else:
             return False
 
-    def execute(self, broker: Type[Broker], **kwargs) -> Optional[str]:
+    def execute(self, broker:Any, **kwargs) -> Optional[str]:
         """
         Execute an order on a broker, place a new order
         kwargs
@@ -200,6 +201,7 @@ class Order(BaseModel):
         Only new arguments added to the order in keyword arguments
         """
         # Do not place a new order if this order is complete or has order_id
+        from omspy.base import Broker as base_broker
         if not (self.is_complete) and not (self.order_id):
             order_args = {
                 "symbol": self.symbol.upper(),
@@ -220,7 +222,7 @@ class Order(BaseModel):
         else:
             return self.order_id
 
-    def modify(self, broker: Broker, **kwargs):
+    def modify(self, broker: Any, **kwargs):
         """
         Modify an existing order
         """
@@ -240,7 +242,7 @@ class Order(BaseModel):
         else:
             logging.info(f"Maximum number of modifications exceeded")
 
-    def cancel(self, broker: Broker):
+    def cancel(self, broker: Any):
         """
         Cancel an existing order
         """
