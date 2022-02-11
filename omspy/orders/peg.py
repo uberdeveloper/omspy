@@ -58,11 +58,12 @@ class PegMarket(BasicPeg):
     def run(self):
         order = self.orders[0]
         now = pendulum.now(self.timezone)
-        if now > self.next_peg:
-            self._next_peg = now.add(seconds=self.peg_every)
-            order.modify(broker=self.broker, price=self.ref_price)
-        if now > self._expire_at:
-            if self.convert_to_market_after_expiry:
-                order.modify(broker=self.broker, order_type="MARKET")
-            else:
-                order.cancel(self.broker)
+        if order.is_pending:
+            if now > self.next_peg:
+                self._next_peg = now.add(seconds=self.peg_every)
+                order.modify(broker=self.broker, price=self.ref_price)
+            if now > self._expire_at:
+                if self.convert_to_market_after_expiry:
+                    order.modify(broker=self.broker, order_type="MARKET")
+                else:
+                    order.cancel(self.broker)

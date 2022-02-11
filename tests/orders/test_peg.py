@@ -103,3 +103,22 @@ def test_peg_market_execute_price(broker):
     peg.update_ltp({"aapl": 107})
     peg.execute()
     assert peg.orders[0].price == 107
+
+
+@patch("omspy.brokers.paper.Paper")
+def test_peg_market_run_is_pending(broker):
+    known = pendulum.datetime(2022, 1, 1, 10)
+    pendulum.set_test_now(known)
+    peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=broker)
+    peg.update_ltp({"aapl": 107})
+    peg.execute()
+    peg.orders[0].filled_quantity = 100
+    peg.orders[0].average_price = 106.75
+    pendulum.set_test_now(known.add(seconds=11))
+    peg.run()
+    pendulum.set_test_now(known.add(seconds=22))
+    peg.run()
+    pendulum.set_test_now(known.add(seconds=33))
+    peg.run()
+    broker.order_place.assert_called_once()
+    broker.order_modify.assert_not_called()
