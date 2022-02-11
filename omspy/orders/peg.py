@@ -17,6 +17,7 @@ class BasicPeg(CompoundOrder):
             quantity=self.quantity,
             side=self.side,
             order_type="LIMIT",
+            timezone=self.timezone,
         )
         self.add(order)
         self.ltp[self.symbol] = 0
@@ -39,6 +40,7 @@ class PegMarket(BasicPeg):
         self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
 
     def execute(self):
+        self.orders[0].price = self.ref_price
         self.orders[0].execute(broker=self.broker, **self.order_args)
 
     @property
@@ -58,9 +60,9 @@ class PegMarket(BasicPeg):
         now = pendulum.now(self.timezone)
         if now > self.next_peg:
             self._next_peg = now.add(seconds=self.peg_every)
-            order.modify(broker=self.broker, price=self.ref_price, **self.order_args)
+            order.modify(broker=self.broker, price=self.ref_price)
         if now > self._expire_at:
             if self.convert_to_market_after_expiry:
-                order.modify(broker=self.broker, order_type="MARKET", **self.order_args)
+                order.modify(broker=self.broker, order_type="MARKET")
             else:
                 order.cancel(self.broker)

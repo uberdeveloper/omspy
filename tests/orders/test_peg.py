@@ -92,3 +92,14 @@ def test_peg_market_cancel_on_expiry(broker):
     pendulum.set_test_now(known.add(seconds=61))
     peg.run()
     broker.order_cancel.assert_called_once()
+
+
+@patch("omspy.brokers.paper.Paper")
+def test_peg_market_execute_price(broker):
+    known = pendulum.datetime(2022, 1, 1, 10)
+    pendulum.set_test_now(known)
+    peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=broker)
+    assert peg.orders[0].price is None
+    peg.update_ltp({"aapl": 107})
+    peg.execute()
+    assert peg.orders[0].price == 107
