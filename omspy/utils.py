@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 from omspy.models import BasicPosition
 from collections import defaultdict
 
+
 def create_basic_positions_from_orders_dict(
     orders: List[Dict]
 ) -> Dict[str, BasicPosition]:
@@ -37,7 +38,8 @@ def create_basic_positions_from_orders_dict(
                 position.sell_value += price * quantity
     return dct
 
-def dict_filter(lst:List[Dict], **kwargs)->List[Dict]:
+
+def dict_filter(lst: List[Dict], **kwargs) -> List[Dict]:
     """
     Filter a list of dictionary to conditions matching
     in kwargs
@@ -67,3 +69,36 @@ def dict_filter(lst:List[Dict], **kwargs)->List[Dict]:
             new_lst.append(d)
     return new_lst
 
+
+def tick(price, tick_size=0.05):
+    """
+    Rounds a given price to the requested tick
+    """
+    return round(price / tick_size) * tick_size
+
+
+def stop_loss_step_decimal(
+    price: float, side: str = "B", dec: float = 0.45, step: int = 2
+) -> float:
+    """
+    Truncates down the stop loss value to the desired step
+    and adds the given decimal
+    price
+        stop loss price
+    side
+        side to place order, the actual stop loss side
+        B for BUY, S for SELL
+    dec
+        fixed decimal to be added
+    step
+        step size to determine stop
+    Note
+    ----
+    1. Step object is always a positive number
+    2. Side is the actual stop loss side you are placing the order
+    """
+    step = abs(step)
+    m = int(price / step)
+    val = (m + 1) * step if side == "S" else (m * step) - 1
+    val = val + 1 - dec if side == "S" else val + dec
+    return val
