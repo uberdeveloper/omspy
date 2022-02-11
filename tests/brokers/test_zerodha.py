@@ -118,6 +118,10 @@ def test_order_place(mock_kite):
         "transaction_type": "BUY",
         "quantity": 1,
         "order_type": "MARKET",
+        "variety": "regular",
+        "validity": "DAY",
+        "product": "MIS",
+        "exchange": "NSE"
     }
     assert broker.kite.place_order.call_args_list[-1] == call(**kwargs)
 
@@ -132,9 +136,10 @@ def test_order_place_kwargs(mock_kite):
         side="BUY",
         quantity=1,
         order_type="MARKET",
-        variety="regular",
+        variety="amo",
         exchange="nse",
         validity="day",
+        product="cnc"
     )
     broker.kite.place_order.assert_called_once()
     kwargs = {
@@ -142,9 +147,10 @@ def test_order_place_kwargs(mock_kite):
         "transaction_type": "BUY",
         "quantity": 1,
         "order_type": "MARKET",
-        "variety": "regular",
+        "variety": "amo",
         "exchange": "nse",
         "validity": "day",
+        "product": "cnc"
     }
     assert broker.kite.place_order.call_args_list[-1] == call(**kwargs)
 
@@ -156,7 +162,7 @@ def test_order_modify(mock_kite):
     broker.kite.modify_order.return_value = mock_data
     broker.order_modify(order_id="abcde12345", quantity=100, order_type="market")
     broker.kite.modify_order.assert_called_once()
-    kwargs = {"order_id": "abcde12345", "quantity": 100, "order_type": "market"}
+    kwargs = {"order_id": "abcde12345", "quantity": 100, "order_type": "market", "variety":"regular"}
     assert broker.kite.modify_order.call_args_list[-1] == call(**kwargs)
 
 
@@ -197,7 +203,7 @@ def test_close_all_positions(mock_kite):
     with open("tests/data/kiteconnect/positions.json") as f:
         mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
-    broker.close_all_positions()
+    broker.close_all_positions(keys_to_copy=('exchange', 'product', 'product'))
     assert broker.kite.place_order.call_count == 2
     call_args = [
         dict(
@@ -205,49 +211,25 @@ def test_close_all_positions(mock_kite):
             order_type="MARKET",
             quantity=3,
             transaction_type="buy",
+            variety='regular',
+            product='NRML',
+            validity='DAY',
+            exchange='MCX'
         ),
         dict(
             tradingsymbol="LEADMINI17DECFUT",
             order_type="MARKET",
             quantity=1,
             transaction_type="sell",
+            variety='regular',
+            product='NRML',
+            validity='DAY',
+            exchange='MCX'
         ),
     ]
     order_args = broker.kite.place_order.call_args_list
-    assert order_args[0] == call(**call_args[0])
-    assert order_args[1] == call(**call_args[1])
-
-
-def test_close_all_positions(mock_kite):
-    broker = mock_kite
-    with open("tests/data/kiteconnect/positions.json") as f:
-        mock_data = json.load(f).get("data")
-    broker.kite.positions.return_value = mock_data
-    broker.close_all_positions(
-        keys_to_copy=("exchange", "product"), keys_to_add={"variety": "regular"}
-    )
-    assert broker.kite.place_order.call_count == 2
-    call_args = [
-        dict(
-            tradingsymbol="GOLDGUINEA17DECFUT",
-            order_type="MARKET",
-            quantity=3,
-            transaction_type="buy",
-            exchange="MCX",
-            product="NRML",
-            variety="regular",
-        ),
-        dict(
-            tradingsymbol="LEADMINI17DECFUT",
-            order_type="MARKET",
-            quantity=1,
-            transaction_type="sell",
-            exchange="MCX",
-            product="NRML",
-            variety="regular",
-        ),
-    ]
-    order_args = broker.kite.place_order.call_args_list
+    print(order_args)
+    print(call_args)
     assert order_args[0] == call(**call_args[0])
     assert order_args[1] == call(**call_args[1])
 
@@ -278,3 +260,11 @@ def test_cancel_all_orders(mock_kite):
     ]
     order_args = broker.kite.cancel_order.call_args_list
     assert order_args[0] == call(**call_args[1])
+
+def test_cancel_order(mock_kite):
+    broker = mock_kite
+    broker.order_cancel(order_id='123456')
+    call_args = dict({'order_id': '123456', 'variety': 'regular'})
+    broker.kite.cancel_order.assert_called_once()
+    order_args = broker.kite.cancel_order.call_args_list
+    assert order_args[0] == call(**call_args)

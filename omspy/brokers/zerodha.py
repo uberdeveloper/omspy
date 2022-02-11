@@ -26,7 +26,6 @@ def get_key(url, key="request_token") -> Optional[str]:
     Get the required key from the query parameter
     """
     from urllib.parse import parse_qs, urlparse
-
     req = urlparse(url)
     key = parse_qs(req.query).get(key)
     if key is None:
@@ -208,17 +207,26 @@ class Zerodha(Broker):
         """
         Place an order
         """
-        return self.kite.place_order(**kwargs)
+        order_args = dict(
+                variety='regular',
+                product='MIS',
+                validity='DAY',
+                exchange='NSE'
+                )
+        order_args.update(kwargs)
+        return self.kite.place_order(**order_args)
 
     def order_cancel(self, **kwargs) -> Dict:
         """
         Cancel an existing order
         """
         order_id = kwargs.pop("order_id", None)
+        order_args = dict(variety='regular')
+        order_args.update(kwargs)
         if not (order_id):
             return {"error": "No order_id"}
         else:
-            return self.kite.cancel_order(order_id=order_id, **kwargs)
+            return self.kite.cancel_order(order_id=order_id, **order_args)
 
     def order_modify(self, **kwargs) -> Dict:
         """
@@ -228,10 +236,12 @@ class Zerodha(Broker):
         All changes must be passed as keyword arguments
         """
         order_id = kwargs.pop("order_id", None)
+        order_args = dict(variety='regular')
+        order_args.update(kwargs)
         if not (order_id):
             return {"error": "No order_id"}
         else:
-            return self.kite.modify_order(order_id=order_id, **kwargs)
+            return self.kite.modify_order(order_id=order_id, **order_args)
 
     @property
     def profile(self):
