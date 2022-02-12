@@ -45,8 +45,8 @@ class Paper(Broker):
 
     @pre
     def order_modify(self, order_id: str, **kwargs):
-        return kwargs
+        return kwargs.update({"order_id": order_id})
 
     @pre
     def order_cancel(self, order_id: str):
-        pass
+        return order_id

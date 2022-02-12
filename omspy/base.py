@@ -6,6 +6,7 @@ from copy import deepcopy
 from omspy.utils import *
 import omspy.models as models
 
+
 def pre(func: Callable) -> Callable:
     """
     Decorator to run before a function call
@@ -242,7 +243,7 @@ class Broker:
             keys_to_copy = ()
         if not (keys_to_add):
             keys_to_add = {}
-        statuses = ("COMPLETE", 'CANCELED', 'REJECTED')
+        statuses = ("COMPLETE", "CANCELED", "REJECTED")
         for order in self.orders:
             status = order.get("status")
             if not (status):
@@ -258,23 +259,25 @@ class Broker:
                 final_args.update({"order_id": order_id})
                 self.order_cancel(**final_args)
 
-    def get_positions_from_orders(self, **kwargs)->Dict[str,models.BasicPosition]:
+    def get_positions_from_orders(self, **kwargs) -> Dict[str, models.BasicPosition]:
         orders = self.orders
-        statuses = ('CANCELED', 'REJECTED')
-        orders = [o for o in orders if o['status'] not in statuses]
+        statuses = ("CANCELED", "REJECTED")
+        orders = [o for o in orders if o["status"] not in statuses]
         orders = dict_filter(orders, **kwargs)
         return create_basic_positions_from_orders_dict(orders)
 
-    def cover_orders(self, stop:Union[Callable, float], 
-            order_args:Optional[Dict]=None, **kwargs):
+    def cover_orders(
+        self, stop: Union[Callable, float], order_args: Optional[Dict] = None, **kwargs
+    ):
         """
         Cover orders for safety
         """
-        def get_stop(side:str, price:float, stop:float=stop)->float:
-            if side == 'buy':
-                stop_price = price*(1-stop)
-            elif side == 'sell':
-                stop_price = price*(1+stop)
+
+        def get_stop(side: str, price: float, stop: float = stop) -> float:
+            if side == "buy":
+                stop_price = price * (1 - stop)
+            elif side == "sell":
+                stop_price = price * (1 + stop)
             else:
                 return price
             return tick(stop_price)
@@ -288,14 +291,27 @@ class Broker:
             order_args = {}
 
         positions = self.get_positions_from_orders(**kwargs)
-        non_matched = [p for p in positions.values() if p.net_quantity != 0] 
+        non_matched = [p for p in positions.values() if p.net_quantity != 0]
         for pos in non_matched:
             if pos.net_quantity > 0:
-                stop_loss_price = stop_function(side='buy',price=pos.average_buy_value)
-                self.order_place(symbol=pos.symbol, side='sell',price=stop_loss_price,
-                        order_type='LIMIT', quantity=abs(pos.net_quantity), **order_args)
+                stop_loss_price = stop_function(side="buy", price=pos.average_buy_value)
+                self.order_place(
+                    symbol=pos.symbol,
+                    side="sell",
+                    price=stop_loss_price,
+                    order_type="LIMIT",
+                    quantity=abs(pos.net_quantity),
+                    **order_args,
+                )
             elif pos.net_quantity < 0:
-                stop_loss_price = stop_function(side='sell',price=pos.average_buy_value)
-                self.order_place(symbol=pos.symbol, side='buy',price=stop_loss_price,
-                        order_type='LIMIT', quantity=abs(pos.net_quantity), **order_args)
-
+                stop_loss_price = stop_function(
+                    side="sell", price=pos.average_sell_value
+                )
+                self.order_place(
+                    symbol=pos.symbol,
+                    side="buy",
+                    price=stop_loss_price,
+                    order_type="LIMIT",
+                    quantity=abs(pos.net_quantity),
+                    **order_args,
+                )
