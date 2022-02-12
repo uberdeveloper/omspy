@@ -4,6 +4,7 @@ from unittest.mock import patch, call
 import pendulum
 from copy import deepcopy
 from omspy.base import Broker, pre, post
+from omspy.brokers.paper import Paper
 
 # Load some mock data
 with open("tests/data/kiteconnect/orders.json") as f:
@@ -166,3 +167,37 @@ def test_close_all_positions_copy_and_add_keys(broker):
     )
     assert broker._place_orders[0] == call_args[0]
     assert broker._place_orders[1] == call_args[1]
+
+def test_cover_orders():
+    orders = [
+            dict(symbol='aapl',side='buy',quantity=10,filled_quantity=10,status='COMPLETE',average_price=160),
+            dict(symbol='aapl',side='sell',quantity=5,filled_quantity=5,status='COMPLETE',average_price=150)
+            ]
+    broker = Paper(orders=orders)
+    with patch('omspy.brokers.paper.Paper.order_place') as order_place:
+        kwargs = dict(symbol='aapl', quantity=5, side='sell',
+                price=152, order_type='LIMIT')
+        broker.cover_orders(stop=0.05)
+        order_place.assert_called_once()
+        print(order_place.call_args)
+
+def test_cover_orders_multiple():
+    orders = [
+            dict(symbol='aapl',side='buy',quantity=10,filled_quantity=10,status='COMPLETE',average_price=160),
+            dict(symbol='aapl',side='sell',quantity=5,filled_quantity=5,status='COMPLETE',average_price=150),
+            dict(symbol='goog',side='sell',quantity=20,
+                status='PENDING',trigger_price=100)
+            ]
+    broker = Paper(orders=orders)
+    with patch('omspy.brokers.paper.Paper.order_place') as order_place:
+        kwargs = [
+                dict(symbol='aapl', quantity=5, side='sell',
+                price=152, order_type='LIMIT'),
+                dict(symbol='goog', quantity=20, side='buy',
+                price=105, order_type='LIMIT')
+                ]
+
+        broker.cover_orders(stop=0.05)
+        assert order_place.call_count == 2
+        assert order_place.call_args_list[0] == call(**kwargs[0])
+        assert order_place.call_args_list[1] == call(**kwargs[1])

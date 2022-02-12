@@ -258,19 +258,18 @@ class Broker:
                 final_args.update({"order_id": order_id})
                 self.order_cancel(**final_args)
 
-    def get_positions_from_orders(self)->Dict[str,models.BasicPosition]:
+    def get_positions_from_orders(self, **kwargs)->Dict[str,models.BasicPosition]:
         orders = self.orders
         statuses = ('CANCELED', 'REJECTED')
         orders = [o for o in orders if o['status'] not in statuses]
+        orders = dict_filter(orders, **kwargs)
         return create_basic_positions_from_orders_dict(orders)
 
-    def cover_orders(self, stop:Union[Callable, float], **kwargs):
+    def cover_orders(self, stop:Union[Callable, float], 
+            order_args:Optional[Dict]=None, **kwargs):
         """
         Cover orders for safety
         """
-        #TODO: round ticks to be a separate function
-        from omspy.order import Order
-        round_tick = lambda x: round(int(x/0.05)*0.05,2)
         def get_stop(side:str, price:float, stop:float=stop)->float:
             if side == 'buy':
                 stop_price = price*(1-stop)
@@ -278,25 +277,25 @@ class Broker:
                 stop_price = price*(1+stop)
             else:
                 return price
-            return round_tick(stop_price)
+            return tick(stop_price)
 
         if callable(stop):
             stop_function = stop
         else:
             stop_function = get_stop
 
-        positions = self.get_positions_from_orders()
+        if order_args is None:
+            order_args = {}
+
+        positions = self.get_positions_from_orders(**kwargs)
         non_matched = [p for p in positions.values() if p.net_quantity != 0] 
         for pos in non_matched:
             if pos.net_quantity > 0:
                 stop_loss_price = stop_function(side='buy',price=pos.average_buy_value)
-                order = Order(symbol=pos.symbol, quantity=abs(pos.net_quantity),
-                        side='sell', price=stop_loss_price, order_type='LIMIT')
-                order.execute(self, **kwargs)
+                self.order_place(symbol=pos.symbol, side='sell',price=stop_loss_price,
+                        order_type='LIMIT', quantity=abs(pos.net_quantity), **order_args)
             elif pos.net_quantity < 0:
                 stop_loss_price = stop_function(side='sell',price=pos.average_buy_value)
-                order = Order(symbol=pos.symbol, quantity=abs(pos.net_quantity),
-                        side='buy', price=stop_loss_price, order_type='LIMIT')
-                order.execute(self, **kwargs)
-
+                self.order_place(symbol=pos.symbol, side='buy',price=stop_loss_price,
+                        order_type='LIMIT', quantity=abs(pos.net_quantity), **order_args)
 
