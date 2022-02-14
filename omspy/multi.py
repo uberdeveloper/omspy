@@ -40,3 +40,9 @@ class MultiBroker:
     @property
     def count(self)->int:
         return len(self.users)
+
+    def _call(self, method, **kwargs):
+        """
+        Call the given method on all the users
+        """
+        pass

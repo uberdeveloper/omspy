@@ -110,6 +110,7 @@ class Order(BaseModel):
     def __init__(self, **data) -> None:
         super().__init__(**data)
         from omspy.base import Broker
+
         if not (self.id):
             self.id = uuid.uuid4().hex
         tz = self.timezone
@@ -122,7 +123,7 @@ class Order(BaseModel):
         else:
             self.expires_in = abs(self.expires_in)
 
-    @validator("quantity", always=True,allow_reuse=True)
+    @validator("quantity", always=True, allow_reuse=True)
     def quantity_not_negative(cls, v):
         if v < 0:
             raise ValueError("quantity must be positive")
@@ -191,7 +192,7 @@ class Order(BaseModel):
         else:
             return False
 
-    def execute(self, broker:Any, **kwargs) -> Optional[str]:
+    def execute(self, broker: Any, **kwargs) -> Optional[str]:
         """
         Execute an order on a broker, place a new order
         kwargs
@@ -202,6 +203,7 @@ class Order(BaseModel):
         """
         # Do not place a new order if this order is complete or has order_id
         from omspy.base import Broker as base_broker
+
         if not (self.is_complete) and not (self.order_id):
             order_args = {
                 "symbol": self.symbol.upper(),
@@ -259,6 +261,18 @@ class Order(BaseModel):
         else:
             logging.info("No valid database connection")
             return False
+
+    def clone(self):
+        """
+        Clone the order with a new order id
+        Note
+        ----
+        returns a copy of the new order with a new
+        order_id. parent_id is not copied
+        """
+        dct = self.dict(exclude={"id", "parent_id"})
+        order = Order(**dct)
+        return order
 
 
 class CompoundOrder(BaseModel):

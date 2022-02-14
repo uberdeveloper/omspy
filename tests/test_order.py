@@ -811,7 +811,6 @@ def test_order_max_modifications():
         assert order._num_modifications == 10
         assert order.max_modifications == order._num_modifications
 
-
 def test_order_max_modifications_change_default():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
@@ -831,3 +830,18 @@ def test_order_max_modifications_change_default():
         for i in range(10):
             order.modify(broker=broker)
         assert order._num_modifications == 5
+
+def test_order_clone():
+    order = Order(
+        symbol="aapl",
+        side="buy",
+        quantity=10,
+        order_type="LIMIT",
+        price=650,
+        exchange='nasdaq',
+        timezone='America/New_York',
+        parent_id='some_random_hex'
+        )
+    clone = order.clone() 
+    assert order.id != clone.id
+    assert order.parent_id != clone.parent_id
