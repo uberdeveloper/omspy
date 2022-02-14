@@ -1,6 +1,22 @@
+## 0.3.0
+
+### Features
+* new **peg order module** added for peg orders.
+* peg to market order added with basic arguments
+* new **models** module added. This contains basic model for converting and manipulating data
+* new **utils** module added that contains utility and helper functions. Functions added
+	* create_basic_positions_from_orders_dict
+	* dict_filter
+	* tick 
+	* stop_loss_step_decimal
+* mandatory arguments for order placement for zerodha broker added. `order_place, order_modify, order_cancel` would now add default arguments for the broker automatically (such as variety);you could override them with kwargs.
+* cover_orders function added to broker class, this checks for all valid orders and place stop loss in case of non-matching orders
+
+
 ## 0.2.0
 
 ### Features
+* **BREAKING CHANGE:** Database model changed
 * `Order, CompoundOrder` models changed from dataclass to pydantic models
 * database class changed to sqlite_utils from native python sqlite3 for better reading and writing, connection now returns `sqlite_utils.Database` instead of `sqlite3.Connection`.
 * #3 `Order` could now be directly added using the `add` method and this inherits the sqlite3 database from the compound order if no connection is specified
