@@ -5,37 +5,29 @@ from omspy.order import Order, CompoundOrder
 
 
 class StopOrder(CompoundOrder):
-    def __init__(
-        self,
-        symbol: str,
-        side: str,
-        trigger_price: float,
-        price: float = 0.0,
-        quantity: int = 1,
-        order_type="MARKET",
-        disclosed_quantity: int = 0,
-        **kwargs,
-    ):
-        super(StopOrder, self).__init__(**kwargs)
-        side2 = "sell" if side.lower() == "buy" else "buy"
-        self.add_order(
-            symbol=symbol,
-            side=side,
-            price=price,
-            quantity=quantity,
-            order_type=order_type,
-            disclosed_quantity=disclosed_quantity,
-        )
-        self.add_order(
-            symbol=symbol,
-            side=side2,
-            price=0,
-            trigger_price=trigger_price,
-            quantity=quantity,
-            order_type="SL-M",
-            disclosed_quantity=disclosed_quantity,
-        )
+    symbol:str
+    side:str
+    trigger_price: float
+    price:float = 0.0
+    quantity:int = 1
+    disclosed_quantity:int = 0
+    order_type:Tuple= ('LIMIT', 'SL-M')
 
+    def __init__(self, **data):
+        super().__init__(**data)
+        side_map = {'buy':'sell','sell':'buy'}
+        base_order = Order(symbol=self.symbol,
+                side=self.side,quantity=self.quantity,
+                disclosed_quantity=self.disclosed_quantity,
+                order_type=self.order_type[0],
+                price=self.price,
+                trigger_price=self.trigger_price)
+
+        cover_order = base_order.clone()
+        cover_order.order_type = self.order_type[1]
+        cover_order.side = side_map.get(cover_order.side)
+        self.add(base_order)
+        self.add(cover_order)
 
 class StopLimitOrder(CompoundOrder):
     def __init__(

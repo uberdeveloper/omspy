@@ -7,7 +7,6 @@ from copy import deepcopy
 from omspy.brokers.zerodha import Zerodha
 from omspy.orders.stop import *
 
-
 @pytest.fixture
 def stop_order():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
@@ -16,12 +15,11 @@ def stop_order():
             side="buy",
             quantity=100,
             price=930,
-            order_type="LIMIT",
+            order_type=("LIMIT","SL-M"),
             trigger_price=850,
             broker=broker,
         )
         return stop_order
-
 
 @pytest.fixture
 def bracket_order():
@@ -67,7 +65,7 @@ def test_stop_order(stop_order):
         side="sell",
         quantity=100,
         trigger_price=850,
-        price=0,
+        price=930,
         order_type="SL-M",
         parent_id=stop_order.id,
     )
