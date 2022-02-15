@@ -295,11 +295,13 @@ class Broker:
         for pos in non_matched:
             if pos.net_quantity > 0:
                 stop_loss_price = stop_function(side="buy", price=pos.average_buy_value)
+                #TODO: Generalize side with enum since the 
+                # present implementation caters to a single broker
                 self.order_place(
                     symbol=pos.symbol,
-                    side="sell",
-                    price=stop_loss_price,
-                    order_type="LIMIT",
+                    side="SELL",
+                    trigger_price=stop_loss_price,
+                    order_type="SL-M",
                     quantity=abs(pos.net_quantity),
                     **order_args,
                 )
@@ -309,9 +311,9 @@ class Broker:
                 )
                 self.order_place(
                     symbol=pos.symbol,
-                    side="buy",
-                    price=stop_loss_price,
-                    order_type="LIMIT",
+                    side="BUY",
+                    trigger_price=stop_loss_price,
+                    order_type="SL-M",
                     quantity=abs(pos.net_quantity),
                     **order_args,
                 )

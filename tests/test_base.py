@@ -223,8 +223,8 @@ def test_cover_orders_multiple():
     broker = Paper(orders=orders)
     with patch("omspy.brokers.paper.Paper.order_place") as order_place:
         kwargs = [
-            dict(symbol="aapl", quantity=5, side="sell", price=152, order_type="LIMIT"),
-            dict(symbol="goog", quantity=20, side="buy", price=105, order_type="LIMIT"),
+            dict(symbol="aapl", quantity=5, side="SELL", trigger_price=152, order_type="SL-M"),
+            dict(symbol="goog", quantity=20, side="BUY", trigger_price=105, order_type="SL-M"),
         ]
 
         broker.cover_orders(stop=0.05)
