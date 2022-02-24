@@ -1,5 +1,4 @@
-from pydantic import BaseModel, validator, ValidationError, Field, PrivateAttr
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, validator, Field, PrivateAttr
 from datetime import timezone
 from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
 import uuid
