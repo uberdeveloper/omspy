@@ -1,6 +1,8 @@
 import os
+import random
 import requests
 from omspy.base import Broker, pre, post
+from omspy.utils import dict_filter
 from requests_oauthlib import OAuth2Session
 
 from selenium import webdriver
@@ -68,7 +70,7 @@ class MasterTrust(Broker):
         product="MIS",
         token_file="token.tok",
     ):
-        self.filter = self.dict_filter
+        self.filter = dict_filter
         self._client_id = client_id
         self._password = password
         self._pin = PIN
@@ -216,6 +218,7 @@ class MasterTrust(Broker):
             contracts=contracts, exchange=exchange, symbol=symbol
         )
 
+    @property
     def profile(self):
         """
         Get the profile for the user
@@ -339,6 +342,11 @@ class MasterTrust(Broker):
         """
         Place an order
         """
+        order_args = dict(
+                product='MIS',
+                validity='DAY',
+                exchange=self.exchange
+                )
         url = f"{self.base_url}/api/v1/orders"
         symbol = kwargs.pop("symbol")
         side = kwargs.pop("side")
@@ -347,8 +355,10 @@ class MasterTrust(Broker):
         kwargs["instrument_token"] = token
         kwargs["order_side"] = side
         kwargs["client_id"] = self.client_id
-        kwargs["user_order_id"] = 1000
-        payload = kwargs.copy()
+        kwargs["user_order_id"] = random.randint(0,1e9)
+        order_args.update({'exchange': exchange})
+        order_args.update(kwargs)
+        payload = order_args.copy()
         resp = requests.post(url, headers=self.headers, params=payload)
         return self._response(resp)
 
