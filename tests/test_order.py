@@ -6,8 +6,13 @@ from collections import Counter
 import pendulum
 from copy import deepcopy
 import sqlite3
+import json
 from sqlite_utils import Database
 
+
+@pytest.fixture
+def new_db():
+    return create_db()
 
 @pytest.fixture
 def compound_order():
@@ -845,3 +850,57 @@ def test_order_clone():
     clone = order.clone() 
     assert order.id != clone.id
     assert order.parent_id != clone.parent_id
+
+def test_new_db():
+    """
+    Testing new db with its columns
+    """
+    con = create_db()
+    order = Order(symbol='amzn', side='sell', quantity=10,
+            connection=con)
+    order.save_to_db()
+    
+    # Check newly added columns are available in the database
+    keys = ['can_peg', 'strategy_id', 'portfolio_id',
+            'pseudo_id', 'JSON', 'error']
+    for row in con.query('select * from orders'):
+        for key in keys:
+            assert key in row
+
+def test_new_db_with_values():
+    con = create_db()
+    order = Order(symbol='amzn', side='sell', quantity=10,
+            connection=con, JSON=json.dumps(
+                {'a':10,'b':[4,5,6]}),
+            pseudo_id='hex_pseudo_id', error='some_error_message')
+    order.save_to_db()
+    
+    # Check newly added columns are available in the database
+    for row in con.query('select * from orders'):
+        assert row['can_peg'] == 1
+        assert row['JSON'] == json.dumps({'a':10, 'b':[4,5,6]})
+        retrieved_order = Order(**row)
+        assert retrieved_order.can_peg is True
+        assert retrieved_order.JSON == {'a': 10, 'b':[4,5,6]}
+        assert retrieved_order.pseudo_id == 'hex_pseudo_id'
+
+def test_new_db_all_values():
+    con = create_db()
+    order = Order(symbol='amzn', side='sell', quantity=10,
+            connection=con, JSON=json.dumps(
+                {'a':10,'b':[4,5,6]}),
+            pseudo_id='hex_pseudo_id', 
+            error='some_error_message',
+            timezone='Asia/Kolkata'
+            )
+    order.save_to_db()
+    
+    # Check newly added columns are available in the database
+    for row in con.query('select * from orders'):
+        retrieved_order = Order(**row)
+
+    expected = retrieved_order.dict() 
+    exclude_keys = ['timestamp', 'connection']
+    for k,v in order.dict().items():
+        if k not in exclude_keys:
+            assert expected[k] == v

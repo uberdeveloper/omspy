@@ -1,6 +1,6 @@
-from pydantic import BaseModel, validator, Field, PrivateAttr
+from pydantic import BaseModel, validator, Field, PrivateAttr, Json
 from datetime import timezone
-from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
+from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable, Set
 import uuid
 import pendulum
 import sqlite3
@@ -52,7 +52,10 @@ def create_db(dbname: str = ":memory:") -> Union[Database, None]:
                            expires_in integer, timezone text,
                            client_id text, convert_to_market_after_expiry text,
                            cancel_after_expiry text, retries integer, max_modifications integer,
-                           exchange text, tag string)"""
+                           exchange text, tag string, can_peg integer,
+                           pseudo_id string, strategy_id string, portfolio_id string, 
+                           JSON text, error text
+                           )"""
             )
             return Database(con)
     except Exception as e:
@@ -91,6 +94,12 @@ class Order(BaseModel):
     exchange: Optional[str] = None
     tag: Optional[str] = None
     connection: Optional[Database] = None
+    can_peg:bool = True
+    pseudo_id: Optional[str] = None
+    strategy_id: Optional[str] = None
+    portfolio_id: Optional[str] = None
+    JSON:Optional[Json] = None
+    error:Optional[str] = None
     _num_modifications: int = 0
     _attrs: Tuple[str] = (
         "exchange_timestamp",
@@ -101,6 +110,9 @@ class Order(BaseModel):
         "disclosed_quantity",
         "average_price",
     )
+    _exclude_fields:Set[str]={
+             'connection'
+            }
 
     class Config:
         underscore_attrs_are_private = True
@@ -254,7 +266,7 @@ class Order(BaseModel):
         save or update the order to db
         """
         if self.connection:
-            values = self.dict(exclude={"connection"})
+            values = self.dict(exclude=self._exclude_fields)
             self.connection["orders"].upsert(values, pk="id")
             return True
         else:
