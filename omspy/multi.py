@@ -66,3 +66,25 @@ class MultiUser:
             order2.parent_id = order2.pseudo_id = order.id
             self._orders[order.id].append(order2)
             order2.execute(user.broker, **kwargs)
+
+class MultiOrder(Order):
+    _orders:List[Order] = []
+
+    @property
+    def orders(self)->List[Order]:
+        return self._orders
+
+    @property
+    def count(self)->int:
+        """
+        Return the number of orders
+        """
+        return len(self.orders)
+
+    def create(self, users:Optional[MultiUser])->List[Order]:
+        for user in users:
+            order2 = self.clone()
+            order2.quantity = int(user.scale * self.quantity)
+            order2.pseudo_id = self.id
+            self._orders.append(order2)
+        return self.orders

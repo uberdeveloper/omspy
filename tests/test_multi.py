@@ -19,6 +19,10 @@ def users_simple():
             ]
     return users
 
+@pytest.fixture
+def multi_user_simple(users_simple):
+    multi = MultiUser(users=users_simple)
+
 def test_user_defaults():
     user = User(broker=Paper(),name='mine',
             scale=0.5)
@@ -60,6 +64,23 @@ def test_multi_user_order_place_broker(users_simple):
     order = Order(symbol='aapl', side='buy', quantity=10)
     multi.order_place(order)
     assert order_place.call_count == 3
+
+def test_multi_order_check_defaults():
+    order = MultiOrder(symbol='amzn', quantity=10, side='buy', timezone='Europe/Paris', exchange='NASDAQ')
+    assert order.symbol == 'amzn'
+    assert order.quantity == 10
+    assert order.side == 'buy'
+    assert order.timezone == 'Europe/Paris'
+    assert order.exchange == 'NASDAQ'
+    assert order.orders == []
+    assert order.count == 0
+
+def test_multi_order_create(users_simple):
+    order = MultiOrder(symbol='amzn', quantity=10, side='buy', timezone='Europe/Paris', exchange='NASDAQ')
+    order.create(users=users_simple)
+    assert order.count == 3
+    for (order,expected) in zip(order.orders, (10,5,20)):
+        assert order.quantity == expected
 
 
 
