@@ -101,7 +101,7 @@ def test_multi_order_create(users_simple):
     order.create(users=users_simple)
     assert order.count == 3
     for (order, expected) in zip(order.orders, (10, 5, 20)):
-        assert order.quantity == expected
+        assert order.order.quantity == expected
 
 
 def test_multi_order_save_to_db(users_simple):

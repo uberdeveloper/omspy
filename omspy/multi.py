@@ -4,7 +4,7 @@ Module for multi-user multi-broker implementation
 from pydantic import BaseModel
 from omspy.base import Broker
 from omspy.order import Order
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 from collections import defaultdict
 import logging
 
@@ -22,6 +22,14 @@ class User(BaseModel):
 
     class Config:
         underscore_attrs_are_private = True
+        arbitrary_types_allowed = True
+
+
+class UserOrder(BaseModel):
+    order: Order
+    user: User
+
+    class Config:
         arbitrary_types_allowed = True
 
 
@@ -72,10 +80,10 @@ class MultiUser:
 
 
 class MultiOrder(Order):
-    _orders: List[Order] = []
+    _orders: List[UserOrder] = []
 
     @property
-    def orders(self) -> List[Order]:
+    def orders(self) -> List[UserOrder]:
         return self._orders
 
     @property
@@ -85,13 +93,14 @@ class MultiOrder(Order):
         """
         return len(self.orders)
 
-    def create(self, users: Optional[MultiUser]) -> List[Order]:
+    def create(self, users: Optional[MultiUser]) -> List[UserOrder]:
         for user in users:
             order2 = self.clone()
             order2.quantity = int(user.scale * self.quantity)
             order2.pseudo_id = self.id
-            self._orders.append(order2)
             order2.save_to_db()
+            m_order = UserOrder(order=order2, user=user)
+            self._orders.append(m_order)
         self.save_to_db()
         return self.orders
 
@@ -103,9 +112,15 @@ class MultiOrder(Order):
             values = []
             values.append(self.dict(exclude=self._exclude_fields))
             for order in self.orders:
-                values.append(order.dict(exclude=self._exclude_fields))
+                values.append(order.order.dict(exclude=self._exclude_fields))
             self.connection["orders"].upsert_all(values, pk="id")
             return True
         else:
             logging.info("No valid database connection")
             return False
+
+    def execute(self):
+        """
+        Execute order on all users
+        """
+        pass
