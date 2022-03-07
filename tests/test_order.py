@@ -852,11 +852,22 @@ def test_order_clone():
     clone = order.clone()
     assert order.id != clone.id
     assert order.parent_id != clone.parent_id
-    exclude_keys = ["id", "parent_id"]
+    exclude_keys = ["id", "parent_id", 'timestamp']
     for k, v in order.dict().items():
         if k not in exclude_keys:
             assert getattr(clone, k) == v
 
+def test_order_clone_new_timestamp():
+    order = Order(
+        symbol="aapl",
+        side="buy",
+        quantity=10,
+        order_type="LIMIT",
+        price=650,
+    )
+    clone = order.clone()
+    assert clone.timestamp != order.timestamp
+    assert clone.timestamp > order.timestamp
 
 def test_new_db():
     """

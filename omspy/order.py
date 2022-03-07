@@ -280,7 +280,7 @@ class Order(BaseModel):
         returns a copy of the new order with a new
         order_id. parent_id is not copied
         """
-        dct = self.dict(exclude={"id", "parent_id"})
+        dct = self.dict(exclude={"id", "parent_id", "timestamp"})
         order = Order(**dct)
         return order
 
