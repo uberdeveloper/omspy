@@ -94,7 +94,7 @@ class MultiOrder(Order):
         return len(self.orders)
 
     def create(self, users: Optional[MultiUser]) -> List[UserOrder]:
-        for user in users:
+        for user in users.users:
             order2 = self.clone()
             order2.quantity = int(user.scale * self.quantity)
             order2.pseudo_id = self.id
@@ -119,8 +119,15 @@ class MultiOrder(Order):
             logging.info("No valid database connection")
             return False
 
-    def execute(self):
+    def execute(self, broker:MultiUser, **kwargs):
         """
         Execute order on all users
+        broker
+            A Multi User instance
+            name is retained as broker so it is compatible
+            with the original Order interface
         """
-        pass
+        if self.count == 0:
+            self.create(users=broker)
+        for u_order in self.orders:
+            u_order.order.execute(u_order.user.broker, **kwargs)

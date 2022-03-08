@@ -21,11 +21,16 @@ def users_simple():
     ]
     return users
 
-
 @pytest.fixture
-def multi_user_simple(users_simple):
-    multi = MultiUser(users=users_simple)
-
+def simple_order():
+    order = MultiOrder(
+        symbol="amzn",
+        quantity=10,
+        side="buy",
+        timezone="Europe/Paris",
+        exchange="NASDAQ",
+    )
+    return order
 
 def test_user_defaults():
     user = User(broker=Paper(), name="mine", scale=0.5)
@@ -73,14 +78,8 @@ def test_multi_user_order_place_broker(users_simple):
     assert order_place.call_count == 3
 
 
-def test_multi_order_check_defaults():
-    order = MultiOrder(
-        symbol="amzn",
-        quantity=10,
-        side="buy",
-        timezone="Europe/Paris",
-        exchange="NASDAQ",
-    )
+def test_multi_order_check_defaults(simple_order):
+    order = simple_order
     assert order.symbol == "amzn"
     assert order.quantity == 10
     assert order.side == "buy"
@@ -90,29 +89,29 @@ def test_multi_order_check_defaults():
     assert order.count == 0
 
 
-def test_multi_order_create(users_simple):
-    order = MultiOrder(
-        symbol="amzn",
-        quantity=10,
-        side="buy",
-        timezone="Europe/Paris",
-        exchange="NASDAQ",
-    )
-    order.create(users=users_simple)
+def test_multi_order_create(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.create(users=multi)
     assert order.count == 3
     for (order, expected) in zip(order.orders, (10, 5, 20)):
         assert order.order.quantity == expected
 
-
-def test_multi_order_save_to_db(users_simple):
+def test_multi_order_save_to_db(users_simple, simple_order):
     db = create_db()
-    order = MultiOrder(
-        symbol="amzn",
-        quantity=10,
-        side="buy",
-        timezone="Europe/Paris",
-        exchange="NASDAQ",
-        connection=db,
-    )
-    order.create(users=users_simple)
+    order = simple_order
+    order.connection = db
+    multi = MultiUser(users=users_simple)
+    order.create(users=multi)
     assert db.execute("select count(*) from orders").fetchone()[0] == 4
+
+def test_multi_order_execute(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    with patch("omspy.brokers.paper.Paper.order_place") as order_place:
+        for user in multi.users:
+            # Patching  the order place method
+            user.broker.order_place = order_place
+    order.execute(broker=multi)
+    assert order_place.call_count == 3
+
