@@ -150,7 +150,7 @@ class MultiOrder(Order):
 
     def cancel(self, **kwargs):
         """
-        cancel all orders
+        cancel all existing orders
         """
         for order in self.orders:
             order.order.cancel(order.user.broker)

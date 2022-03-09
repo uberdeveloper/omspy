@@ -22,6 +22,7 @@ def users_simple():
     ]
     return users
 
+
 @pytest.fixture
 def simple_order():
     order = MultiOrder(
@@ -33,6 +34,7 @@ def simple_order():
         exchange="NASDAQ",
     )
     return order
+
 
 def test_user_defaults():
     user = User(broker=Paper(), name="mine", scale=0.5)
@@ -99,6 +101,7 @@ def test_multi_order_create(users_simple, simple_order):
     for (order, expected) in zip(order.orders, (10, 5, 20)):
         assert order.order.quantity == expected
 
+
 def test_multi_order_save_to_db(users_simple, simple_order):
     db = create_db()
     order = simple_order
@@ -106,6 +109,7 @@ def test_multi_order_save_to_db(users_simple, simple_order):
     multi = MultiUser(users=users_simple)
     order.create(users=multi)
     assert db.execute("select count(*) from orders").fetchone()[0] == 4
+
 
 def test_multi_order_execute(users_simple, simple_order):
     order = simple_order
@@ -116,6 +120,7 @@ def test_multi_order_execute(users_simple, simple_order):
             user.broker.order_place = order_place
     order.execute(broker=multi)
     assert order_place.call_count == 3
+
 
 def test_multi_order_execute_already_created(users_simple, simple_order):
     ur = UserOrder(order=simple_order, user=users_simple[0])
@@ -137,8 +142,9 @@ def test_multi_order_execute_dont_modify(users_simple, simple_order):
     with patch("omspy.brokers.paper.Paper.order_place") as order_place:
         order.execute(multi)
         calls = order_place.call_args_list
-        for c,expected in zip(calls, (10,5,20)):
-            assert c.kwargs.get('quantity') == expected
+        for c, expected in zip(calls, (10, 5, 20)):
+            assert c.kwargs.get("quantity") == expected
+
 
 def test_multi_order_create_clean_before_running_again(users_simple, simple_order):
     order = simple_order
@@ -148,8 +154,9 @@ def test_multi_order_create_clean_before_running_again(users_simple, simple_orde
     order.quantity = 100
     order.create(multi)
     assert order.count == 3
-    for (order,expected) in zip(order.orders, (100,50,200)):
+    for (order, expected) in zip(order.orders, (100, 50, 200)):
         assert order.order.quantity == expected
+
 
 def test_multi_order_modify(users_simple, simple_order):
     order = simple_order
@@ -163,22 +170,32 @@ def test_multi_order_modify(users_simple, simple_order):
             print(o.order.price)
         call_args = order_modify.call_args_list
         assert order_modify.call_count == 3
-        for o,a,q in zip(order.orders, call_args, (50,25,100)):
+        for o, a, q in zip(order.orders, call_args, (50, 25, 100)):
             assert o.order.quantity == q
-            assert a.kwargs.get('quantity') == q
-            assert a.kwargs.get('price') == 400
+            assert a.kwargs.get("quantity") == q
+            assert a.kwargs.get("price") == 400
+
 
 def test_multi_order_modify_no_quantity(users_simple, simple_order):
     order = simple_order
     multi = MultiUser(users=users_simple)
     order.execute(multi)
     with patch("omspy.brokers.paper.Paper.order_modify") as order_modify:
-        order.modify(price=400, exchange='nfo')
+        order.modify(price=400, exchange="nfo")
         assert order.price == 400
-        assert order.exchange == 'nfo'
+        assert order.exchange == "nfo"
         for o in order.orders:
             print(o.order.price)
         call_args = order_modify.call_args_list
         assert order_modify.call_count == 3
-        for o,a in zip(order.orders, call_args):
-            assert a.kwargs.get('price') == 400
+        for o, a in zip(order.orders, call_args):
+            assert a.kwargs.get("price") == 400
+
+
+def test_multi_order_cancel(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.execute(multi)
+    with patch("omspy.brokers.paper.Paper.order_cancel") as order_cancel:
+        order.cancel()
+        assert order_cancel.call_count == 3
