@@ -852,22 +852,18 @@ def test_order_clone():
     clone = order.clone()
     assert order.id != clone.id
     assert order.parent_id != clone.parent_id
-    exclude_keys = ["id", "parent_id", 'timestamp']
+    exclude_keys = ["id", "parent_id", "timestamp"]
     for k, v in order.dict().items():
         if k not in exclude_keys:
             assert getattr(clone, k) == v
 
+
 def test_order_clone_new_timestamp():
-    order = Order(
-        symbol="aapl",
-        side="buy",
-        quantity=10,
-        order_type="LIMIT",
-        price=650,
-    )
+    order = Order(symbol="aapl", side="buy", quantity=10, order_type="LIMIT", price=650)
     clone = order.clone()
     assert clone.timestamp != order.timestamp
     assert clone.timestamp > order.timestamp
+
 
 def test_new_db():
     """
@@ -930,3 +926,20 @@ def test_new_db_all_values():
     for k, v in order.dict().items():
         if k not in exclude_keys:
             assert expected[k] == v
+
+
+def test_order_modify_quantity():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order = Order(
+            symbol="aapl",
+            side="buy",
+            quantity=10,
+            order_type="LIMIT",
+            price=650,
+            order_id="abcdef",
+            exchange="NSE",
+        )
+        order.modify(broker=broker, price=630, quantity=20, exchange="NFO")
+        broker.order_modify.assert_called_once()
+        assert order.quantity == 20
+        assert order.price == 630

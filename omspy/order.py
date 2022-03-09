@@ -238,6 +238,9 @@ class Order(BaseModel):
         """
         Modify an existing order
         """
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
         order_args = {
             "order_id": self.order_id,
             "quantity": self.quantity,
@@ -246,8 +249,6 @@ class Order(BaseModel):
             "order_type": self.order_type.upper(),
             "disclosed_quantity": self.disclosed_quantity,
         }
-        dct = {k: v for k, v in kwargs.items() if k not in order_args.keys()}
-        order_args.update(**kwargs)
         if self._num_modifications < self.max_modifications:
             broker.order_modify(**order_args)
             self._num_modifications += 1
