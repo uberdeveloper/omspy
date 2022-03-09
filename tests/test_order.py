@@ -927,7 +927,6 @@ def test_new_db_all_values():
         if k not in exclude_keys:
             assert expected[k] == v
 
-
 def test_order_modify_quantity():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
@@ -943,3 +942,23 @@ def test_order_modify_quantity():
         broker.order_modify.assert_called_once()
         assert order.quantity == 20
         assert order.price == 630
+
+def test_order_modify_by_attribute():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order = Order(
+            symbol="aapl",
+            side="buy",
+            quantity=10,
+            order_type="LIMIT",
+            price=650,
+            order_id="abcdef",
+            exchange="NSE",
+        )
+        order.quantity=100
+        order.price=600
+        order.modify(broker=broker)
+        broker.order_modify.assert_called_once()
+        kwargs = broker.order_modify.call_args_list[0].kwargs
+        assert kwargs['quantity'] == 100
+        assert kwargs['price'] == 600
+

@@ -28,6 +28,7 @@ def simple_order():
         symbol="amzn",
         quantity=10,
         side="buy",
+        price=420,
         timezone="Europe/Paris",
         exchange="NASDAQ",
     )
@@ -150,4 +151,34 @@ def test_multi_order_create_clean_before_running_again(users_simple, simple_orde
     for (order,expected) in zip(order.orders, (100,50,200)):
         assert order.order.quantity == expected
 
+def test_multi_order_modify(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.execute(multi)
+    with patch("omspy.brokers.paper.Paper.order_modify") as order_modify:
+        order.modify(quantity=50, price=400)
+        assert order.quantity == 50
+        assert order.price == 400
+        for o in order.orders:
+            print(o.order.price)
+        call_args = order_modify.call_args_list
+        assert order_modify.call_count == 3
+        for o,a,q in zip(order.orders, call_args, (50,25,100)):
+            assert o.order.quantity == q
+            assert a.kwargs.get('quantity') == q
+            assert a.kwargs.get('price') == 400
 
+def test_multi_order_modify_no_quantity(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.execute(multi)
+    with patch("omspy.brokers.paper.Paper.order_modify") as order_modify:
+        order.modify(price=400, exchange='nfo')
+        assert order.price == 400
+        assert order.exchange == 'nfo'
+        for o in order.orders:
+            print(o.order.price)
+        call_args = order_modify.call_args_list
+        assert order_modify.call_count == 3
+        for o,a in zip(order.orders, call_args):
+            assert a.kwargs.get('price') == 400

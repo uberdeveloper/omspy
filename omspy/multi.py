@@ -131,5 +131,27 @@ class MultiOrder(Order):
         """
         if self.count == 0:
             self.create(users=broker)
-        for u_order in self.orders:
-            u_order.order.execute(u_order.user.broker, **kwargs)
+        for order in self.orders:
+            order.order.execute(order.user.broker, **kwargs)
+
+    def modify(self, **kwargs):
+        """
+        modify all orders
+        """
+        for k,v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self,k,v)
+        if 'quantity' in kwargs:
+            kwargs.pop('quantity')
+        for order in self.orders:
+            quantity = int(self.quantity * order.user.scale)
+            order.order.quantity = quantity
+            order.order.modify(order.user.broker, quantity=quantity, **kwargs)
+
+    def cancel(self, **kwargs):
+        """
+        cancel all orders
+        """
+        for order in self.orders:
+            order.order.cancel(order.user.broker)
+
