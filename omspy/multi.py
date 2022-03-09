@@ -94,6 +94,8 @@ class MultiOrder(Order):
         return len(self.orders)
 
     def create(self, users: Optional[MultiUser]) -> List[UserOrder]:
+        # Clear existing list
+        self._orders.clear()
         for user in users.users:
             order2 = self.clone()
             order2.quantity = int(user.scale * self.quantity)

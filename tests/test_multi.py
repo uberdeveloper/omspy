@@ -3,6 +3,7 @@ from omspy.order import Order, create_db
 from omspy.brokers.paper import Paper
 import pytest
 from unittest.mock import patch
+from copy import deepcopy
 
 
 class Paper2(Paper):
@@ -114,4 +115,39 @@ def test_multi_order_execute(users_simple, simple_order):
             user.broker.order_place = order_place
     order.execute(broker=multi)
     assert order_place.call_count == 3
+
+def test_multi_order_execute_already_created(users_simple, simple_order):
+    ur = UserOrder(order=simple_order, user=users_simple[0])
+    with patch("omspy.multi.MultiOrder.create") as create:
+        order = simple_order
+        multi = MultiUser(users=MultiUser(users_simple[:1]))
+        # Filling orders since create is a mock
+        order.create(multi)
+        # Caused a recursion error when directly assigned due to reference, copying the order fixed this
+        order._orders = [deepcopy(ur)]
+        order.execute(multi)
+
+
+def test_multi_order_execute_dont_modify(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.create(multi)
+    order.quantity = 100
+    with patch("omspy.brokers.paper.Paper.order_place") as order_place:
+        order.execute(multi)
+        calls = order_place.call_args_list
+        for c,expected in zip(calls, (10,5,20)):
+            assert c.kwargs.get('quantity') == expected
+
+def test_multi_order_create_clean_before_running_again(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.create(multi)
+    assert order.count == 3
+    order.quantity = 100
+    order.create(multi)
+    assert order.count == 3
+    for (order,expected) in zip(order.orders, (100,50,200)):
+        assert order.order.quantity == expected
+
 
