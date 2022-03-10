@@ -40,7 +40,8 @@ def create_db(dbname: str = ":memory:") -> Union[Database, None]:
         with con:
             con.execute(
                 """create table orders
-                           (symbol text, side text, quantity integer,
+                           (
+                           symbol text, side text, quantity integer,
                            id text primary key, parent_id text, timestamp text,
                            order_type text, broker_timestamp text,
                            exchange_timestamp text, order_id text,
@@ -54,13 +55,16 @@ def create_db(dbname: str = ":memory:") -> Union[Database, None]:
                            cancel_after_expiry text, retries integer, max_modifications integer,
                            exchange text, tag string, can_peg integer,
                            pseudo_id string, strategy_id string, portfolio_id string,
-                           JSON text, error text
+                           JSON text, error text, is_multi integer,
+                           last_updated_at text
                            )"""
             )
+            print(con)
             return Database(con)
     except Exception as e:
         logging.error(e)
         return None
+
 
 
 class Order(BaseModel):
@@ -100,6 +104,8 @@ class Order(BaseModel):
     portfolio_id: Optional[str] = None
     JSON: Optional[Json] = None
     error: Optional[str] = None
+    is_multi: bool = False
+    last_updated_at: Optional[pendulum.DateTime] = None
     _num_modifications: int = 0
     _attrs: Tuple[str] = (
         "exchange_timestamp",

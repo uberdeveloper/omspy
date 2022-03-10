@@ -890,6 +890,7 @@ def test_new_db_with_values():
         JSON=json.dumps({"a": 10, "b": [4, 5, 6]}),
         pseudo_id="hex_pseudo_id",
         error="some_error_message",
+        tag="this is a tag",
     )
     order.save_to_db()
 
@@ -897,6 +898,9 @@ def test_new_db_with_values():
     for row in con.query("select * from orders"):
         assert row["can_peg"] == 1
         assert row["JSON"] == json.dumps({"a": 10, "b": [4, 5, 6]})
+        assert row['tag'] == 'this is a tag'
+        assert row['is_multi'] == 0
+        assert row['last_updated_at'] is None
         retrieved_order = Order(**row)
         assert retrieved_order.can_peg is True
         assert retrieved_order.JSON == {"a": 10, "b": [4, 5, 6]}
