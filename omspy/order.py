@@ -202,6 +202,7 @@ class Order(BaseModel):
                 val = data.get(att)
                 if val:
                     setattr(self, att, val)
+            self.last_updated_at = pendulum.now(tz=self.timezone)
             if self.connection and save:
                 self.save_to_db()
             return True

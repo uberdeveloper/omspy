@@ -158,6 +158,21 @@ def test_order_update_simple():
     assert order.average_price == 912
     assert order.exchange_order_id == "abcd"
 
+def test_order_update_timestamp():
+    known = pendulum.datetime(2021, 1, 1, 12, tz="Europe/Paris")
+    with pendulum.test(known):
+        order = Order(symbol="aapl", side="buy", quantity=10,
+                timezone='Europe/Paris')
+    assert order.timestamp == known
+    known= known.add(minutes=5)
+    with pendulum.test(known):
+        order.update(
+            {"filled_quantity": 7, "average_price": 912, "exchange_order_id": "abcd"}
+        )
+        assert order.last_updated_at == known
+        diff = order.last_updated_at - order.timestamp
+        assert diff.in_seconds() == 300
+
 
 def test_order_update_non_attribute():
     order = Order(symbol="aapl", side="buy", quantity=10)
@@ -166,6 +181,7 @@ def test_order_update_non_attribute():
     )
     assert order.filled_quantity == 7
     assert hasattr(order, "message") is False
+
 
 
 def test_order_update_do_not_update_when_complete():
@@ -181,7 +197,6 @@ def test_order_update_do_not_update_when_complete():
     order.status = "COMPLETE"
     assert order.average_price == 0
     assert order.filled_quantity == 7
-
 
 def test_compound_order_id_custom():
     order = CompoundOrder(broker=Paper(), id="some_id")
