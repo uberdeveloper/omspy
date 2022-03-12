@@ -7,6 +7,7 @@ from omspy.order import Order
 from typing import Dict, List, Optional, Type
 from collections import defaultdict
 import logging
+import uuid
 
 
 class User(BaseModel):
@@ -82,6 +83,10 @@ class MultiUser:
 class MultiOrder(Order):
     _orders: List[UserOrder] = []
 
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+        self.pseudo_id = uuid.uuid4().hex
+
     @property
     def orders(self) -> List[UserOrder]:
         return self._orders
@@ -99,7 +104,7 @@ class MultiOrder(Order):
         for user in users.users:
             order2 = self.clone()
             order2.quantity = int(user.scale * self.quantity)
-            order2.pseudo_id = self.id
+            order2.pseudo_id = self.pseudo_id
             order2.save_to_db()
             m_order = UserOrder(order=order2, user=user)
             self._orders.append(m_order)

@@ -199,3 +199,17 @@ def test_multi_order_cancel(users_simple, simple_order):
     with patch("omspy.brokers.paper.Paper.order_cancel") as order_cancel:
         order.cancel()
         assert order_cancel.call_count == 3
+
+def test_multi_order_defaults(simple_order):
+    order = simple_order
+    assert order.id is not None
+    assert order.pseudo_id is not None
+    assert order.timestamp is not None
+
+def test_multi_order_pseudo_id(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.create(users=multi)
+    for o in order.orders:
+        print(order.pseudo_id, o.order.pseudo_id)
+        assert order.pseudo_id == o.order.pseudo_id
