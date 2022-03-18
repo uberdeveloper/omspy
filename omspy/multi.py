@@ -126,7 +126,7 @@ class MultiOrder(Order):
             logging.info("No valid database connection")
             return False
 
-    def execute(self, broker:MultiUser, **kwargs):
+    def execute(self, broker: MultiUser, **kwargs):
         """
         Execute order on all users
         broker
@@ -143,11 +143,11 @@ class MultiOrder(Order):
         """
         modify all orders
         """
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             if hasattr(self, k):
-                setattr(self,k,v)
-        if 'quantity' in kwargs:
-            kwargs.pop('quantity')
+                setattr(self, k, v)
+        if "quantity" in kwargs:
+            kwargs.pop("quantity")
         for order in self.orders:
             quantity = int(self.quantity * order.user.scale)
             order.order.quantity = quantity
@@ -160,3 +160,17 @@ class MultiOrder(Order):
         for order in self.orders:
             order.order.cancel(order.user.broker)
 
+    def update(self, data: Dict[str, Dict]):
+        """
+        Update order based on information received from broker
+        data
+            data to update as dictionary; key should be the broker order_id
+        returns True if update is done
+        """
+        keys = data.keys()
+        for order in self._orders:
+            order_id = order.order.order_id
+            order_details = data.get(order_id)
+            if order_details:
+                order.order.update(order_details, save=False)
+        self.save_to_db()

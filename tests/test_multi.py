@@ -200,11 +200,13 @@ def test_multi_order_cancel(users_simple, simple_order):
         order.cancel()
         assert order_cancel.call_count == 3
 
+
 def test_multi_order_defaults(simple_order):
     order = simple_order
     assert order.id is not None
     assert order.pseudo_id is not None
     assert order.timestamp is not None
+
 
 def test_multi_order_pseudo_id(users_simple, simple_order):
     order = simple_order
@@ -213,3 +215,40 @@ def test_multi_order_pseudo_id(users_simple, simple_order):
     for o in order.orders:
         print(order.pseudo_id, o.order.pseudo_id)
         assert order.pseudo_id == o.order.pseudo_id
+
+
+def test_multi_order_update(users_simple, simple_order):
+    order = simple_order
+    multi = MultiUser(users=users_simple)
+    order.execute(multi)
+    fake_ids = ["1111", "2222", "3333"]
+    for (o, fi) in zip(order.orders, fake_ids):
+        o.order.order_id = fi
+    update = {
+        "1111": {"filled_quantity": 3, "exchange_order_id": "aaaa"},
+        "3333": {"filled_quantity": 16},
+    }
+    order.update(update)
+    for o, qty in zip(order.orders, (3, 0, 16)):
+        assert o.order.filled_quantity == qty
+    assert order.orders[0].order.exchange_order_id == "aaaa"
+
+
+def test_multi_order_update_save_db(users_simple, simple_order):
+
+    db = create_db()
+    order = simple_order
+    order.connection = db
+    multi = MultiUser(users=users_simple)
+    order.execute(multi)
+    fake_ids = ["1111", "2222", "3333"]
+    for (o, fi) in zip(order.orders, fake_ids):
+        o.order.order_id = fi
+    update = {
+        "1111": {"filled_quantity": 3, "exchange_order_id": "aaaa"},
+        "3333": {"filled_quantity": 16},
+    }
+    order.update(update)
+    filled = [0, 3, 0, 16]
+    for i, row in enumerate(db.query("select * from orders order by timestamp")):
+        assert row["filled_quantity"] == filled[i]
