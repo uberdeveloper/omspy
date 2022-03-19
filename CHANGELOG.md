@@ -1,3 +1,14 @@
+## 0.4.0
+
+### Features
+* **BREAKING CHANGE:** Database structured changed. New keys added
+* new **multi** module added for placing the same order for multiple clients
+
+### Fixes
+* #13 do not change existing timestamp fixed
+* cloning an order creates a new timestamp instead of the original one
+* keyword arguments passed to `modify` method to update order attributes and then modify the broker order 
+
 ## 0.3.0
 
 ### Features
