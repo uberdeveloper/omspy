@@ -59,7 +59,6 @@ def create_db(dbname: str = ":memory:") -> Union[Database, None]:
                            last_updated_at text
                            )"""
             )
-            print(con)
             return Database(con)
     except Exception as e:
         logging.error(e)

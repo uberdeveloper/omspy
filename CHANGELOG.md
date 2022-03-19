@@ -8,6 +8,7 @@
 * #13 do not change existing timestamp fixed
 * cloning an order creates a new timestamp instead of the original one
 * keyword arguments passed to `modify` method to update order attributes and then modify the broker order 
+* peg order attributes carried to child orders
 
 ## 0.3.0
 

@@ -61,24 +61,6 @@ class MultiUser:
     def count(self) -> int:
         return len(self.users)
 
-    def _call(self, method, **kwargs):
-        """
-        Call the given method on all the users
-        """
-        pass
-
-    def order_place(self, order: Order, **kwargs):
-        """
-        Place an order
-        """
-        self._orders[order.id] = []
-        for user in self.users:
-            order2 = order.clone()
-            order2.quantity = int(user.scale * order.quantity)
-            order2.parent_id = order2.pseudo_id = order.id
-            self._orders[order.id].append(order2)
-            order2.execute(user.broker, **kwargs)
-
 
 class MultiOrder(Order):
     _orders: List[UserOrder] = []
