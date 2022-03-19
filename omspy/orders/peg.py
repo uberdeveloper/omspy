@@ -1,6 +1,7 @@
 from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
 from omspy.base import Broker
 from omspy.order import Order, CompoundOrder
+from copy import deepcopy
 import pendulum
 
 
@@ -8,16 +9,22 @@ class BasicPeg(CompoundOrder):
     symbol: str
     side: str
     quantity: int
-    timezone: str = "UTC"
+    timezone:str = 'UTC'
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
+        pop_attribs = ['symbol', 'side', 'quantity',
+                'timezone', 'order_type', 'connection']
+        for attrib in pop_attribs:
+            if attrib in data:
+                data.pop(attrib)
         order = Order(
             symbol=self.symbol,
             quantity=self.quantity,
             side=self.side,
-            order_type="LIMIT",
             timezone=self.timezone,
+            order_type="LIMIT",
+            **data
         )
         self.add(order)
         self.ltp[self.symbol] = 0
