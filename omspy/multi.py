@@ -86,6 +86,7 @@ class MultiOrder(Order):
     def __init__(self, **data) -> None:
         super().__init__(**data)
         self.pseudo_id = uuid.uuid4().hex
+        self.is_multi = True
 
     @property
     def orders(self) -> List[UserOrder]:
