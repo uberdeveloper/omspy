@@ -31,17 +31,13 @@ def test_basic_position_zero_quantity():
     assert position.average_buy_value == 131.5
     assert position.average_sell_value == 0
 
+
 def test_order_book():
-    bids=[
-            Level(price=120,quantity=4),
-            Level(price=121,quantity=20,orders=2)
-            ]
-    asks = [
-            Level(price=119,quantity=7),
-            Level(price=118,quantity=28),
-            ]
+    bids = [Level(price=120, quantity=4), Level(price=121, quantity=20, orders=2)]
+    asks = [Level(price=119, quantity=7), Level(price=118, quantity=28)]
     orderbook = OrderBook(bid=bids, ask=asks)
     assert orderbook.bid[0].quantity == 4
     assert orderbook.bid[0].orders is None
     assert orderbook.bid[-1].orders == 2
     assert orderbook.ask[1].quantity == 28
+    assert orderbook.ask[-1].value == 118 * 28

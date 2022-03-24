@@ -4,6 +4,7 @@ This module contains the list of basic models
 from pydantic import BaseModel
 from typing import Optional, List
 
+
 class QuantityMatch(BaseModel):
     buy: int = 0
     sell: int = 0
@@ -40,13 +41,17 @@ class BasicPosition(BaseModel):
     def average_sell_value(self) -> float:
         return self.sell_value / self.sell_quantity if self.sell_quantity > 0 else 0.0
 
+
 class Level(BaseModel):
-    print('into level')
     price: float
     quantity: int
-    orders:Optional[int]=None
+    orders: Optional[int] = None
+
+    @property
+    def value(self):
+        return self.price * self.quantity
+
 
 class OrderBook(BaseModel):
     bid: List[Level]
     ask: List[Level]
-
