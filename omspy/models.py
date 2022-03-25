@@ -42,7 +42,7 @@ class BasicPosition(BaseModel):
         return self.sell_value / self.sell_quantity if self.sell_quantity > 0 else 0.0
 
 
-class Level(BaseModel):
+class Quote(BaseModel):
     price: float
     quantity: int
     orders: Optional[int] = None
@@ -53,5 +53,5 @@ class Level(BaseModel):
 
 
 class OrderBook(BaseModel):
-    bid: List[Level]
-    ask: List[Level]
+    bid: List[Quote]
+    ask: List[Quote]

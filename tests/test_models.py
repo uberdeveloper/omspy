@@ -33,8 +33,8 @@ def test_basic_position_zero_quantity():
 
 
 def test_order_book():
-    bids = [Level(price=120, quantity=4), Level(price=121, quantity=20, orders=2)]
-    asks = [Level(price=119, quantity=7), Level(price=118, quantity=28)]
+    bids = [Quote(price=120, quantity=4), Quote(price=121, quantity=20, orders=2)]
+    asks = [Quote(price=119, quantity=7), Quote(price=118, quantity=28)]
     orderbook = OrderBook(bid=bids, ask=asks)
     assert orderbook.bid[0].quantity == 4
     assert orderbook.bid[0].orders is None
