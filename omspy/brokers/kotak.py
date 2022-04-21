@@ -1,6 +1,15 @@
 from omspy.base import Broker,pre,post
 from typing import Optional,List,Dict
 from ks_api_client import ks_api
+import pendulum
+
+def get_url(segment:Optional[str]='cash')->str:
+    dt = pendulum.now(tz='Asia/Kolkata')
+    date_string = dt.strftime('%d_%m_%Y')
+    dct = {'cash': 'Cash', 'fno': 'FNO'}
+    seg = dct.get(segment, 'Cash')
+    url = f'https://preferred.kotaksecurities.com/security/production/TradeApiInstruments_{seg}_{date_string}.txt'
+    return url
 
 
 class Kotak(Broker):
