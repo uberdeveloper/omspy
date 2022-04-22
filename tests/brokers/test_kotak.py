@@ -65,6 +65,7 @@ def test_get_name_for_cash_symbol(test_input, expected):
     "test_input, expected",
     [
         (("nifty", "2022-05-20"), "NIFTY20MAY22FUT"),
+        (("nifty", "2022-05-20", '-', '-'), "NIFTY20MAY22FUT"),
         (("nifty", pendulum.date(2021, 7, 13), "ce"), "NIFTY13JUL21FUT"),
         (("nifty", pendulum.date(2021, 7, 13), "ce", 14500), "NIFTY13JUL2114500CALL"),
         (("nifty", pendulum.date(2021, 7, 13), "pe", 14500), "NIFTY13JUL2114500PUT"),
@@ -73,3 +74,11 @@ def test_get_name_for_cash_symbol(test_input, expected):
 )
 def test_get_name_for_fno_symbol(test_input, expected):
     assert get_name_for_fno_symbol(*test_input) == expected
+
+def test_download_file():
+    url = get_url()
+    test_df = pd.read_csv('tests/data/kotak_cash.csv')
+    with patch('pandas.read_csv') as get:
+        get.return_value = test_df
+        df = download_file(url)
+        assert len(df) == 7321

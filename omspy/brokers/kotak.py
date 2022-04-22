@@ -89,8 +89,8 @@ def download_file(url: str) -> pd.DataFrame:
     and return a dataframe.
     returns an empty Dataframe in case of an error
     """
-    df = pd.read_csv(url)
-    pass
+    df = pd.read_csv(url, delimiter='|', parse_dates=['expiry'])
+    return df.rename(columns = lambda x:x.lower())
 
 
 class Kotak(Broker):
