@@ -81,4 +81,4 @@ def test_download_file():
     with patch('pandas.read_csv') as get:
         get.return_value = test_df
         df = download_file(url)
-        assert len(df) == 7321
+        assert len(df) == 7314

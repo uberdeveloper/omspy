@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Union
 from ks_api_client import ks_api
 import pendulum
 import pandas as pd
+import logging
 
 
 def get_url(segment: Optional[str] = "cash") -> str:
@@ -89,8 +90,24 @@ def download_file(url: str) -> pd.DataFrame:
     and return a dataframe.
     returns an empty Dataframe in case of an error
     """
-    df = pd.read_csv(url, delimiter='|', parse_dates=['expiry'])
-    return df.rename(columns = lambda x:x.lower())
+    try:
+        df = pd.read_csv(url, delimiter='|', parse_dates=['expiry'])
+        df = df.rename(columns = lambda x:x.lower())
+        return df.drop_duplicates(subset=['instrumenttoken'])
+    except Exception as e:
+        logging.error(e)
+        return pd.DataFrame()
+
+def add_name(segment:Optional[str]="cash")->pd.DataFrame:
+    """
+    add name to the given dataframe and return it
+    segment
+        segment to add name to either cash or fno
+    Note
+    -----
+    1) The extra column added is inst_name 
+    """
+    pass
 
 
 class Kotak(Broker):
