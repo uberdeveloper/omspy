@@ -9,12 +9,18 @@ class BasicPeg(CompoundOrder):
     symbol: str
     side: str
     quantity: int
-    timezone:str = 'UTC'
+    timezone: str = "UTC"
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
-        pop_attribs = ['symbol', 'side', 'quantity',
-                'timezone', 'order_type', 'connection']
+        pop_attribs = [
+            "symbol",
+            "side",
+            "quantity",
+            "timezone",
+            "order_type",
+            "connection",
+        ]
         for attrib in pop_attribs:
             if attrib in data:
                 data.pop(attrib)

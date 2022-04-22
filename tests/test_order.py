@@ -158,13 +158,13 @@ def test_order_update_simple():
     assert order.average_price == 912
     assert order.exchange_order_id == "abcd"
 
+
 def test_order_update_timestamp():
     known = pendulum.datetime(2021, 1, 1, 12, tz="Europe/Paris")
     with pendulum.test(known):
-        order = Order(symbol="aapl", side="buy", quantity=10,
-                timezone='Europe/Paris')
+        order = Order(symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris")
     assert order.timestamp == known
-    known= known.add(minutes=5)
+    known = known.add(minutes=5)
     with pendulum.test(known):
         order.update(
             {"filled_quantity": 7, "average_price": 912, "exchange_order_id": "abcd"}
@@ -183,7 +183,6 @@ def test_order_update_non_attribute():
     assert hasattr(order, "message") is False
 
 
-
 def test_order_update_do_not_update_when_complete():
     order = Order(symbol="aapl", side="buy", quantity=10)
     order.filled_quantity = 10
@@ -197,6 +196,7 @@ def test_order_update_do_not_update_when_complete():
     order.status = "COMPLETE"
     assert order.average_price == 0
     assert order.filled_quantity == 7
+
 
 def test_compound_order_id_custom():
     order = CompoundOrder(broker=Paper(), id="some_id")
@@ -913,9 +913,9 @@ def test_new_db_with_values():
     for row in con.query("select * from orders"):
         assert row["can_peg"] == 1
         assert row["JSON"] == json.dumps({"a": 10, "b": [4, 5, 6]})
-        assert row['tag'] == 'this is a tag'
-        assert row['is_multi'] == 0
-        assert row['last_updated_at'] is None
+        assert row["tag"] == "this is a tag"
+        assert row["is_multi"] == 0
+        assert row["last_updated_at"] is None
         retrieved_order = Order(**row)
         assert retrieved_order.can_peg is True
         assert retrieved_order.JSON == {"a": 10, "b": [4, 5, 6]}
@@ -946,6 +946,7 @@ def test_new_db_all_values():
         if k not in exclude_keys:
             assert expected[k] == v
 
+
 def test_order_modify_quantity():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
@@ -962,6 +963,7 @@ def test_order_modify_quantity():
         assert order.quantity == 20
         assert order.price == 630
 
+
 def test_order_modify_by_attribute():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = Order(
@@ -973,11 +975,10 @@ def test_order_modify_by_attribute():
             order_id="abcdef",
             exchange="NSE",
         )
-        order.quantity=100
-        order.price=600
+        order.quantity = 100
+        order.price = 600
         order.modify(broker=broker)
         broker.order_modify.assert_called_once()
         kwargs = broker.order_modify.call_args_list[0].kwargs
-        assert kwargs['quantity'] == 100
-        assert kwargs['price'] == 600
-
+        assert kwargs["quantity"] == 100
+        assert kwargs["price"] == 600

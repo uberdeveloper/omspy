@@ -342,11 +342,7 @@ class MasterTrust(Broker):
         """
         Place an order
         """
-        order_args = dict(
-                product='MIS',
-                validity='DAY',
-                exchange=self.exchange
-                )
+        order_args = dict(product="MIS", validity="DAY", exchange=self.exchange)
         url = f"{self.base_url}/api/v1/orders"
         symbol = kwargs.pop("symbol")
         side = kwargs.pop("side")
@@ -355,8 +351,8 @@ class MasterTrust(Broker):
         kwargs["instrument_token"] = token
         kwargs["order_side"] = side
         kwargs["client_id"] = self.client_id
-        kwargs["user_order_id"] = random.randint(0,1e9)
-        order_args.update({'exchange': exchange})
+        kwargs["user_order_id"] = random.randint(0, 1e9)
+        order_args.update({"exchange": exchange})
         order_args.update(kwargs)
         payload = order_args.copy()
         resp = requests.post(url, headers=self.headers, params=payload)

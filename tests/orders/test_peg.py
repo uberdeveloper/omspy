@@ -27,13 +27,20 @@ def test_peg_market_connection():
     connection = create_db()
     known = pendulum.datetime(2022, 1, 1, 10)
     with pendulum.test(known):
-        peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=Paper(),connection=connection)
+        peg = PegMarket(
+            symbol="aapl",
+            side="buy",
+            quantity=100,
+            broker=Paper(),
+            connection=connection,
+        )
         assert peg.num_pegs == 0
         assert peg._max_pegs == 6
         assert peg._expire_at == pendulum.datetime(2022, 1, 1, 10, minute=1)
         assert peg.next_peg == pendulum.datetime(2022, 1, 1, 10, second=10)
         assert peg.connection == connection
         assert peg.orders[0].connection == connection
+
 
 def test_peg_market_change_defaults():
     known = pendulum.datetime(2022, 1, 1, 10, 5, 45, tz="Asia/Kolkata")
@@ -46,9 +53,9 @@ def test_peg_market_change_defaults():
             duration=150,
             peg_every=20,
             timezone="Asia/Kolkata",
-            exchange='nse',
-            client_id='ab1111',
-            order_type='MARKET'
+            exchange="nse",
+            client_id="ab1111",
+            order_type="MARKET",
         )
         assert peg.num_pegs == 0
         assert peg._max_pegs == 7
@@ -58,9 +65,10 @@ def test_peg_market_change_defaults():
         assert peg.next_peg == pendulum.datetime(
             2022, 1, 1, 10, minute=6, second=5, tz="Asia/Kolkata"
         )
-        assert peg.orders[0].exchange == 'nse'
-        assert peg.orders[0].client_id == 'ab1111'
-        assert peg.orders[0].order_type == 'LIMIT'
+        assert peg.orders[0].exchange == "nse"
+        assert peg.orders[0].client_id == "ab1111"
+        assert peg.orders[0].order_type == "LIMIT"
+
 
 def test_peg_market_update_ltp():
     peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=Paper())

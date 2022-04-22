@@ -215,12 +215,14 @@ def test_multi_order_pseudo_id(users_simple, simple_order):
     for o in order.orders:
         assert order.pseudo_id == o.order.pseudo_id
 
+
 def test_multi_order_is_multi_check(users_simple, simple_order):
     order = simple_order
     multi = MultiUser(users=users_simple)
     order.create(users=multi)
     for o in order.orders:
         assert o.order.is_multi is True
+
 
 def test_multi_order_update(users_simple, simple_order):
     order = simple_order

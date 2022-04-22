@@ -7,7 +7,7 @@ from collections import defaultdict
 
 
 def create_basic_positions_from_orders_dict(
-    orders: List[Dict]
+    orders: List[Dict],
 ) -> Dict[str, BasicPosition]:
     """
     Create a dictionary of positions from list of orders received from broker
