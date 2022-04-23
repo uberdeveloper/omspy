@@ -85,6 +85,7 @@ def test_download_file():
         df = download_file(url)
         assert len(df) == 7314
 
+@pytest.mark.skipif(os.environ.get('SLOW')=='slow', reason="slow test")
 def test_add_name_cash():
     df = pd.read_csv('tests/data/kotak_cash.csv')
     df2 = pd.read_csv('tests/data/kotak_cash_named.csv')
@@ -122,4 +123,15 @@ def test_create_instrument_master():
         master = create_instrument_master()
         assert master == expected
 
+
+def test_authenticate():
+    broker = Kotak("token", "userid", "password", "consumer_key", "access_code", instrument_master = {'a':100,'b':200})
+    assert hasattr(broker, 'client') is False
+    with patch("ks_api_client.ks_api.KSTradeApi") as mock_broker:
+        broker.authenticate()
+        mock_broker.assert_called_once()
+        assert hasattr(broker, 'client') is True
+        mock_broker.return_value.login.assert_called_once()
+        mock_broker.return_value.session_2fa.assert_called_once()
+    
 

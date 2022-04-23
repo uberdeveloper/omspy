@@ -125,6 +125,7 @@ def create_instrument_master()->Dict[str,int]:
     ----
     Takes no arguments and returns the entire instrument_master as a dictionary with key as name and values as instrument token
     """
+    #TODO: Handle error in case of no instruments
     cash = download_file(get_url(segment='cash'))
     fno = download_file(get_url(segment='fno'))
     cash = add_name(cash, segment="cash")
@@ -145,16 +146,36 @@ class Kotak(Broker):
         password: str,
         consumer_key: str,
         access_code: Optional[str] = None,
+        instrument_master: Optional[str] = None,
         ip: str = "127.0.0.1",
         app_id: str = "default",
     ):
-        pass
+        self._access_token = access_token
+        self._userid = userid
+        self._password = password
+        self._consumer_key = consumer_key
+        self._access_code = access_code
+        self._ip = ip
+        self._app_id = app_id
+        if instrument_master is None:
+            self.master = create_instrument_master()
+        else:
+            self.master = instrument_master 
+        self._rev_master = {v:k for k,v in self.master.items()}
 
     def get_instrument_token(self, **kwargs) -> int:
         pass
 
     def authenticate(self) -> None:
-        pass
+        try:
+            client = ks_api.KSTradeApi(access_token=self._access_token, userid=self._userid, consumer_key=self._consumer_key,
+                    ip=self._ip, app_id=self._app_id)
+            client.login(password=self._password)
+            client.session_2fa(access_code=self._access_code)
+            self.client = client
+        except Exception as e:
+            logging.error(e)
+            self.client = None
 
     def orders(self) -> List[Dict]:
         pass
