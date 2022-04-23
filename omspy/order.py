@@ -65,7 +65,6 @@ def create_db(dbname: str = ":memory:") -> Union[Database, None]:
         return None
 
 
-
 class Order(BaseModel):
     symbol: str
     side: str

@@ -8,9 +8,9 @@ import os
 
 @pytest.fixture
 def mock_kotak():
-    broker = Kotak("token", "userid", "password", "consumer_key", "access_code")
-    with patch("ks_api_client.ks_api.KSTradeApi") as mock:
-        broker.ksapi = mock
+    broker = Kotak("token", "userid", "password", "consumer_key", "access_code", instrument_master={'a':100, 'b':200})
+    with patch("ks_api_client.ks_api.KSTradeApi") as mock_broker:
+        broker.client = mock_broker
         return broker
 
 
@@ -129,9 +129,14 @@ def test_authenticate():
     assert hasattr(broker, 'client') is False
     with patch("ks_api_client.ks_api.KSTradeApi") as mock_broker:
         broker.authenticate()
-        mock_broker.assert_called_once()
         assert hasattr(broker, 'client') is True
+        mock_broker.assert_called_once()
         mock_broker.return_value.login.assert_called_once()
         mock_broker.return_value.session_2fa.assert_called_once()
+        assert broker.master == {'a':100, 'b':200}
+        assert broker._rev_master == {100:'a', 200:'b'}
     
+def test_get_instrument_token(mock_kotak):
+    assert mock_kotak.get_instrument_token('a') == 100
+    assert mock_kotak.get_instrument_token('aa') is None
 

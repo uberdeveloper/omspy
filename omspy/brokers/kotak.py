@@ -163,8 +163,8 @@ class Kotak(Broker):
             self.master = instrument_master 
         self._rev_master = {v:k for k,v in self.master.items()}
 
-    def get_instrument_token(self, **kwargs) -> int:
-        pass
+    def get_instrument_token(self, instrument:str) -> Union[int, None]:
+        return self.master.get(instrument)
 
     def authenticate(self) -> None:
         try:
