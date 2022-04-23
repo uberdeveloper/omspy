@@ -8,7 +8,7 @@ import os
 
 @pytest.fixture
 def mock_kotak():
-    broker = Kotak("token", "userid", "password", "consumer_key", "access_code", instrument_master={'a':100, 'b':200})
+    broker = Kotak("token", "userid", "password", "consumer_key", "access_code", instrument_master={'a':100, 'b':200, 'NSE:SYM':1000})
     with patch("ks_api_client.ks_api.KSTradeApi") as mock_broker:
         broker.client = mock_broker
         return broker
@@ -139,4 +139,11 @@ def test_authenticate():
 def test_get_instrument_token(mock_kotak):
     assert mock_kotak.get_instrument_token('a') == 100
     assert mock_kotak.get_instrument_token('aa') is None
+
+def test_order_place(mock_kotak):
+    broker = mock_kotak
+    broker.order_place(symbol='SYM', quantity=10, side='buy',
+            exchange='NSE')
+    broker.client.place_order.assert_called_once()
+    #TODO: Check kwargs passed
 

@@ -162,6 +162,7 @@ class Kotak(Broker):
         else:
             self.master = instrument_master 
         self._rev_master = {v:k for k,v in self.master.items()}
+        super(Kotak, self).__init__()
 
     def get_instrument_token(self, instrument:str) -> Union[int, None]:
         return self.master.get(instrument)
@@ -186,9 +187,32 @@ class Kotak(Broker):
     def trades(self) -> List[Dict]:
         pass
 
-    def order_place(self, **kwargs) -> Dict:
+    def _get_order_type(self)->Dict:
         pass
 
+    @post
+    def order_place(self, symbol:str, side:str, quantity:int=1, **kwargs) -> Dict:
+        order_args=dict(
+                variety='REGULAR', validity='GFD', order_type='MIS',
+                product='NORMAL', exchange='NSE'
+        )
+        if kwargs.get('exchange'):
+            exchange = kwargs.get('exchange')
+        else:
+            exchange = order_args.get('exchange')
+        token = self.get_instrument_token(f"{exchange}:{symbol}")
+        if not(token):
+            logging.warning('No token for this symbol,check your symbol')
+            return
+        order_args.update(dict(
+            side=side.upper(),
+            instrument_token=token,
+            quantity=quantity
+            ))
+        order_args.update(kwargs)
+        response = self.client.place_order(**order_args)
+        return response
+        
     def order_cancel(self, **kwargs) -> Dict:
         pass
 
