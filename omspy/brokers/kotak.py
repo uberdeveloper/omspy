@@ -118,6 +118,20 @@ def add_name(data, segment:Optional[str]="cash")->pd.DataFrame:
     else:
         return data
 
+def create_instrument_master()->Dict[str,int]:
+    """
+    Create the instrument master
+    Note
+    ----
+    Takes no arguments and returns the entire instrument_master as a dictionary with key as name and values as instrument token
+    """
+    cash = download_file(get_url(segment='cash'))
+    fno = download_file(get_url(segment='fno'))
+    cash = add_name(cash, segment="cash")
+    fno = add_name(fno, segment="fno")
+    df = pd.concat([cash, fno]).drop_duplicates(subset=['instrumenttoken'])
+    return {k:v for k,v in zip(df.inst_name.values, df.instrumenttoken.values)}
+
 
 class Kotak(Broker):
     """

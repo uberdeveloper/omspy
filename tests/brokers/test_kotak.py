@@ -2,6 +2,8 @@ from omspy.brokers.kotak import *
 from unittest.mock import patch, call
 import pytest
 import pendulum
+import json
+import os
 
 
 @pytest.fixture
@@ -91,7 +93,7 @@ def test_add_name_cash():
     assert 'inst_name' in df
     pd.testing.assert_frame_equal(df, df2)
 
-@pytest.mark.skip(reason="Test skipped since slow")
+@pytest.mark.skipif(os.environ.get('SLOW')=='slow', reason="slow test")
 def test_add_name_fno():
     df = pd.read_csv('tests/data/kotak_fno.csv')
     df2 = pd.read_csv('tests/data/kotak_fno_named.csv')
@@ -108,3 +110,16 @@ def test_add_name_random():
     df2 = add_name(df, 'fix')
     assert len(df.columns) == 15
     pd.testing.assert_frame_equal(df, df2)
+
+@pytest.mark.skipif(os.environ.get('SLOW')=='slow', reason="slow test")
+def test_create_instrument_master():
+    df = pd.read_csv('tests/data/kotak_cash.csv')
+    df2 = pd.read_csv('tests/data/kotak_fno.csv')
+    with open('tests/data/kotak_master.json') as f:
+        expected = json.load(f)
+    with patch('pandas.read_csv') as get:
+        get.side_effect = [df, df2]
+        master = create_instrument_master()
+        assert master == expected
+
+
