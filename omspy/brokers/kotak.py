@@ -98,16 +98,25 @@ def download_file(url: str) -> pd.DataFrame:
         logging.error(e)
         return pd.DataFrame()
 
-def add_name(segment:Optional[str]="cash")->pd.DataFrame:
+def add_name(data, segment:Optional[str]="cash")->pd.DataFrame:
     """
     add name to the given dataframe and return it
+    data
+        dataframe with the instrument data
     segment
         segment to add name to either cash or fno
     Note
     -----
-    1) The extra column added is inst_name 
+    1) The extra column added is inst_name
     """
-    pass
+    if segment.lower() == "cash":
+        data['inst_name'] = [f"{k}:{get_name_for_cash_symbol(x,y)}" for x,y,k in zip (data.instrumentname.values, data.instrumenttype.values,data.exchange.values)]
+        return data
+    elif segment.lower() == "fno":
+        data['inst_name'] = [f"{k}:{get_name_for_fno_symbol(a,b,c,d)}" for a,b,c,d,k in zip(data.instrumentname.values, data.expiry.values, data.optiontype.values,data.strike.values,data.exchange.values)]
+        return data
+    else:
+        return data
 
 
 class Kotak(Broker):

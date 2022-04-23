@@ -82,3 +82,29 @@ def test_download_file():
         get.return_value = test_df
         df = download_file(url)
         assert len(df) == 7314
+
+def test_add_name_cash():
+    df = pd.read_csv('tests/data/kotak_cash.csv')
+    df2 = pd.read_csv('tests/data/kotak_cash_named.csv')
+    df = add_name(df)
+    assert len(df.columns) == 16
+    assert 'inst_name' in df
+    pd.testing.assert_frame_equal(df, df2)
+
+@pytest.mark.skip(reason="Test skipped since slow")
+def test_add_name_fno():
+    df = pd.read_csv('tests/data/kotak_fno.csv')
+    df2 = pd.read_csv('tests/data/kotak_fno_named.csv')
+    df = add_name(df, "fno")
+    assert len(df.columns) == 16
+    assert 'inst_name' in df
+    assert len(df) == len(df2)
+    m1 = df.head(5)
+    m2 = df2.head(5)
+    pd.testing.assert_frame_equal(df, df2)
+
+def test_add_name_random():
+    df = pd.read_csv('tests/data/kotak_cash.csv')
+    df2 = add_name(df, 'fix')
+    assert len(df.columns) == 15
+    pd.testing.assert_frame_equal(df, df2)
