@@ -191,3 +191,19 @@ def test_positions(mock_kotak):
         assert 'quantity' in positions[0]
         assert 'quantity' in positions[1]
         assert 'totalStock' not in positions[0]
+
+def test_orders(mock_kotak):
+    broker = mock_kotak
+    broker.master = {'NSE:BHEL':878, 'NSE:NIFTY28APR2216400PUT': 71377}
+    broker._rev_master = {v:k for k,v in broker.master.items()}
+    with open('tests/data/kotak_orders.json') as f:
+        expected = json.load(f)
+        broker.client.order_report.side_effect = [expected]
+        orders = broker.orders
+        broker.client.order_report.assert_called_once()
+        symbols = ['NSE:BHEL']*4+['NSE:NIFTY28APR2216400PUT']*2 +['NSE:BHEL']
+        assert [x['symbol'] for x in orders] == symbols
+        assert len(orders)  == 7
+        for column in ['side', 'filled_quantity', 'quantity',
+                'exchange_timestamp', 'order_id', 'exchange_order_id']:
+            assert column in orders[0]

@@ -1,2 +1,12 @@
 order_place:
   side: transaction_type
+positions:
+  totalStock: quantity
+orders:
+  transactionType: side
+  filledQuantity: filled_quantity
+  orderQuantity: quantity 
+  orderId: order_id
+  orderTimestamp: exchange_timestamp
+  exchangeOrderId: exchange_order_id
+

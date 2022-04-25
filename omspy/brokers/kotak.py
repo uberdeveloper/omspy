@@ -191,8 +191,20 @@ class Kotak(Broker):
             logging.error(e)
             self.client = None
 
+    @property
+    @post
     def orders(self) -> List[Dict]:
-        pass
+        """
+        Return the orders for the day
+        """
+        order_report = self.client.order_report()
+        if 'success' in order_report:
+            for order in order_report['success']:
+                order['symbol'] = self._rev_master.get(order['instrumentToken'], order['instrumentName'])
+            return order_report['success']
+        else:
+            return order_report
+
 
     @property
     @post
@@ -200,13 +212,13 @@ class Kotak(Broker):
         """
         Return the positions only for the day
         """
-        positions = self.client.positions(position_type="TODAYS")
-        if 'Success' in positions:
-            for position in positions['Success']:
+        positions_report = self.client.positions(position_type="TODAYS")
+        if 'Success' in positions_report:
+            for position in positions_report['Success']:
                 position['symbol'] = self._rev_master.get(position['instrumentToken'], position['instrumentName'])
-            return positions['Success']
+            return positions_report['Success']
         else:
-            return {}
+            return positions_report
         
 
     def trades(self) -> List[Dict]:
