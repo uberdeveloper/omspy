@@ -8,7 +8,14 @@ import os
 
 @pytest.fixture
 def mock_kotak():
-    broker = Kotak("token", "userid", "password", "consumer_key", "access_code", instrument_master={'a':100, 'b':200, 'NSE:SYM':1000})
+    broker = Kotak(
+        "token",
+        "userid",
+        "password",
+        "consumer_key",
+        "access_code",
+        instrument_master={"a": 100, "b": 200, "NSE:SYM": 1000},
+    )
     with patch("ks_api_client.ks_api.KSTradeApi") as mock_broker:
         broker.client = mock_broker
         return broker
@@ -64,10 +71,19 @@ def test_get_name_for_cash_symbol(test_input, expected):
 
 
 @pytest.mark.parametrize(
+    "test_input, expected, expected_type",
+    [(17500.0, 17500, int), (22.96, 22.96, float), (18.396, 18.4, float)],
+)
+def test_convert_strike(test_input, expected, expected_type):
+    assert convert_strike(test_input) == expected
+    assert type(convert_strike(test_input)) == expected_type
+
+
+@pytest.mark.parametrize(
     "test_input, expected",
     [
         (("nifty", "2022-05-20"), "NIFTY20MAY22FUT"),
-        (("nifty", "2022-05-20", '-', '-'), "NIFTY20MAY22FUT"),
+        (("nifty", "2022-05-20", "-", "-"), "NIFTY20MAY22FUT"),
         (("nifty", pendulum.date(2021, 7, 13), "ce"), "NIFTY13JUL21FUT"),
         (("nifty", pendulum.date(2021, 7, 13), "ce", 14500), "NIFTY13JUL2114500CALL"),
         (("nifty", pendulum.date(2021, 7, 13), "pe", 14500), "NIFTY13JUL2114500PUT"),
@@ -77,73 +93,86 @@ def test_get_name_for_cash_symbol(test_input, expected):
 def test_get_name_for_fno_symbol(test_input, expected):
     assert get_name_for_fno_symbol(*test_input) == expected
 
+
 def test_download_file():
     url = get_url()
-    test_df = pd.read_csv('tests/data/kotak_cash.csv')
-    with patch('pandas.read_csv') as get:
+    test_df = pd.read_csv("tests/data/kotak_cash.csv")
+    with patch("pandas.read_csv") as get:
         get.return_value = test_df
         df = download_file(url)
         assert len(df) == 7314
 
-@pytest.mark.skipif(os.environ.get('SLOW')=='slow', reason="slow test")
+
+@pytest.mark.skipif(os.environ.get("SLOW") == "slow", reason="slow test")
 def test_add_name_cash():
-    df = pd.read_csv('tests/data/kotak_cash.csv')
-    df2 = pd.read_csv('tests/data/kotak_cash_named.csv')
+    df = pd.read_csv("tests/data/kotak_cash.csv")
+    df2 = pd.read_csv("tests/data/kotak_cash_named.csv")
     df = add_name(df)
     assert len(df.columns) == 16
-    assert 'inst_name' in df
+    assert "inst_name" in df
     pd.testing.assert_frame_equal(df, df2)
 
-@pytest.mark.skipif(os.environ.get('SLOW')=='slow', reason="slow test")
+
+@pytest.mark.skipif(os.environ.get("SLOW") == "slow", reason="slow test")
 def test_add_name_fno():
-    df = pd.read_csv('tests/data/kotak_fno.csv')
-    df2 = pd.read_csv('tests/data/kotak_fno_named.csv')
+    df = pd.read_csv("tests/data/kotak_fno.csv")
+    df2 = pd.read_csv("tests/data/kotak_fno_named.csv")
     df = add_name(df, "fno")
     assert len(df.columns) == 16
-    assert 'inst_name' in df
+    assert "inst_name" in df
     assert len(df) == len(df2)
     m1 = df.head(5)
     m2 = df2.head(5)
     pd.testing.assert_frame_equal(df, df2)
 
+
 def test_add_name_random():
-    df = pd.read_csv('tests/data/kotak_cash.csv')
-    df2 = add_name(df, 'fix')
+    df = pd.read_csv("tests/data/kotak_cash.csv")
+    df2 = add_name(df, "fix")
     assert len(df.columns) == 15
     pd.testing.assert_frame_equal(df, df2)
 
-@pytest.mark.skipif(os.environ.get('SLOW')=='slow', reason="slow test")
+
+@pytest.mark.skipif(os.environ.get("SLOW") == "slow", reason="slow test")
 def test_create_instrument_master():
-    df = pd.read_csv('tests/data/kotak_cash.csv')
-    df2 = pd.read_csv('tests/data/kotak_fno.csv')
-    with open('tests/data/kotak_master.json') as f:
+    df = pd.read_csv("tests/data/kotak_cash.csv")
+    df2 = pd.read_csv("tests/data/kotak_fno.csv")
+    with open("tests/data/kotak_master.json") as f:
         expected = json.load(f)
-    with patch('pandas.read_csv') as get:
+    with patch("pandas.read_csv") as get:
         get.side_effect = [df, df2]
         master = create_instrument_master()
         assert master == expected
 
 
 def test_authenticate():
-    broker = Kotak("token", "userid", "password", "consumer_key", "access_code", instrument_master = {'a':100,'b':200})
-    assert hasattr(broker, 'client') is False
+    broker = Kotak(
+        "token",
+        "userid",
+        "password",
+        "consumer_key",
+        "access_code",
+        instrument_master={"a": 100, "b": 200},
+    )
+    assert hasattr(broker, "client") is False
     with patch("ks_api_client.ks_api.KSTradeApi") as mock_broker:
         broker.authenticate()
-        assert hasattr(broker, 'client') is True
+        assert hasattr(broker, "client") is True
         mock_broker.assert_called_once()
         mock_broker.return_value.login.assert_called_once()
         mock_broker.return_value.session_2fa.assert_called_once()
-        assert broker.master == {'a':100, 'b':200}
-        assert broker._rev_master == {100:'a', 200:'b'}
-    
+        assert broker.master == {"a": 100, "b": 200}
+        assert broker._rev_master == {100: "a", 200: "b"}
+
+
 def test_get_instrument_token(mock_kotak):
-    assert mock_kotak.get_instrument_token('a') == 100
-    assert mock_kotak.get_instrument_token('aa') is None
+    assert mock_kotak.get_instrument_token("a") == 100
+    assert mock_kotak.get_instrument_token("aa") is None
+
 
 def test_order_place(mock_kotak):
     broker = mock_kotak
-    broker.order_place(symbol='SYM', quantity=10, side='buy',
-            exchange='NSE')
+    broker.order_place(symbol="SYM", quantity=10, side="buy", exchange="NSE")
+    print(broker.client.place_order.call_args_list)
     broker.client.place_order.assert_called_once()
-    #TODO: Check kwargs passed
-
+    # TODO: Check kwargs passed
