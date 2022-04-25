@@ -113,7 +113,7 @@ def add_name(data, segment:Optional[str]="cash")->pd.DataFrame:
         data['inst_name'] = [f"{k}:{get_name_for_cash_symbol(x,y)}" for x,y,k in zip (data.instrumentname.values, data.instrumenttype.values,data.exchange.values)]
         return data
     elif segment.lower() == "fno":
-        data['inst_name'] = [f"{k}:{get_name_for_fno_symbol(a,b,c,d)}" for a,b,c,d,k in zip(data.instrumentname.values, data.expiry.values, data.optiontype.values,data.strike.values,data.exchange.values)]
+        data['inst_name'] = [f"{k}:{get_name_for_fno_symbol(a,str(b),c,d)}" for a,b,c,d,k in zip(data.instrumentname.values, data.expiry.values, data.optiontype.values,data.strike.values,data.exchange.values)]
         return data
     else:
         return data
@@ -131,7 +131,7 @@ def create_instrument_master()->Dict[str,int]:
     cash = add_name(cash, segment="cash")
     fno = add_name(fno, segment="fno")
     df = pd.concat([cash, fno]).drop_duplicates(subset=['instrumenttoken'])
-    return {k:v for k,v in zip(df.inst_name.values, df.instrumenttoken.values)}
+    return {k:int(v) for k,v in zip(df.inst_name.values, df.instrumenttoken.values)}
 
 
 class Kotak(Broker):
@@ -190,24 +190,18 @@ class Kotak(Broker):
     def _get_order_type(self)->Dict:
         pass
 
-    @post
-    def order_place(self, symbol:str, side:str, quantity:int=1, **kwargs) -> Dict:
+    def order_place(self, symbol:str, side:str, exchange:str='NSE', quantity:int=1, **kwargs) -> Dict:
         order_args=dict(
-                variety='REGULAR', validity='GFD', order_type='MIS',
-                product='NORMAL', exchange='NSE'
+                variety='REGULAR', validity='GFD', order_type='MIS', price=0
         )
-        if kwargs.get('exchange'):
-            exchange = kwargs.get('exchange')
-        else:
-            exchange = order_args.get('exchange')
-        token = self.get_instrument_token(f"{exchange}:{symbol}")
+        token = self.get_instrument_token(f"{exchange}:{symbol}".upper())
         if not(token):
             logging.warning('No token for this symbol,check your symbol')
             return
         order_args.update(dict(
-            side=side.upper(),
+            transaction_type=side.upper(),
             instrument_token=token,
-            quantity=quantity
+            quantity=quantity,
             ))
         order_args.update(kwargs)
         response = self.client.place_order(**order_args)
