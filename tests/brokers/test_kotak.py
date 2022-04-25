@@ -176,3 +176,18 @@ def test_order_place(mock_kotak):
     print(broker.client.place_order.call_args_list)
     broker.client.place_order.assert_called_once()
     # TODO: Check kwargs passed
+
+def test_positions(mock_kotak):
+    broker = mock_kotak
+    broker.master = {'NSE:BHEL':878, 'NSE:NIFTY28APR2216400PUT': 71377}
+    broker._rev_master = {v:k for k,v in broker.master.items()}
+    with open('tests/data/kotak_positions.json') as f:
+        expected = json.load(f)
+        broker.client.positions.side_effect = [expected]
+        positions = broker.positions
+        broker.client.positions.assert_called_once()
+        assert len(positions) == 2
+        assert [x['symbol'] for x in positions] == ['NSE:BHEL', 'NSE:NIFTY28APR2216400PUT']
+        assert 'quantity' in positions[0]
+        assert 'quantity' in positions[1]
+        assert 'totalStock' not in positions[0]

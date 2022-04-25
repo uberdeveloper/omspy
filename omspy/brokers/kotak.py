@@ -4,6 +4,7 @@ from ks_api_client import ks_api
 import pendulum
 import pandas as pd
 import logging
+from copy import deepcopy
 
 
 def get_url(segment: Optional[str] = "cash") -> str:
@@ -83,15 +84,14 @@ def get_name_for_fno_symbol(
     else:
         return f"{instrument_name}{expiry}{strike}{option_type}".upper()
 
-
-def convert_strike(strike: Union[int, float]) -> Union[int, float]:
+def convert_strike(strike:Union[int,float])->Union[int,float]:
     """
     Convert the type of the strike to an integer if it is an integer or float to 2 points if it is a float
     Note
     ----
     This is only a type conversion
     """
-    if (strike - int(strike)) == 0:
+    if (strike-int(strike)) == 0:
         return int(strike)
     else:
         return round(strike, 2)
@@ -104,15 +104,14 @@ def download_file(url: str) -> pd.DataFrame:
     returns an empty Dataframe in case of an error
     """
     try:
-        df = pd.read_csv(url, delimiter="|", parse_dates=["expiry"])
-        df = df.rename(columns=lambda x: x.lower())
-        return df.drop_duplicates(subset=["instrumenttoken"])
+        df = pd.read_csv(url, delimiter='|', parse_dates=['expiry'])
+        df = df.rename(columns = lambda x:x.lower())
+        return df.drop_duplicates(subset=['instrumenttoken'])
     except Exception as e:
         logging.error(e)
         return pd.DataFrame()
 
-
-def add_name(data, segment: Optional[str] = "cash") -> pd.DataFrame:
+def add_name(data, segment:Optional[str]="cash")->pd.DataFrame:
     """
     add name to the given dataframe and return it
     data
@@ -124,45 +123,28 @@ def add_name(data, segment: Optional[str] = "cash") -> pd.DataFrame:
     1) The extra column added is inst_name
     """
     if segment.lower() == "cash":
-        data["inst_name"] = [
-            f"{k}:{get_name_for_cash_symbol(x,y)}"
-            for x, y, k in zip(
-                data.instrumentname.values,
-                data.instrumenttype.values,
-                data.exchange.values,
-            )
-        ]
+        data['inst_name'] = [f"{k}:{get_name_for_cash_symbol(x,y)}" for x,y,k in zip (data.instrumentname.values, data.instrumenttype.values,data.exchange.values)]
         return data
     elif segment.lower() == "fno":
-        data["inst_name"] = [
-            f"{k}:{get_name_for_fno_symbol(a,str(b),c,convert_strike(d))}"
-            for a, b, c, d, k in zip(
-                data.instrumentname.values,
-                data.expiry.values,
-                data.optiontype.values,
-                data.strike.values,
-                data.exchange.values,
-            )
-        ]
+        data['inst_name'] = [f"{k}:{get_name_for_fno_symbol(a,str(b),c,convert_strike(d))}" for a,b,c,d,k in zip(data.instrumentname.values, data.expiry.values, data.optiontype.values,data.strike.values,data.exchange.values)]
         return data
     else:
         return data
 
-
-def create_instrument_master() -> Dict[str, int]:
+def create_instrument_master()->Dict[str,int]:
     """
     Create the instrument master
     Note
     ----
     Takes no arguments and returns the entire instrument_master as a dictionary with key as name and values as instrument token
     """
-    # TODO: Handle error in case of no instruments
-    cash = download_file(get_url(segment="cash"))
-    fno = download_file(get_url(segment="fno"))
+    #TODO: Handle error in case of no instruments
+    cash = download_file(get_url(segment='cash'))
+    fno = download_file(get_url(segment='fno'))
     cash = add_name(cash, segment="cash")
     fno = add_name(fno, segment="fno")
-    df = pd.concat([cash, fno]).drop_duplicates(subset=["instrumenttoken"])
-    return {k: int(v) for k, v in zip(df.inst_name.values, df.instrumenttoken.values)}
+    df = pd.concat([cash, fno]).drop_duplicates(subset=['instrumenttoken'])
+    return {k:int(v) for k,v in zip(df.inst_name.values, df.instrumenttoken.values)}
 
 
 class Kotak(Broker):
@@ -191,22 +173,17 @@ class Kotak(Broker):
         if instrument_master is None:
             self.master = create_instrument_master()
         else:
-            self.master = instrument_master
-        self._rev_master = {v: k for k, v in self.master.items()}
+            self.master = instrument_master 
+        self._rev_master = {v:k for k,v in self.master.items()}
         super(Kotak, self).__init__()
 
-    def get_instrument_token(self, instrument: str) -> Union[int, None]:
+    def get_instrument_token(self, instrument:str) -> Union[int, None]:
         return self.master.get(instrument)
 
     def authenticate(self) -> None:
         try:
-            client = ks_api.KSTradeApi(
-                access_token=self._access_token,
-                userid=self._userid,
-                consumer_key=self._consumer_key,
-                ip=self._ip,
-                app_id=self._app_id,
-            )
+            client = ks_api.KSTradeApi(access_token=self._access_token, userid=self._userid, consumer_key=self._consumer_key,
+                    ip=self._ip, app_id=self._app_id)
             client.login(password=self._password)
             client.session_2fa(access_code=self._access_code)
             self.client = client
@@ -217,34 +194,44 @@ class Kotak(Broker):
     def orders(self) -> List[Dict]:
         pass
 
+    @property
+    @post
     def positions(self) -> List[Dict]:
-        pass
+        """
+        Return the positions only for the day
+        """
+        positions = self.client.positions(position_type="TODAYS")
+        if 'Success' in positions:
+            for position in positions['Success']:
+                position['symbol'] = self._rev_master.get(position['instrumentToken'], position['instrumentName'])
+            return positions['Success']
+        else:
+            return {}
+        
 
     def trades(self) -> List[Dict]:
         pass
 
-    def _get_order_type(self) -> Dict:
+    def _get_order_type(self)->Dict:
         pass
 
-    def order_place(
-        self, symbol: str, side: str, exchange: str = "NSE", quantity: int = 1, **kwargs
-    ) -> Dict:
-        order_args = dict(variety="REGULAR", validity="GFD", order_type="MIS", price=0)
-        token = self.get_instrument_token(f"{exchange}:{symbol}".upper())
-        if not (token):
-            logging.warning("No token for this symbol,check your symbol")
-            return
-        order_args.update(
-            dict(
-                transaction_type=side.upper(),
-                instrument_token=token,
-                quantity=quantity,
-            )
+    def order_place(self, symbol:str, side:str, exchange:str='NSE', quantity:int=1, **kwargs) -> Dict:
+        order_args=dict(
+                variety='REGULAR', validity='GFD', order_type='MIS', price=0
         )
+        token = self.get_instrument_token(f"{exchange}:{symbol}".upper())
+        if not(token):
+            logging.warning('No token for this symbol,check your symbol')
+            return
+        order_args.update(dict(
+            transaction_type=side.upper(),
+            instrument_token=token,
+            quantity=quantity,
+            ))
         order_args.update(kwargs)
         response = self.client.place_order(**order_args)
         return response
-
+        
     def order_cancel(self, **kwargs) -> Dict:
         pass
 
