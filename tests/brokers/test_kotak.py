@@ -7,6 +7,21 @@ import os
 
 
 @pytest.fixture
+def mock_order_response():
+    return {
+        "Success": {
+            "NSE": {
+                "message": "Your AMO has been Modified: 13220426019512",
+                "orderId": 13220426019512,
+                "price": 115,
+                "quantity": 1,
+                "tag": "string",
+            }
+        }
+    }
+
+
+@pytest.fixture
 def mock_kotak():
     broker = Kotak(
         "token",
@@ -225,3 +240,22 @@ def test_order_modify(mock_kotak):
     broker.order_modify(order_id=123456, quantity=10, side="buy")
     broker.client.modify_order.assert_called_once()
     # TODO: Check kwargs passed
+
+
+def test_order_cancel(mock_kotak):
+    broker = mock_kotak
+    broker.order_cancel(order_id=123456)
+    broker.client.cancel_order.assert_called_once()
+    # TODO: Check kwargs passed
+
+
+def test_response(mock_kotak, mock_order_response):
+    broker = mock_kotak
+    expected = mock_order_response["Success"]
+    assert mock_kotak._response(mock_order_response) == expected
+
+
+def test_get_order_id(mock_kotak, mock_order_response):
+    broker = mock_kotak
+    assert broker._get_order_id(mock_order_response) == 13220426019512
+    assert type(broker._get_order_id(mock_order_response)) == int

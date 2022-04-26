@@ -199,6 +199,33 @@ class Kotak(Broker):
     def get_instrument_token(self, instrument: str) -> Union[int, None]:
         return self.master.get(instrument)
 
+    def _response(self, response: Dict) -> Union[Dict, None]:
+        """
+        return the response if success key is found else
+        return None
+        """
+        if "Success" in response:
+            return response["Success"]
+        elif "success" in response:
+            return response["success"]
+        else:
+            return None
+
+    def _get_order_id(self, response: Optional[Dict] = None) -> Union[int, None]:
+        """
+        return order id from response
+        """
+        if response is None:
+            return None
+        elif isinstance(response, dict):
+            response = self._response(response)
+            if response is None:
+                return None
+            else:
+                return dict(*response.values())["orderId"]
+        else:
+            return None
+
     def authenticate(self) -> None:
         try:
             client = ks_api.KSTradeApi(
@@ -255,29 +282,46 @@ class Kotak(Broker):
 
     def order_place(
         self, symbol: str, side: str, exchange: str = "NSE", quantity: int = 1, **kwargs
-    ) -> Dict:
-        order_args = dict(variety="REGULAR", validity="GFD", order_type="MIS", price=0)
-        token = self.get_instrument_token(f"{exchange}:{symbol}".upper())
-        if not (token):
-            logging.warning("No token for this symbol,check your symbol")
-            return
-        order_args.update(
-            dict(
-                transaction_type=side.upper(),
-                instrument_token=token,
-                quantity=quantity,
+    ) -> Union[str, None]:
+        try:
+            order_args = dict(
+                variety="REGULAR", validity="GFD", order_type="MIS", price=0
             )
-        )
-        order_args.update(kwargs)
-        response = self.client.place_order(**order_args)
+            token = self.get_instrument_token(f"{exchange}:{symbol}".upper())
+            if not (token):
+                logging.warning("No token for this symbol,check your symbol")
+                return
+            order_args.update(
+                dict(
+                    transaction_type=side.upper(),
+                    instrument_token=token,
+                    quantity=quantity,
+                )
+            )
+            order_args.update(kwargs)
+            response = self.client.place_order(**order_args)
+            return self._get_order_id(response)
+        except Exception as e:
+            logging.error(e)
+            return None
+
+    def order_cancel(self, order_id: str) -> Dict:
+        """
+        Cancel an existing order
+        """
+        order_id = str(order_id)
+        response = self.client.cancel_order(order_id=order_id)
         return response
 
-    def order_cancel(self, **kwargs) -> Dict:
-        pass
-
-    def order_modify(self, order_id: Union[int, str], **kwargs) -> Dict:
+    def order_modify(self, order_id: str, **kwargs) -> Union[str, None]:
         """
         Modify an order
         """
-        response = self.client.modify_order(order_id=order_id, **kwargs)
-        return response
+        try:
+            order_id = str(order_id)
+            response = self.client.modify_order(order_id=order_id, **kwargs)
+            response = self._response(response)
+            return dict(*response.values())["orderId"]
+        except Exception as e:
+            logging.error(e)
+            return None
