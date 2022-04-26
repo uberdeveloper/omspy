@@ -309,9 +309,13 @@ class Kotak(Broker):
         """
         Cancel an existing order
         """
-        order_id = str(order_id)
-        response = self.client.cancel_order(order_id=order_id)
-        return response
+        try:
+            order_id = str(order_id)
+            response = self.client.cancel_order(order_id=order_id)
+            return self._get_order_id(response)
+        except Exception as e:
+            logging.error(e)
+            return None
 
     def order_modify(self, order_id: str, **kwargs) -> Union[str, None]:
         """
@@ -321,7 +325,7 @@ class Kotak(Broker):
             order_id = str(order_id)
             response = self.client.modify_order(order_id=order_id, **kwargs)
             response = self._response(response)
-            return dict(*response.values())["orderId"]
+            return self._get_order_id(response)
         except Exception as e:
             logging.error(e)
             return None
