@@ -177,33 +177,51 @@ def test_order_place(mock_kotak):
     broker.client.place_order.assert_called_once()
     # TODO: Check kwargs passed
 
+
 def test_positions(mock_kotak):
     broker = mock_kotak
-    broker.master = {'NSE:BHEL':878, 'NSE:NIFTY28APR2216400PUT': 71377}
-    broker._rev_master = {v:k for k,v in broker.master.items()}
-    with open('tests/data/kotak_positions.json') as f:
+    broker.master = {"NSE:BHEL": 878, "NSE:NIFTY28APR2216400PUT": 71377}
+    broker._rev_master = {v: k for k, v in broker.master.items()}
+    with open("tests/data/kotak_positions.json") as f:
         expected = json.load(f)
         broker.client.positions.side_effect = [expected]
         positions = broker.positions
         broker.client.positions.assert_called_once()
         assert len(positions) == 2
-        assert [x['symbol'] for x in positions] == ['NSE:BHEL', 'NSE:NIFTY28APR2216400PUT']
-        assert 'quantity' in positions[0]
-        assert 'quantity' in positions[1]
-        assert 'totalStock' not in positions[0]
+        assert [x["symbol"] for x in positions] == [
+            "NSE:BHEL",
+            "NSE:NIFTY28APR2216400PUT",
+        ]
+        assert "quantity" in positions[0]
+        assert "quantity" in positions[1]
+        assert "netTrdQtyLot" not in positions[0]
+
 
 def test_orders(mock_kotak):
     broker = mock_kotak
-    broker.master = {'NSE:BHEL':878, 'NSE:NIFTY28APR2216400PUT': 71377}
-    broker._rev_master = {v:k for k,v in broker.master.items()}
-    with open('tests/data/kotak_orders.json') as f:
+    broker.master = {"NSE:BHEL": 878, "NSE:NIFTY28APR2216400PUT": 71377}
+    broker._rev_master = {v: k for k, v in broker.master.items()}
+    with open("tests/data/kotak_orders.json") as f:
         expected = json.load(f)
         broker.client.order_report.side_effect = [expected]
         orders = broker.orders
         broker.client.order_report.assert_called_once()
-        symbols = ['NSE:BHEL']*4+['NSE:NIFTY28APR2216400PUT']*2 +['NSE:BHEL']
-        assert [x['symbol'] for x in orders] == symbols
-        assert len(orders)  == 7
-        for column in ['side', 'filled_quantity', 'quantity',
-                'exchange_timestamp', 'order_id', 'exchange_order_id']:
+        symbols = ["NSE:BHEL"] * 4 + ["NSE:NIFTY28APR2216400PUT"] * 2 + ["NSE:BHEL"]
+        assert [x["symbol"] for x in orders] == symbols
+        assert len(orders) == 7
+        for column in [
+            "side",
+            "filled_quantity",
+            "quantity",
+            "exchange_timestamp",
+            "order_id",
+            "exchange_order_id",
+        ]:
             assert column in orders[0]
+
+
+def test_order_modify(mock_kotak):
+    broker = mock_kotak
+    broker.order_modify(order_id=123456, quantity=10, side="buy")
+    broker.client.modify_order.assert_called_once()
+    # TODO: Check kwargs passed
