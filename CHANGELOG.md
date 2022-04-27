@@ -1,3 +1,8 @@
+## 0.5.0
+
+### Features
+* Broker support added for **kotak**
+
 ## 0.4.0
 
 ### Features
