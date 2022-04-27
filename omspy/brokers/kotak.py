@@ -242,6 +242,19 @@ class Kotak(Broker):
             logging.error(e)
             self.client = None
 
+    def get_status(self, status: str) -> str:
+        """
+        Get the order status
+        """
+        status_map = dict(
+            TRAD="COMPLETE",
+            CAN="CANCELED",
+            OPN="PENDING",
+            SLO="PENDING",
+            NEWF="PENDING",
+        )
+        return status_map.get(status.upper(), "PENDING")
+
     @property
     @post
     def orders(self) -> List[Dict]:
@@ -254,6 +267,7 @@ class Kotak(Broker):
                 order["symbol"] = self._rev_master.get(
                     order["instrumentToken"], order["instrumentName"]
                 )
+                order["status"] = self.get_status(order["status"])
             return order_report["success"]
         else:
             return order_report

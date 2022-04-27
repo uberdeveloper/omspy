@@ -235,6 +235,24 @@ def test_orders(mock_kotak):
             assert column in orders[0]
 
 
+def tests_orders_status(mock_kotak):
+    broker = mock_kotak
+    broker.master = {
+        "NSE:NIFTY28APR2217400CALL": 71530,
+        "NSE:ESCORTS": 1099,
+        "NSE:MANAPPURAM": 6035,
+    }
+    broker._rev_master = {v: k for k, v in broker.master.items()}
+    with open("tests/data/kotak_orders2.json") as f:
+        mock_data = json.load(f)
+        broker.client.order_report.side_effect = [mock_data]
+        orders = broker.orders
+        broker.client.order_report.assert_called_once()
+        assert [x["status"] for x in orders] == ["COMPLETE"] * 7 + ["CANCELED"] * 5 + [
+            "COMPLETE"
+        ] * 6
+
+
 def test_order_modify(mock_kotak):
     broker = mock_kotak
     broker.order_modify(order_id=123456, quantity=10, side="buy")
@@ -259,3 +277,12 @@ def test_get_order_id(mock_kotak, mock_order_response):
     broker = mock_kotak
     assert broker._get_order_id(mock_order_response) == 13220426019512
     assert type(broker._get_order_id(mock_order_response)) == int
+
+
+def test_get_status(mock_kotak):
+    broker = mock_kotak
+    assert broker.get_status("TRAD") == "COMPLETE"
+    assert broker.get_status("trad") == "COMPLETE"
+    assert broker.get_status("OPN") == "PENDING"
+    assert broker.get_status("CAN") == "CANCELED"
+    assert broker.get_status("MRF") == "PENDING"
