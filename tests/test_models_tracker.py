@@ -18,6 +18,15 @@ def simple_timer():
             end_time=pendulum.datetime(2022, 4, 1, 15, 20),
         )
 
+@pytest.fixture
+def time_tracker():
+    with pendulum.test(pendulum.datetime(2022, 4, 1)):
+        return TimeTracker(
+            name='tracker',
+            start_time=pendulum.datetime(2022, 4, 1, 9, 20),
+            end_time=pendulum.datetime(2022, 4, 1, 15, 20),
+        )
+
 
 def test_tracker_defaults(simple):
     tracker = simple
@@ -77,3 +86,17 @@ def test_timer_has_completed(simple_timer):
         assert timer.has_completed is False
     with pendulum.test(known.add(hours=6)):
         assert timer.has_completed is True
+
+def test_time_tracker_inherit(time_tracker):
+    tracker = time_tracker
+    assert tracker.name == 'tracker'
+    assert tracker.start_time == pendulum.datetime(2022,4,1,9,20)
+    assert tracker.end_time == pendulum.datetime(2022,4,1,15,20)
+    assert tracker.has_started is True 
+    #TODO: Tracker to update only after start 
+    for ltps in (201,207,199,224,208,203,216):
+        tracker.update(ltps)
+    assert tracker.last_price == 216
+    assert tracker.high == 224
+    assert tracker.low == 199
+

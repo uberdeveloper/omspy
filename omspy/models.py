@@ -111,3 +111,6 @@ class Timer(BaseModel):
         Whether tracking has completed
         """
         return True if pendulum.now(tz=self.timezone) > self.end_time else False
+
+class TimeTracker(Tracker, Timer):
+    pass
