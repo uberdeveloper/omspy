@@ -1,8 +1,9 @@
 """
 This module contains the list of basic models
 """
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Optional, List
+import pendulum
 
 
 class QuantityMatch(BaseModel):
@@ -72,3 +73,41 @@ class Tracker(BaseModel):
         self.last_price = last_price
         self.high = max(last_price, self.high)
         self.low = min(last_price, self.low)
+
+
+class Timer(BaseModel):
+    """
+    A simple timer that could be attached to any model
+    """
+
+    start_time: pendulum.DateTime
+    end_time: pendulum.DateTime
+    timezone: Optional[str] = None
+
+    @validator("end_time")
+    def validate_times(cls, v, values):
+        """
+        Validate end_time greater than start_time
+        and start_time greater than current time
+        """
+        start = values.get("start_time")
+        tz = values.get("timezone")
+        if v < start:
+            raise ValueError("end time greater than start time")
+        if start < pendulum.now(tz=tz):
+            raise ValueError("start time lesser than current time")
+        return v
+
+    @property
+    def has_started(self):
+        """
+        Whether tracking has started
+        """
+        return True if pendulum.now(tz=self.timezone) > self.start_time else False
+
+    @property
+    def has_completed(self):
+        """
+        Whether tracking has completed
+        """
+        return True if pendulum.now(tz=self.timezone) > self.end_time else False

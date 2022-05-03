@@ -1,5 +1,6 @@
 import pytest
 from omspy.models import *
+from pydantic import ValidationError
 
 
 @pytest.fixture
@@ -7,6 +8,15 @@ def simple():
     # A simple tracker
     tracker = Tracker(name="aapl")
     return tracker
+
+
+@pytest.fixture
+def simple_timer():
+    with pendulum.test(pendulum.datetime(2022, 4, 1)):
+        return Timer(
+            start_time=pendulum.datetime(2022, 4, 1, 9, 20),
+            end_time=pendulum.datetime(2022, 4, 1, 15, 20),
+        )
 
 
 def test_tracker_defaults(simple):
@@ -30,3 +40,40 @@ def test_tracker_update(simple):
     assert tracker.high == 203
     tracker.update(203.5)
     assert tracker.high == 203.5
+
+
+def test_timer_end_time_less_than_start_time():
+    with pytest.raises(ValidationError):
+        base = Timer(
+            start_time=pendulum.datetime(2022, 1, 2, 10, 10),
+            end_time=pendulum.datetime(2022, 1, 1, 15, 10),
+        )
+
+
+def test_timer_start_time_less_than_now():
+    known = pendulum.datetime(2022, 1, 4, 10, 15)
+    with pendulum.test(known):
+        with pytest.raises(ValidationError):
+            base = Timer(
+                start_time=pendulum.datetime(2022, 1, 4, 10, 12),
+                end_time=pendulum.datetime(2022, 1, 4, 10, 20),
+            )
+
+
+def test_timer_has_started(simple_timer):
+    timer = simple_timer
+    known = pendulum.datetime(2022, 4, 1, 9, 15)
+    with pendulum.test(known):
+        assert timer.has_started is False
+    with pendulum.test(known.add(minutes=6)):
+        assert timer.has_started is True
+
+
+def test_timer_has_completed(simple_timer):
+    timer = simple_timer
+    known = pendulum.datetime(2022, 4, 1, 9, 25)
+    with pendulum.test(known):
+        assert timer.has_started is True
+        assert timer.has_completed is False
+    with pendulum.test(known.add(hours=6)):
+        assert timer.has_completed is True
