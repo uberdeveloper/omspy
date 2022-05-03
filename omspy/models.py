@@ -55,3 +55,20 @@ class Quote(BaseModel):
 class OrderBook(BaseModel):
     bid: List[Quote]
     ask: List[Quote]
+
+
+class Tracker(BaseModel):
+    """
+    A simple tracker to track the high low prices
+    """
+
+    name: str  # name of the symbol to be tracked
+    last_price: float = 0
+    # Initializing high and low to extreme values
+    high: float = -1e100
+    low: float = 1e100
+
+    def update(self, last_price: float):
+        self.last_price = last_price
+        self.high = max(last_price, self.high)
+        self.low = min(last_price, self.low)
