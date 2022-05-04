@@ -28,3 +28,15 @@ def test_base_strategy_start_time_less_than_now():
                 start_time=pendulum.datetime(2022, 1, 4, 10, 12),
                 end_time=pendulum.datetime(2022, 1, 4, 10, 20),
             )
+
+
+def test_base_strategy_time():
+    known = pendulum.datetime(2022, 1, 1)
+    with pendulum.test(known):
+        base = BaseStrategy(
+            start_time=pendulum.datetime(2022, 1, 1, 10, 10),
+            end_time=pendulum.datetime(2022, 1, 1, 15, 10),
+            timezone="Europe/Paris",
+        )
+        assert base.timer.start_time == base.start_time
+        assert base.timer.end_time == base.end_time
