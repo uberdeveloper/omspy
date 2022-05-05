@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ValidationError, validator
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Tuple, Union
 from omspy.base import Broker
 from omspy.order import Order, CompoundOrder
 from omspy.models import Timer
@@ -31,16 +31,50 @@ class BaseStrategy(BaseModel):
     def timer(self):
         return self._timer
 
-    @validator("end_time")
-    def validate_times(cls, v, values):
-        """
-        Validate end_time greater than start_time
-        and start_time greater than current time
-        """
-        start = values.get("start_time")
-        tz = values.get("timezone")
-        if v < start:
-            raise ValueError("end time greater than start time")
-        if start < pendulum.now(tz=tz):
-            raise ValueError("start time lesser than current time")
-        return v
+class ShortStraddle(BaseStrategy):
+    symbols:Tuple[str,str]
+    limit_price:Optional[Tuple[float, float]] = (0.0,0.0)
+    trigger_price:Optional[Tuple[float, float]] = (0.0,0.0)
+    stop_price:Optional[Tuple[float, float]] = (0.0,0.0)
+    quantity:int = 1
+    exclude_stop:bool = False
+    _order: Optional[CompoundOrder] = None
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._order = CompoundOrder(broker=self.broker,
+                connection=self.connection, 
+                timezone= self.timezone)
+
+    @property
+    def order(self)->CompoundOrder:
+        return self._order
+
+    def create_order(self):
+        com = self._order
+        s1,s2 = self.symbols
+        order1 = Order(symbol=s1, side='sell', 
+                quantity = self.quantity)
+        order1.price = self.limit_price[0]
+        order2 = order1.clone()
+        order2.symbol = s2
+        order2.price = self.limit_price[1]
+        com.add(order1)
+        com.add(order2)
+        order1stop = order1.clone()
+        order1stop.trigger_price = self.trigger_price[0]
+        order1stop.price = self.stop_price[0]
+        order1stop.order_type = 'SL'
+        order1stop.side = 'buy'
+        com.add(order1stop)
+        order2stop = order2.clone()
+        order2stop.trigger_price = self.trigger_price[1]
+        order2stop.price = self.stop_price[1]
+        order2stop.order_type = 'SL'
+        order2stop.side = 'buy'
+        com.add(order2stop)
+        return self.order
+
+
+
+
