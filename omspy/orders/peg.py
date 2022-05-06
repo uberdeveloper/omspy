@@ -1,8 +1,9 @@
 from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
 from omspy.base import Broker
 from omspy.order import Order, CompoundOrder
-from copy import deepcopy
 import pendulum
+from pydantic import BaseModel
+import logging
 
 
 class BasicPeg(CompoundOrder):
@@ -75,6 +76,59 @@ class PegMarket(BasicPeg):
             if now > self.next_peg:
                 self._next_peg = now.add(seconds=self.peg_every)
                 order.modify(broker=self.broker, price=self.ref_price)
+            if now > self._expire_at:
+                if self.convert_to_market_after_expiry:
+                    order.modify(broker=self.broker, order_type="MARKET")
+                else:
+                    order.cancel(self.broker)
+
+
+class PegExisting(BaseModel):
+    order: Order
+    broker: Any
+    timezone: Optional[str] = None
+    duration: int = 60
+    peg_every: int = 10
+    done: bool = False
+    convert_to_market_after_expiry: bool = False
+    _next_peg: Optional[pendulum.DateTime]
+    _num_pegs: int = 0
+    _max_pegs: int = 0
+    _expire_at: Optional[pendulum.DateTime]
+
+    class Config:
+        underscore_attrs_are_private = True
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+        self._max_pegs = int(self.duration / self.peg_every)
+        self._num_pegs = 0
+        self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
+        self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
+        self.order.order_type = "LIMIT"
+
+    @property
+    def next_peg(self):
+        return self._next_peg
+
+    @property
+    def num_pegs(self):
+        return self._num_pegs
+
+    def execute(self, **order_args):
+        self.order.execute(broker=self.broker)
+
+    def run(self, ltp: float):
+        if self.done:
+            logging.warning("Order already done")
+            return
+
+        order = self.order
+        now = pendulum.now(self.timezone)
+        if not (order.is_complete):
+            if now > self.next_peg:
+                self._next_peg = now.add(seconds=self.peg_every)
+                order.modify(broker=self.broker, price=ltp)
             if now > self._expire_at:
                 if self.convert_to_market_after_expiry:
                     order.modify(broker=self.broker, order_type="MARKET")

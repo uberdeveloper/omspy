@@ -1,9 +1,10 @@
 from omspy.orders.peg import *
 import pytest
 from omspy.brokers.paper import Paper
-from omspy.order import create_db
+from omspy.order import create_db, Order
 import pendulum
 from unittest.mock import patch, call
+from omspy.brokers.zerodha import Zerodha
 
 
 def test_basic_peg():
@@ -148,3 +149,33 @@ def test_peg_market_run_is_pending(broker):
     peg.run()
     broker.order_place.assert_called_once()
     broker.order_modify.assert_not_called()
+
+
+def test_existing_peg_defaults():
+    order = Order(symbol="amzn", quantity=20, side="buy")
+    assert order.order_type == "MARKET"
+    broker = Zerodha(*list("abcdef"))
+    peg = PegExisting(order=order, broker=broker)
+    assert peg.order.order_type == "LIMIT"
+    known = pendulum.datetime(2022, 1, 1, 9, 15, 30)
+    with pendulum.test(known):
+        peg = PegExisting(order=order, broker=broker, duration=10, peg_every=3)
+        assert peg.num_pegs == 0
+        assert peg._max_pegs == 3
+
+
+@patch("omspy.brokers.zerodha.Zerodha")
+def test_existing_peg_run(broker):
+    known = pendulum.datetime(2022, 4, 1, 10, 0)
+    order = Order(symbol="amzn", quantity=20, side="buy")
+    with pendulum.test(known):
+        peg = PegExisting(order=order, broker=broker)
+        peg.execute(broker=broker)
+        broker.order_place.assert_called_once()
+        peg.run(ltp=228)
+        assert order.price is None
+    known = known.add(seconds=11)
+    with pendulum.test(known):
+        peg.run(ltp=228)
+        assert order.price == 228
+        broker.order_modify.assert_called_once()
