@@ -1,6 +1,6 @@
 from omspy.models import *
-
 import pytest
+from unittest.mock import patch
 
 
 def test_basic_position():
@@ -41,3 +41,14 @@ def test_order_book():
     assert orderbook.bid[-1].orders == 2
     assert orderbook.ask[1].quantity == 28
     assert orderbook.ask[-1].value == 118 * 28
+
+
+@patch("pendulum.now")
+def test_order_lock_defaults(now):
+    known = pendulum.datetime(2022, 1, 1, 10, 10, 13, tz=None)
+    now.side_effect = [known] * 6
+    lock = OrderLock()
+    print(lock.creation_lock_till)
+    assert lock.creation_lock_till == known
+    assert lock.modification_lock_till == known
+    assert lock.cancellation_lock_till == known

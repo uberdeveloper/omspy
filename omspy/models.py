@@ -1,7 +1,7 @@
 """
 This module contains the list of basic models
 """
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, PrivateAttr
 from typing import Optional, List
 import pendulum
 
@@ -112,5 +112,39 @@ class Timer(BaseModel):
         """
         return True if pendulum.now(tz=self.timezone) > self.end_time else False
 
+
 class TimeTracker(Tracker, Timer):
     pass
+
+
+class OrderLock(BaseModel):
+    """
+    Lock order placement, modification and cancellation
+    for a few seconds
+    """
+
+    max_order_creation_lock_time: float = 60
+    max_order_modification_lock_time: float = 60
+    max_order_cancellation_lock_time: float = 60
+    timezone: Optional[str] = None
+    _creation_lock_till: pendulum.DateTime = PrivateAttr()
+    _modification_lock_till: pendulum.DateTime = PrivateAttr()
+    _cancellation_lock_till: pendulum.DateTime = PrivateAttr()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._creation_lock_till = pendulum.now(tz=self.timezone)
+        self._modification_lock_till = pendulum.now(tz=self.timezone)
+        self._cancellation_lock_till = pendulum.now(tz=self.timezone)
+
+    @property
+    def creation_lock_till(self):
+        return self._creation_lock_till
+
+    @property
+    def modification_lock_till(self):
+        return self._modification_lock_till
+
+    @property
+    def cancellation_lock_till(self):
+        return self._cancellation_lock_till
