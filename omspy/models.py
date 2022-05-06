@@ -148,3 +148,31 @@ class OrderLock(BaseModel):
     @property
     def cancellation_lock_till(self):
         return self._cancellation_lock_till
+
+    def create(self, seconds: float) -> pendulum.DateTime:
+        """
+        Lock the create_order function for the given number of seconds
+        """
+        seconds = min(seconds, self.max_order_creation_lock_time)
+        self._creation_lock_till = pendulum.now(tz=self.timezone).add(seconds=seconds)
+        return self.creation_lock_till
+
+    def modify(self, seconds: float) -> pendulum.DateTime:
+        """
+        Lock the modify_order function for the given number of seconds
+        """
+        seconds = min(seconds, self.max_order_modification_lock_time)
+        self._modification_lock_till = pendulum.now(tz=self.timezone).add(
+            seconds=seconds
+        )
+        return self.modification_lock_till
+
+    def cancel(self, seconds: float) -> pendulum.DateTime:
+        """
+        Lock the cancel_order function for the given number of seconds
+        """
+        seconds = min(seconds, self.max_order_cancellation_lock_time)
+        self._cancellation_lock_till = pendulum.now(tz=self.timezone).add(
+            seconds=seconds
+        )
+        return self.cancellation_lock_till

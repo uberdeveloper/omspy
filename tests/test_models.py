@@ -48,7 +48,38 @@ def test_order_lock_defaults(now):
     known = pendulum.datetime(2022, 1, 1, 10, 10, 13, tz=None)
     now.side_effect = [known] * 6
     lock = OrderLock()
-    print(lock.creation_lock_till)
     assert lock.creation_lock_till == known
     assert lock.modification_lock_till == known
     assert lock.cancellation_lock_till == known
+
+
+def test_order_lock_methods():
+    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz=None)
+    lock = OrderLock()
+    with pendulum.test(known):
+        lock.create(20)
+        assert lock.creation_lock_till == known.add(seconds=20)
+    with pendulum.test(known):
+        lock.modify(60)
+        assert lock.modification_lock_till == pendulum.datetime(
+            2022, 1, 1, 10, 11, 15, tz=None
+        )
+        lock.cancel(15)
+        assert lock.cancellation_lock_till == pendulum.datetime(
+            2022, 1, 1, 10, 10, 30, tz=None
+        )
+
+
+def test_order_lock_methods_max_duration():
+    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz=None)
+    lock = OrderLock()
+    with pendulum.test(known):
+        lock.create(90)
+        assert lock.creation_lock_till == pendulum.datetime(
+            2022, 1, 1, 10, 11, 15, tz=None
+        )
+        lock.max_order_creation_lock_time = 120
+        lock.create(90)
+        assert lock.creation_lock_till == pendulum.datetime(
+            2022, 1, 1, 10, 11, 45, tz=None
+        )
