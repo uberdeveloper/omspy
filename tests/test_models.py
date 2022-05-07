@@ -3,6 +3,11 @@ import pytest
 from unittest.mock import patch
 
 
+@pytest.fixture
+def order_lock():
+    return OrderLock()
+
+
 def test_basic_position():
     position = BasicPosition(symbol="AAPL")
     assert position.symbol == "AAPL"
@@ -83,3 +88,17 @@ def test_order_lock_methods_max_duration():
         assert lock.creation_lock_till == pendulum.datetime(
             2022, 1, 1, 10, 11, 45, tz=None
         )
+
+
+@pytest.mark.parametrize("method", ["can_create", "can_modify", "can_cancel"])
+def test_order_lock_can_methods(method):
+    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz=None)
+    with pendulum.test(known):
+        lock = OrderLock()
+        assert getattr(lock, method) is False
+    with pendulum.test(known.add(seconds=1)):
+        assert getattr(lock, method) is True
+        assert getattr(lock, method[4:])(10)
+        assert getattr(lock, method) is False
+    with pendulum.test(known.add(seconds=12)):
+        assert getattr(lock, method) is True

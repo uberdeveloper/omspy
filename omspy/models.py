@@ -176,3 +176,34 @@ class OrderLock(BaseModel):
             seconds=seconds
         )
         return self.cancellation_lock_till
+
+    @property
+    def can_create(self) -> bool:
+        """
+        returns True if order can be created else False
+        """
+        return (
+            True if pendulum.now(tz=self.timezone) > self.creation_lock_till else False
+        )
+
+    @property
+    def can_modify(self) -> bool:
+        """
+        returns True if order can be modified else False
+        """
+        return (
+            True
+            if pendulum.now(tz=self.timezone) > self.modification_lock_till
+            else False
+        )
+
+    @property
+    def can_cancel(self) -> bool:
+        """
+        returns True is order can be canceled else False
+        """
+        return (
+            True
+            if pendulum.now(tz=self.timezone) > self.cancellation_lock_till
+            else False
+        )
