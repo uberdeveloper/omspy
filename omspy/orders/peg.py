@@ -127,6 +127,16 @@ class PegExisting(BaseModel):
     def execute(self, **order_args):
         self.order.execute(broker=self.broker)
 
+    def _mark_done(self) -> bool:
+        """
+        Mark whether the order is done
+        """
+        if self.order.is_complete:
+            self.done = True
+        elif not (self.order.is_pending):
+            self.done = True
+        return self.done
+
     def run(self, ltp: float):
         if self.done:
             logging.warning("Order already done")
@@ -144,3 +154,4 @@ class PegExisting(BaseModel):
 
                 self._next_peg = now.add(seconds=self.peg_every)
                 order.modify(broker=self.broker, price=ltp)
+        self._mark_done()

@@ -251,6 +251,9 @@ def test_existing_peg_full_run(existing_peg):
             disclosed_quantity=0,
         )
         assert call_args[-1].kwargs == expected_kwargs
+    peg.order.filled_quantity = 200
+    peg.run(ltp=234)
+    assert peg.done is True
 
 
 def test_existing_peg_full_run_cancel(existing_peg):
@@ -273,10 +276,13 @@ def test_existing_peg_full_run_cancel(existing_peg):
         broker.order_place.assert_called_once()
         broker.order_modify.assert_called_once()
         broker.order_cancel.assert_called_once()
+    peg.order.status = "CANCELED"
+    peg.run(ltp=234)
+    assert peg.done is True
 
 
 def test_existing_peg_run_complete(existing_peg):
-    # Do not call modify if all quantity is filled
+    # Do not call modify if all quantity is filled or order is complete
     peg = existing_peg
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     order, broker = peg.order, peg.broker
@@ -289,3 +295,4 @@ def test_existing_peg_run_complete(existing_peg):
         order.filled_quantity = 200
         peg.run(ltp=252)
         broker.order_modify.assert_not_called()
+        assert peg.done is True
