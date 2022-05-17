@@ -5,6 +5,7 @@ from omspy.order import create_db, Order
 import pendulum
 from unittest.mock import patch, call
 from omspy.brokers.zerodha import Zerodha
+from pydantic import ValidationError
 
 
 def test_basic_peg():
@@ -179,3 +180,16 @@ def test_existing_peg_run(broker):
         peg.run(ltp=228)
         assert order.price == 228
         broker.order_modify.assert_called_once()
+
+def test_existing_peg_validation_pending():
+    known = pendulum.datetime(2022, 4, 1, 10, 0)
+    order = Order(symbol="amzn", quantity=20, side="buy",
+            status='COMPLETE')
+    with pytest.raises(ValidationError):
+        with pendulum.test(known):
+            peg = PegExisting(order=order)
+    order.status = None
+    order.filled_quantity = 20
+    with pytest.raises(ValidationError):
+        with pendulum.test(known):
+            peg = PegExisting(order=order)

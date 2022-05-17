@@ -2,7 +2,7 @@ from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
 from omspy.base import Broker
 from omspy.order import Order, CompoundOrder
 import pendulum
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError, validator
 import logging
 
 
@@ -106,6 +106,16 @@ class PegExisting(BaseModel):
         self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
         self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
         self.order.order_type = "LIMIT"
+
+    @validator('order')
+    def order_should_be_pending(cls, v):
+        """
+        Only accept a pending order
+        """
+        if not(v.is_pending):
+            raise ValueError
+        else:
+            return v
 
     @property
     def next_peg(self):
