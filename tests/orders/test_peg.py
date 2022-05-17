@@ -8,6 +8,20 @@ from omspy.brokers.zerodha import Zerodha
 from pydantic import ValidationError
 
 
+@pytest.fixture
+def existing_peg():
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10009)
+        broker.order_modify.side_effect = range(10000, 10009)
+        with pendulum.test(known):
+            order = Order(
+                symbol="goog", quantity=200, side="buy", price=250, timezone="local"
+            )
+            peg = PegExisting(order=order, broker=broker, peg_every=3, duration=10)
+            return peg
+
+
 def test_basic_peg():
     peg = BasicPeg(symbol="aapl", side="buy", quantity=100, broker=Paper())
     assert peg.count == 1
@@ -181,10 +195,10 @@ def test_existing_peg_run(broker):
         assert order.price == 228
         broker.order_modify.assert_called_once()
 
+
 def test_existing_peg_validation_pending():
     known = pendulum.datetime(2022, 4, 1, 10, 0)
-    order = Order(symbol="amzn", quantity=20, side="buy",
-            status='COMPLETE')
+    order = Order(symbol="amzn", quantity=20, side="buy", status="COMPLETE")
     with pytest.raises(ValidationError):
         with pendulum.test(known):
             peg = PegExisting(order=order)
@@ -193,3 +207,42 @@ def test_existing_peg_validation_pending():
     with pytest.raises(ValidationError):
         with pendulum.test(known):
             peg = PegExisting(order=order)
+
+
+def test_existing_peg_full_run(existing_peg):
+    peg = existing_peg
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    order, broker = peg.order, peg.broker
+    assert order.order_type == "LIMIT"
+    with pendulum.test(known):
+        peg.execute(broker=broker)
+        broker.order_place.assert_called_once()
+        for price in (271, 264, 268):
+            peg.run(ltp=price)
+            broker.order_modify.assert_not_called()
+    known = known.add(seconds=4)
+    with pendulum.test(known):
+        order.filled_quantity = 122
+        peg.run(ltp=252)
+        assert order.price == 252
+        broker.order_modify.assert_called_once()
+    known = known.add(seconds=3)
+    with pendulum.test(known):
+        order.filled_quantity = 122
+        peg.run(ltp=252)
+        assert order.price == 252
+        broker.order_modify.assert_called_once()
+    known = known.add(seconds=4)
+    with pendulum.test(known):
+        peg.run(ltp=250.9)
+        assert broker.order_modify.call_count == 2
+        call_args = broker.order_modify.call_args_list
+        expected_kwargs = dict(
+            order_id=10000,
+            quantity=200,
+            price=252,
+            trigger_price=0,
+            order_type="MARKET",
+            disclosed_quantity=0,
+        )
+        assert call_args[-1].kwargs == expected_kwargs

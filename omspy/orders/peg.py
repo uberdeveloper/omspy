@@ -90,8 +90,8 @@ class PegExisting(BaseModel):
     duration: int = 60
     peg_every: int = 10
     done: bool = False
-    convert_to_market_after_expiry: bool = False
-    _next_peg: Optional[pendulum.DateTime]
+    convert_to_market_after_expiry: bool = True
+    _next_peg: Optional[pendulum.DateTime] = None
     _num_pegs: int = 0
     _max_pegs: int = 0
     _expire_at: Optional[pendulum.DateTime]
@@ -107,22 +107,22 @@ class PegExisting(BaseModel):
         self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
         self.order.order_type = "LIMIT"
 
-    @validator('order')
+    @validator("order")
     def order_should_be_pending(cls, v):
         """
         Only accept a pending order
         """
-        if not(v.is_pending):
+        if not (v.is_pending):
             raise ValueError
         else:
             return v
 
     @property
-    def next_peg(self):
+    def next_peg(self) -> pendulum.DateTime:
         return self._next_peg
 
     @property
-    def num_pegs(self):
+    def num_pegs(self) -> int:
         return self._num_pegs
 
     def execute(self, **order_args):
@@ -135,12 +135,13 @@ class PegExisting(BaseModel):
 
         order = self.order
         now = pendulum.now(self.timezone)
-        if not (order.is_complete):
-            if now > self.next_peg:
-                self._next_peg = now.add(seconds=self.peg_every)
-                order.modify(broker=self.broker, price=ltp)
+        if order.is_pending:
             if now > self._expire_at:
                 if self.convert_to_market_after_expiry:
                     order.modify(broker=self.broker, order_type="MARKET")
                 else:
                     order.cancel(self.broker)
+            elif now > self.next_peg:
+
+                self._next_peg = now.add(seconds=self.peg_every)
+                order.modify(broker=self.broker, price=ltp)
