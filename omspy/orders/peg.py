@@ -40,7 +40,7 @@ class BasicPeg(CompoundOrder):
 class PegMarket(BasicPeg):
     duration: int = 60
     peg_every: int = 10
-    convert_to_market_after_expiry: bool = False
+    convert_to_market_after_expiry = True
     _next_peg: Optional[pendulum.DateTime]
     _num_pegs: int = 0
     _max_pegs: int = 0
@@ -90,7 +90,6 @@ class PegExisting(BaseModel):
     duration: int = 60
     peg_every: int = 10
     done: bool = False
-    convert_to_market_after_expiry: bool = True
     _next_peg: Optional[pendulum.DateTime] = None
     _num_pegs: int = 0
     _max_pegs: int = 0
@@ -137,7 +136,7 @@ class PegExisting(BaseModel):
         now = pendulum.now(self.timezone)
         if order.is_pending:
             if now > self._expire_at:
-                if self.convert_to_market_after_expiry:
+                if self.order.convert_to_market_after_expiry:
                     order.modify(broker=self.broker, order_type="MARKET")
                 else:
                     order.cancel(self.broker)

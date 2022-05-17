@@ -16,7 +16,12 @@ def existing_peg():
         broker.order_modify.side_effect = range(10000, 10009)
         with pendulum.test(known):
             order = Order(
-                symbol="goog", quantity=200, side="buy", price=250, timezone="local"
+                symbol="goog",
+                quantity=200,
+                side="buy",
+                price=250,
+                timezone="local",
+                convert_to_market_after_expiry=True,
             )
             peg = PegExisting(order=order, broker=broker, peg_every=3, duration=10)
             return peg
@@ -246,3 +251,41 @@ def test_existing_peg_full_run(existing_peg):
             disclosed_quantity=0,
         )
         assert call_args[-1].kwargs == expected_kwargs
+
+
+def test_existing_peg_full_run_cancel(existing_peg):
+    peg = existing_peg
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    order, broker = peg.order, peg.broker
+    order.convert_to_market_after_expiry = False
+    with pendulum.test(known):
+        peg.execute(broker=broker)
+        broker.order_place.assert_called_once()
+    known = known.add(seconds=4)
+    with pendulum.test(known):
+        peg.run(ltp=252)
+        assert order.price == 252
+        broker.order_modify.assert_called_once()
+    known = known.add(seconds=10)
+    with pendulum.test(known):
+        peg.run(ltp=250.9)
+        broker.order_cancel.assert_called_once()
+        broker.order_place.assert_called_once()
+        broker.order_modify.assert_called_once()
+        broker.order_cancel.assert_called_once()
+
+
+def test_existing_peg_run_complete(existing_peg):
+    # Do not call modify if all quantity is filled
+    peg = existing_peg
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    order, broker = peg.order, peg.broker
+    order.convert_to_market_after_expiry = False
+    with pendulum.test(known):
+        peg.execute(broker=broker)
+        broker.order_place.assert_called_once()
+    known = known.add(seconds=4)
+    with pendulum.test(known):
+        order.filled_quantity = 200
+        peg.run(ltp=252)
+        broker.order_modify.assert_not_called()
