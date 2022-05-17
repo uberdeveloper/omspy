@@ -157,7 +157,9 @@ class Order(BaseModel):
     @property
     def is_pending(self) -> bool:
         quantity = self.filled_quantity + self.cancelled_quantity
-        if self.status == "COMPLETE":
+        # Order not pending if it is complete/canceled or rejected
+        # irrespective of the filled and remaining quantity
+        if self.status in ("COMPLETE", "CANCELED", "REJECTED"):
             return False
         elif quantity < self.quantity:
             return True

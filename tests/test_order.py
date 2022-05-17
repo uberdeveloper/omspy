@@ -982,3 +982,20 @@ def test_order_modify_by_attribute():
         kwargs = broker.order_modify.call_args_list[0].kwargs
         assert kwargs["quantity"] == 100
         assert kwargs["price"] == 600
+
+
+def test_order_is_pending_canceled():
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    assert order.is_pending is True
+    order.filled_quantity, order.cancelled_quantity = 5, 0
+    assert order.is_pending is True
+    order.status = "CANCELED"
+    assert order.is_pending is False
+
+
+def test_order_is_pending_rejected():
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    assert order.is_pending is True
+    order.status = "REJECTED"
+    assert order.filled_quantity == order.cancelled_quantity == 0
+    assert order.is_pending is False
