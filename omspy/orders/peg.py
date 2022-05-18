@@ -1,6 +1,7 @@
 from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable
 from omspy.base import Broker
 from omspy.order import Order, CompoundOrder
+from omspy.models import OrderLock
 import pendulum
 from pydantic import BaseModel, ValidationError, validator
 import logging
@@ -90,6 +91,8 @@ class PegExisting(BaseModel):
     duration: int = 60
     peg_every: int = 10
     done: bool = False
+    lock: Optional[OrderLock] = None
+    lock_duration: int = 2
     _next_peg: Optional[pendulum.DateTime] = None
     _num_pegs: int = 0
     _max_pegs: int = 0
@@ -105,6 +108,8 @@ class PegExisting(BaseModel):
         self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
         self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
         self.order.order_type = "LIMIT"
+        if self.lock is None:
+            self.lock = OrderLock()
 
     @validator("order")
     def order_should_be_pending(cls, v):
@@ -147,11 +152,17 @@ class PegExisting(BaseModel):
         if order.is_pending:
             if now > self._expire_at:
                 if self.order.convert_to_market_after_expiry:
-                    order.modify(broker=self.broker, order_type="MARKET")
+                    if self.lock.can_modify:
+                        order.modify(broker=self.broker, order_type="MARKET")
+                        self.lock.modify(self.lock_duration)
                 else:
-                    order.cancel(self.broker)
+                    if self.lock.can_cancel:
+                        order.cancel(self.broker)
+                        self.lock.cancel(self.lock_duration)
             elif now > self.next_peg:
 
                 self._next_peg = now.add(seconds=self.peg_every)
-                order.modify(broker=self.broker, price=ltp)
+                if self.lock.can_modify:
+                    order.modify(broker=self.broker, price=ltp)
+                    self.lock.modify(self.lock_duration)
         self._mark_done()

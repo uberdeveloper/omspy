@@ -258,6 +258,7 @@ def test_existing_peg_full_run(existing_peg):
 
 def test_existing_peg_full_run_cancel(existing_peg):
     peg = existing_peg
+    print(peg.lock.modification_lock_till)
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     order, broker = peg.order, peg.broker
     order.convert_to_market_after_expiry = False
@@ -296,3 +297,26 @@ def test_existing_peg_run_complete(existing_peg):
         peg.run(ltp=252)
         broker.order_modify.assert_not_called()
         assert peg.done is True
+
+
+def test_existing_peg_run_order_lock(existing_peg):
+    peg = existing_peg
+    peg.peg_every = 2
+    peg.lock_duration = 4
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    order, broker = peg.order, peg.broker
+    with pendulum.test(known):
+        peg.execute(broker=broker)
+        broker.order_place.assert_called_once()
+    known = known.add(seconds=4)
+    with pendulum.test(known):
+        peg.run(ltp=252)
+        broker.order_modify.assert_called_once()
+    known = known.add(seconds=5)
+    with pendulum.test(known):
+        peg.run(ltp=252)
+        assert broker.order_modify.call_count == 2
+    known = known.add(seconds=5)
+    with pendulum.test(known):
+        peg.run(ltp=252)
+        assert broker.order_modify.call_count == 3
