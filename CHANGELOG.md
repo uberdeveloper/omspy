@@ -1,4 +1,11 @@
+## 0.5.1
+### Improvements 
+* Order Lock mechanism added
+* ExistingPeg to check for time expiry before next peg
+
 ## 0.5.0
+### Features
+* ExistingPeg order added to peg existing orders
 
 ### Features
 * Broker support added for **kotak**
