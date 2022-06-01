@@ -160,9 +160,68 @@ class PegExisting(BaseModel):
                         order.cancel(self.broker)
                         self.lock.cancel(self.lock_duration)
             elif now > self.next_peg:
-
                 self._next_peg = now.add(seconds=self.peg_every)
                 if self.lock.can_modify:
                     order.modify(broker=self.broker, price=ltp)
                     self.lock.modify(self.lock_duration)
         self._mark_done()
+
+class PegSequential(BaseModel):
+    """
+    Peg orders in sequence and peg only when the
+    previous order is complete
+    """
+    orders: List[Order]
+    broker: Any
+    timezone: Optional[str] = None
+    duration: int = 12
+    peg_every: int = 4
+    lock_duration: int = 2
+    done: bool = False
+    _order: Optional[PegExisting] = None
+
+    class Config:
+        underscore_attrs_are_private = True
+
+
+    @property
+    def order(self)->Optional[PegExisting]:
+        return self._order
+
+    @property
+    def completed(self):
+        # Completed orders
+        pass
+
+    @property
+    def pending(self):
+        # Pending orders
+        pass
+
+    def get_current_order(self)->PegExisting:
+        """
+        Get the current order to peg
+        """
+        pass
+
+    def set_current_order(self)->PegExisting:
+        """
+        Set the current order for pegging
+        """
+        self._order = self.get_current_order()
+        return self.order
+
+    def execute_all(self):
+        # Execute all pending orders
+        pass
+
+    def cancel_all(self):
+        # Cancel all pending orders
+        pass
+
+    def run(self, ltp:Dict[str,float]):
+        pass
+
+    def _mark_done(self):
+        pass
+
