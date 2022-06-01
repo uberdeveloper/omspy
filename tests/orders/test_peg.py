@@ -320,3 +320,25 @@ def test_existing_peg_run_order_lock(existing_peg):
     with pendulum.test(known):
         peg.run(ltp=252)
         assert broker.order_modify.call_count == 3
+        
+def test_peg_sequential_defaults():
+    orders = [
+            Order(symbol='aapl', side='buy', quantity=10),
+            Order(symbol='goog', side='buy', quantity=10),
+            Order(symbol='amzn', side='buy', quantity=10),
+            ]
+    peg = PegSequential(orders=orders)
+    assert len(peg.orders) == 3
+    assert peg.timezone is None
+    assert peg.duration == 12
+    assert peg.peg_every == 4
+    assert peg.done is False
+
+def test_peg_sequential_valid_orders():
+    orders = [
+            Order(symbol='aapl', side='buy', quantity=10),
+            Order(symbol='goog', side='buy', quantity=10),
+            Order(symbol='amzn', side='buy', quantity=10,
+                filled_quantity=10),
+            ]
+    peg = PegSequential(orders=orders)

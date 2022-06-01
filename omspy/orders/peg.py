@@ -183,6 +183,13 @@ class PegSequential(BaseModel):
     class Config:
         underscore_attrs_are_private = True
 
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+        # Validate whether orders could be pegged
+        for order in self.orders:
+            peg = PegExisting(order, timezone=timezone,
+                    duration=duration, peg_every=peg_every,
+                    lock_duration=lock_duration)
 
     @property
     def order(self)->Optional[PegExisting]:
