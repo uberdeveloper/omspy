@@ -19,8 +19,12 @@ class Finvasia(Broker):
         self.finvasia = ShoonyaApiPy()
 
 
-    def login(self):
-        pass
+    def login(self)->Union[Dict,None]:
+        return self.finvasia.login(userid=self._user_id,
+                password=self._password,twoFA=self._pin,
+                vendor_code=self._vendor_code,
+                api_secret=self._app_key,imei=self._imei)
+
 
     @property
     @post
