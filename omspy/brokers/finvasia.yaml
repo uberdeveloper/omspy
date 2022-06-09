@@ -1,0 +1,4 @@
+order_place:
+  validity: retention
+  disclosed_quantity: discloseqty
+  product: product_type

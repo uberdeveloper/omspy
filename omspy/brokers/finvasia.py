@@ -9,7 +9,15 @@ class Finvasia(Broker):
     Automated Trading class
     """
 
-    def __init__(self, user_id:str, password:str, pin:str, vendor_code:str, app_key: str, imei:str):
+    def __init__(
+        self,
+        user_id: str,
+        password: str,
+        pin: str,
+        vendor_code: str,
+        app_key: str,
+        imei: str,
+    ):
         self._user_id = user_id
         self._password = password
         self._pin = pin
@@ -17,37 +25,65 @@ class Finvasia(Broker):
         self._app_key = app_key
         self._imei = imei
         self.finvasia = ShoonyaApiPy()
+        super(Finvasia, self).__init__()
 
-
-    def login(self)->Union[Dict,None]:
-        return self.finvasia.login(userid=self._user_id,
-                password=self._password,twoFA=self._pin,
-                vendor_code=self._vendor_code,
-                api_secret=self._app_key,imei=self._imei)
-
-
-    @property
-    @post
-    def orders(self)->List[Dict]:
-        pass
-
+    def login(self) -> Union[Dict, None]:
+        return self.finvasia.login(
+            userid=self._user_id,
+            password=self._password,
+            twoFA=self._pin,
+            vendor_code=self._vendor_code,
+            api_secret=self._app_key,
+            imei=self._imei,
+        )
 
     @property
     @post
-    def positions(self)->List[Dict]:
+    def orders(self) -> List[Dict]:
         pass
 
-
-    def trades(self)->List[Dict]:
+    @property
+    @post
+    def positions(self) -> List[Dict]:
         pass
 
-    def order_place(self, symbol:str, side:str, exchange:str='NSE', quantity:int=1, **kwargs)->Union[str,None]:
+    def trades(self) -> List[Dict]:
         pass
 
-    def order_cancel(self, order_id:str)->Dict:
+    def get_order_type(self, order_type: str) -> str:
+        """
+        Convert a generic order type to this specific
+        broker's order type string
+        returns MKT if the order_type is not matching
+        """
+        order_types = dict(LIMIT="LMT", MARKET="MKT", SL="SL-LMT", SLM="SL-MKT")
+        return order_types.get(order_type.upper(), "MKT")
+
+    @pre
+    def order_place(self, **kwargs) -> Union[str, None]:
+        symbol = kwargs.pop("symbol")
+        side = kwargs.pop("side")
+        order_type = kwargs.pop("order_type", "MKT")
+        if order_type:
+            order_type = self.get_order_type(order_type)
+        if side:
+            side = side.upper()[0]
+        if symbol:
+            symbol = symbol.upper()
+        order_args = dict(
+            tradingsymbol=symbol,
+            buy_or_sell=side,
+            price_type=order_type,
+            exchange="NSE",
+            retention="DAY",
+            product_type="I",
+            discloseqty=0,
+        )
+        order_args.update(kwargs)
+        return self.finvasia.place_order(**order_args)
+
+    def order_cancel(self, order_id: str) -> Dict:
         pass
 
-    def order_modify(self, order_id:str, **kwargs)->Union[str,None]:
+    def order_modify(self, order_id: str, **kwargs) -> Union[str, None]:
         pass
-
-
