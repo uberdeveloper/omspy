@@ -2,3 +2,8 @@ order_place:
   validity: retention
   disclosed_quantity: discloseqty
   product: product_type
+order_modify:
+  quantity: newquantity
+  price: newprice
+  trigger_price: newtrigger_price
+  symbol: tradingsymbol

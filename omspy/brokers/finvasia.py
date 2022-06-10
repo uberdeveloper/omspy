@@ -85,5 +85,20 @@ class Finvasia(Broker):
     def order_cancel(self, order_id: str) -> Dict:
         pass
 
-    def order_modify(self, order_id: str, **kwargs) -> Union[str, None]:
-        pass
+    @pre
+    def order_modify(self, **kwargs) -> Union[str, None]:
+        """
+        Modify an existing order
+        """
+        order_id = kwargs.pop("order_id", None)
+        order_type = kwargs.pop("order_type", 'MKT')
+        if order_type:
+            order_type = self.get_order_type(order_type)
+        order_args = dict(
+                orderno=order_id,
+                newprice_type = order_type,
+                exchange='NSE'
+                )
+        order_args.update(kwargs)
+        return self.finvasia.modify_order(**order_args)
+            

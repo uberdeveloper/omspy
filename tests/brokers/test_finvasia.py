@@ -95,3 +95,34 @@ def test_place_order_mixed_args(broker):
         discloseqty=15,
     )
     assert broker.finvasia.place_order.call_args.kwargs == order_args
+
+
+def test_modify_order(broker):
+    broker.order_modify(symbol="RELIANCE-EQ", quantity=5,
+            order_id=1234)
+    broker.finvasia.modify_order.assert_called_once()
+    order_args = dict(
+            orderno=1234,
+            tradingsymbol="RELIANCE-EQ",
+            newquantity=5,
+            newprice_type="MKT",
+            exchange='NSE'
+    )
+    assert broker.finvasia.modify_order.call_args.kwargs == order_args
+
+
+def test_modify_order_kwargs(broker):
+    broker.order_modify(symbol="RELIANCE-EQ", quantity=5,
+            order_id='1234', exchange='NSE', 
+            order_type='limit', price=2075)
+    broker.finvasia.modify_order.assert_called_once()
+    order_args = dict(
+            orderno='1234',
+            tradingsymbol="RELIANCE-EQ",
+            newquantity=5,
+            newprice_type="LMT",
+            exchange='NSE',
+            newprice=2075
+
+    )
+    assert broker.finvasia.modify_order.call_args.kwargs == order_args
