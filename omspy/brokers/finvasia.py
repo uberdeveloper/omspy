@@ -37,6 +37,15 @@ class Finvasia(Broker):
             imei=self._imei,
         )
 
+    def _convert_symbol(self, symbol: str, exchange: str = "NSE") -> str:
+        """
+        Convert raw symbol to finvasia
+        """
+        if symbol.endswith("-EQ") or symbol.endswith("-eq"):
+            return symbol
+        else:
+            return f"{symbol}-EQ"
+
     @property
     @post
     def orders(self) -> List[Dict]:
@@ -62,6 +71,7 @@ class Finvasia(Broker):
     @pre
     def order_place(self, **kwargs) -> Union[str, None]:
         symbol = kwargs.pop("symbol")
+        symbol = self._convert_symbol(symbol)
         side = kwargs.pop("side")
         order_type = kwargs.pop("order_type", "MKT")
         if order_type:
@@ -93,10 +103,18 @@ class Finvasia(Broker):
         """
         Modify an existing order
         """
+        symbol = kwargs.pop("tradingsymbol")
         order_id = kwargs.pop("order_id", None)
         order_type = kwargs.pop("order_type", "MKT")
         if order_type:
             order_type = self.get_order_type(order_type)
-        order_args = dict(orderno=order_id, newprice_type=order_type, exchange="NSE")
+        if symbol:
+            symbol = self._convert_symbol(symbol).upper()
+        order_args = dict(
+            orderno=order_id,
+            newprice_type=order_type,
+            exchange="NSE",
+            tradingsymbol=symbol,
+        )
         order_args.update(kwargs)
         return self.finvasia.modify_order(**order_args)

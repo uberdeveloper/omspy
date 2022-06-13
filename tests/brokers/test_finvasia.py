@@ -134,3 +134,25 @@ def test_modify_order_kwargs(broker):
 def test_cancel_order(broker):
     broker.order_cancel(order_id=1234)
     broker.finvasia.cancel_order.assert_called_once()
+
+
+def test_convert_symbol(broker):
+    assert broker._convert_symbol("reliance", "RELIANCE-EQ")
+    assert broker._convert_symbol("RELIANCE-EQ", "RELIANCE-EQ")
+    assert broker._convert_symbol("reliance-eq", "RELIANCE-EQ")
+
+
+def test_place_order_without_eq(broker):
+    broker.order_place(symbol="RELIANCE", side="BUY", quantity=1)
+    broker.finvasia.place_order.assert_called_once()
+    order_args = dict(
+        buy_or_sell="B",
+        product_type="I",
+        exchange="NSE",
+        tradingsymbol="RELIANCE-EQ",
+        quantity=1,
+        price_type="MKT",
+        retention="DAY",
+        discloseqty=0,
+    )
+    assert broker.finvasia.place_order.call_args.kwargs == order_args
