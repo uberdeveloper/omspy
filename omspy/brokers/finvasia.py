@@ -37,7 +37,7 @@ class Finvasia(Broker):
             imei=self._imei,
         )
 
-    def authenticate(self)->Union[Dict, None]:
+    def authenticate(self) -> Union[Dict, None]:
         """
         Authenticate the user
         """
@@ -55,15 +55,20 @@ class Finvasia(Broker):
     @property
     @post
     def orders(self) -> List[Dict]:
-        pass
+        orderbook = self.finvasia.get_order_book()
+        return orderbook
 
     @property
     @post
     def positions(self) -> List[Dict]:
-        pass
+        positionbook = self.finvasia.get_positions()
+        return positionbook
 
+    @property
+    @post
     def trades(self) -> List[Dict]:
-        pass
+        tradebook = self.finvasia.get_trade_book()
+        return tradebook
 
     def get_order_type(self, order_type: str) -> str:
         """

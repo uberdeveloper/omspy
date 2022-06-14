@@ -1,5 +1,7 @@
 from omspy.brokers.finvasia import *
 import pytest
+import yaml
+import json
 from unittest.mock import patch
 
 
@@ -9,6 +11,12 @@ def broker():
     with patch("omspy.brokers.api_helper.ShoonyaApiPy") as mock_broker:
         finvasia.finvasia = mock_broker
     return finvasia
+
+
+@pytest.fixture
+def mod():
+    with open("omspy/brokers/finvasia.yaml") as f:
+        return yaml.safe_load(f)
 
 
 def test_defaults(broker):
@@ -25,9 +33,11 @@ def test_login(broker):
     broker.login()
     broker.finvasia.login.assert_called_once()
 
+
 def test_authenticate(broker):
     broker.authenticate()
     broker.finvasia.login.assert_called_once()
+
 
 def test_get_order_type(broker):
     assert broker.get_order_type("limit") == "LMT"
@@ -159,3 +169,38 @@ def test_place_order_without_eq(broker):
         discloseqty=0,
     )
     assert broker.finvasia.place_order.call_args.kwargs == order_args
+
+
+def test_orders(broker, mod):
+    with open("tests/data/finvasia/orders.json", "r") as f:
+        orders = json.load(f)
+    broker.finvasia.get_order_book.return_value = orders
+    fetched = broker.orders
+    keys = mod["orders"]
+    for order in fetched:
+        for k, v in keys.items():
+            assert k not in order
+
+
+def test_trades(broker, mod):
+    with open("tests/data/finvasia/trades.json", "r") as f:
+        trades = json.load(f)
+    broker.finvasia.get_trade_book.return_value = trades
+    fetched = broker.trades
+    keys = mod["trades"]
+    for trade in fetched:
+        for k, v in keys.items():
+            assert k not in trade
+            assert v in trade
+
+
+def test_positions(broker, mod):
+    with open("tests/data/finvasia/positions.json", "r") as f:
+        positions = json.load(f)
+    broker.finvasia.get_positions.return_value = positions
+    fetched = broker.positions
+    keys = mod["positions"]
+    for order in fetched:
+        for k, v in keys.items():
+            assert k not in order
+            assert v in order
