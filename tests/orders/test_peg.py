@@ -28,8 +28,13 @@ def existing_peg():
 
 
 @pytest.fixture
-def sequential_peg():
-    pass
+def order_list():
+    orders = [
+        Order(symbol="aapl", side="buy", quantity=10),
+        Order(symbol="goog", side="buy", quantity=10),
+        Order(symbol="amzn", side="buy", quantity=10),
+    ]
+    return orders
 
 
 def test_basic_peg():
@@ -351,24 +356,16 @@ def test_peg_sequential_valid_orders():
         peg = PegSequential(orders=orders)
 
 
-def test_peg_sequential_completed_orders():
-    orders = [
-        Order(symbol="aapl", side="buy", quantity=10),
-        Order(symbol="goog", side="buy", quantity=10),
-        Order(symbol="amzn", side="buy", quantity=10),
-    ]
+def test_peg_sequential_completed_orders(order_list):
+    orders = order_list
     peg = PegSequential(orders=orders)
     assert peg.completed == []
     orders[-1].filled_quantity = 10
     assert peg.completed == orders[-1:]
 
 
-def test_peg_sequential_pending_orders():
-    orders = [
-        Order(symbol="aapl", side="buy", quantity=10),
-        Order(symbol="goog", side="buy", quantity=10),
-        Order(symbol="amzn", side="buy", quantity=10),
-    ]
+def test_peg_sequential_pending_orders(order_list):
+    orders = order_list
     peg = PegSequential(orders=orders)
     assert peg.pending == orders
     for order in orders:
@@ -376,12 +373,8 @@ def test_peg_sequential_pending_orders():
     assert peg.pending == []
 
 
-def test_peg_sequential_pending_orders():
-    orders = [
-        Order(symbol="aapl", side="buy", quantity=10),
-        Order(symbol="goog", side="buy", quantity=10),
-        Order(symbol="amzn", side="buy", quantity=10),
-    ]
+def test_peg_sequential_pending_orders(order_list):
+    orders = order_list
     peg = PegSequential(orders=orders)
     assert peg.all_complete is False
     orders[-1].filled_quantity = 10
@@ -389,3 +382,39 @@ def test_peg_sequential_pending_orders():
     for order in orders:
         order.status = "COMPLETE"
     assert peg.all_complete is True
+
+def test_peg_sequential_get_current_order(order_list):
+    orders = order_list
+    peg = PegSequential(orders=orders, peg_every=3)
+    peg_args = dict(duration=12,peg_every=3,lock_duration=2)
+    peg_order = PegExisting(order=orders[0],**peg_args)
+    assert peg.get_current_order() == peg_order
+    assert peg.order is None
+    orders[0].filled_quantity = 10
+    peg_order = PegExisting(order=orders[1],**peg_args)
+    assert peg.get_current_order() == peg_order
+    orders[1].filled_quantity = 5
+    assert peg.get_current_order() == peg_order
+    orders[1].cancelled_quantity = 5
+    assert peg.get_current_order() != peg_order
+    assert peg.get_current_order() == PegExisting(order=orders[-1],**peg_args)
+    orders[2].status = 'COMPLETE'
+    assert peg.get_current_order() is None
+
+def test_peg_sequential_set_current_order(order_list):
+    orders = order_list
+    peg = PegSequential(orders=orders, peg_every=3)
+    peg_args = dict(duration=12,peg_every=3,lock_duration=2)
+    peg_order = PegExisting(order=orders[0],**peg_args)
+    assert peg.order is None
+    peg.set_current_order()
+    assert peg.order == peg_order
+    orders[0].filled_quantity = 10
+    peg_order = PegExisting(order=orders[1],**peg_args)
+    peg.set_current_order()
+    assert peg.order == peg_order
+    orders[1].filled_quantity = 5
+    orders[1].cancelled_quantity = 5
+    orders[2].status = 'COMPLETE'
+    peg.set_current_order()
+    assert peg.order is None

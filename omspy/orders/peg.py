@@ -222,13 +222,22 @@ class PegSequential(BaseModel):
         """
         return all([order.is_complete for order in self.orders])
 
-    def get_current_order(self) -> PegExisting:
+    def get_current_order(self) -> Union[PegExisting,None]:
         """
         Get the current order to peg
         """
-        pass
+        for order in self.orders:
+            if order.is_pending:
+                return PegExisting(
+                        order=order,
+                        timezone=self.timezone,
+                        duration=self.duration,
+                        peg_every=self.peg_every,
+                        lock_duration=self.lock_duration
+                        )
+        return None
 
-    def set_current_order(self) -> PegExisting:
+    def set_current_order(self) -> Union[PegExisting, None]:
         """
         Set the current order for pegging
         """
