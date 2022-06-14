@@ -25,6 +25,9 @@ def test_login(broker):
     broker.login()
     broker.finvasia.login.assert_called_once()
 
+def test_authenticate(broker):
+    broker.authenticate()
+    broker.finvasia.login.assert_called_once()
 
 def test_get_order_type(broker):
     assert broker.get_order_type("limit") == "LMT"

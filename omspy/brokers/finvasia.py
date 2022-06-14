@@ -37,6 +37,12 @@ class Finvasia(Broker):
             imei=self._imei,
         )
 
+    def authenticate(self)->Union[Dict, None]:
+        """
+        Authenticate the user
+        """
+        return self.login()
+
     def _convert_symbol(self, symbol: str, exchange: str = "NSE") -> str:
         """
         Convert raw symbol to finvasia
