@@ -27,6 +27,11 @@ def existing_peg():
             return peg
 
 
+@pytest.fixture
+def sequential_peg():
+    pass
+
+
 def test_basic_peg():
     peg = BasicPeg(symbol="aapl", side="buy", quantity=100, broker=Paper())
     assert peg.count == 1
@@ -320,13 +325,14 @@ def test_existing_peg_run_order_lock(existing_peg):
     with pendulum.test(known):
         peg.run(ltp=252)
         assert broker.order_modify.call_count == 3
-        
+
+
 def test_peg_sequential_defaults():
     orders = [
-            Order(symbol='aapl', side='buy', quantity=10),
-            Order(symbol='goog', side='buy', quantity=10),
-            Order(symbol='amzn', side='buy', quantity=10),
-            ]
+        Order(symbol="aapl", side="buy", quantity=10),
+        Order(symbol="goog", side="buy", quantity=10),
+        Order(symbol="amzn", side="buy", quantity=10),
+    ]
     peg = PegSequential(orders=orders)
     assert len(peg.orders) == 3
     assert peg.timezone is None
@@ -334,11 +340,52 @@ def test_peg_sequential_defaults():
     assert peg.peg_every == 4
     assert peg.done is False
 
+
 def test_peg_sequential_valid_orders():
     orders = [
-            Order(symbol='aapl', side='buy', quantity=10),
-            Order(symbol='goog', side='buy', quantity=10),
-            Order(symbol='amzn', side='buy', quantity=10,
-                filled_quantity=10),
-            ]
+        Order(symbol="aapl", side="buy", quantity=10),
+        Order(symbol="goog", side="buy", quantity=10),
+        Order(symbol="amzn", side="buy", quantity=10, filled_quantity=10),
+    ]
+    with pytest.raises(ValidationError):
+        peg = PegSequential(orders=orders)
+
+
+def test_peg_sequential_completed_orders():
+    orders = [
+        Order(symbol="aapl", side="buy", quantity=10),
+        Order(symbol="goog", side="buy", quantity=10),
+        Order(symbol="amzn", side="buy", quantity=10),
+    ]
     peg = PegSequential(orders=orders)
+    assert peg.completed == []
+    orders[-1].filled_quantity = 10
+    assert peg.completed == orders[-1:]
+
+
+def test_peg_sequential_pending_orders():
+    orders = [
+        Order(symbol="aapl", side="buy", quantity=10),
+        Order(symbol="goog", side="buy", quantity=10),
+        Order(symbol="amzn", side="buy", quantity=10),
+    ]
+    peg = PegSequential(orders=orders)
+    assert peg.pending == orders
+    for order in orders:
+        order.status = "COMPLETE"
+    assert peg.pending == []
+
+
+def test_peg_sequential_pending_orders():
+    orders = [
+        Order(symbol="aapl", side="buy", quantity=10),
+        Order(symbol="goog", side="buy", quantity=10),
+        Order(symbol="amzn", side="buy", quantity=10),
+    ]
+    peg = PegSequential(orders=orders)
+    assert peg.all_complete is False
+    orders[-1].filled_quantity = 10
+    assert peg.all_complete is False
+    for order in orders:
+        order.status = "COMPLETE"
+    assert peg.all_complete is True

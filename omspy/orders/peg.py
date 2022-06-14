@@ -166,11 +166,13 @@ class PegExisting(BaseModel):
                     self.lock.modify(self.lock_duration)
         self._mark_done()
 
+
 class PegSequential(BaseModel):
     """
     Peg orders in sequence and peg only when the
     previous order is complete
     """
+
     orders: List[Order]
     broker: Any
     timezone: Optional[str] = None
@@ -187,31 +189,46 @@ class PegSequential(BaseModel):
         super().__init__(**data)
         # Validate whether orders could be pegged
         for order in self.orders:
-            peg = PegExisting(order, timezone=timezone,
-                    duration=duration, peg_every=peg_every,
-                    lock_duration=lock_duration)
+            peg = PegExisting(
+                order=order,
+                timezone=self.timezone,
+                duration=self.duration,
+                peg_every=self.peg_every,
+                lock_duration=self.lock_duration,
+            )
 
     @property
-    def order(self)->Optional[PegExisting]:
+    def order(self) -> Optional[PegExisting]:
         return self._order
 
     @property
-    def completed(self):
-        # Completed orders
-        pass
+    def completed(self) -> List[Order]:
+        """
+        returns the list of completed orders
+        """
+        return [order for order in self.orders if order.is_complete]
 
     @property
     def pending(self):
-        # Pending orders
-        pass
+        """
+        returns the list of pending orders
+        """
+        return [order for order in self.orders if order.is_pending]
 
-    def get_current_order(self)->PegExisting:
+    @property
+    def all_complete(self):
+        """
+        Whether all orders are completed
+        """
+        return all([order.is_complete for order in self.orders])
+
+    def get_current_order(self) -> PegExisting:
         """
         Get the current order to peg
         """
         pass
 
-    def set_current_order(self)->PegExisting:
+    def set_current_order(self) -> PegExisting:
         """
         Set the current order for pegging
         """
@@ -226,9 +243,8 @@ class PegSequential(BaseModel):
         # Cancel all pending orders
         pass
 
-    def run(self, ltp:Dict[str,float]):
+    def run(self, ltp: Dict[str, float]):
         pass
 
     def _mark_done(self):
         pass
-
