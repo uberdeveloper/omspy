@@ -273,11 +273,13 @@ class PegSequential(BaseModel):
 
     def execute_all(self):
         # Execute all pending orders
-        pass
+        for order in self.orders:
+            order.execute(broker=self.broker)
 
     def cancel_all(self):
         # Cancel all pending orders
-        pass
+        for order in self.orders:
+            order.cancel(broker=self.broker)
 
     def run(self, ltp: Dict[str, float]):
         self.set_current_order()

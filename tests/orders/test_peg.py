@@ -507,3 +507,15 @@ def test_peg_sequential_run_modify(sequential_peg):
     assert peg.broker.order_place.call_count == 4
     assert peg.broker.order_modify.call_count == 3
     assert peg.all_complete is True
+
+
+def test_peg_sequential_execute_all(sequential_peg):
+    peg = sequential_peg
+    peg.execute_all()
+    assert peg.broker.order_place.call_count == 4
+
+
+def test_peg_sequential_cancel_all(sequential_peg):
+    peg = sequential_peg
+    peg.cancel_all()
+    assert peg.broker.order_cancel.call_count == 4
