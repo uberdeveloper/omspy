@@ -181,6 +181,7 @@ class PegSequential(BaseModel):
     lock_duration: int = 2
     done: bool = False
     _order: Optional[PegExisting] = None
+    _start_time: Optional[pendulum.DateTime] = None
 
     class Config:
         underscore_attrs_are_private = True
@@ -196,6 +197,24 @@ class PegSequential(BaseModel):
                 peg_every=self.peg_every,
                 lock_duration=self.lock_duration,
             )
+        self._start_time = pendulum.now(tz=self.timezone)
+
+    @property
+    def has_expired(self) -> bool:
+        """
+        Whether the entire sequential order has expired.
+        A sequential order is considered expired when the
+        current time is greater than the maximum possible
+        time taken by all the orders together
+        Note
+        ----
+        1) total_time = duration*number of orders
+        """
+        total_time = self.duration * len(self.orders)
+        if pendulum.now(tz=self.timezone) > self._start_time.add(seconds=total_time):
+            return True
+        else:
+            return False
 
     @property
     def order(self) -> Optional[PegExisting]:
@@ -222,19 +241,19 @@ class PegSequential(BaseModel):
         """
         return all([order.is_complete for order in self.orders])
 
-    def get_current_order(self) -> Union[PegExisting,None]:
+    def get_current_order(self) -> Union[PegExisting, None]:
         """
         Get the current order to peg
         """
         for order in self.orders:
             if order.is_pending:
                 return PegExisting(
-                        order=order,
-                        timezone=self.timezone,
-                        duration=self.duration,
-                        peg_every=self.peg_every,
-                        lock_duration=self.lock_duration
-                        )
+                    order=order,
+                    timezone=self.timezone,
+                    duration=self.duration,
+                    peg_every=self.peg_every,
+                    lock_duration=self.lock_duration,
+                )
         return None
 
     def set_current_order(self) -> Union[PegExisting, None]:

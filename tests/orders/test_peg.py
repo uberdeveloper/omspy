@@ -332,18 +332,17 @@ def test_existing_peg_run_order_lock(existing_peg):
         assert broker.order_modify.call_count == 3
 
 
-def test_peg_sequential_defaults():
-    orders = [
-        Order(symbol="aapl", side="buy", quantity=10),
-        Order(symbol="goog", side="buy", quantity=10),
-        Order(symbol="amzn", side="buy", quantity=10),
-    ]
-    peg = PegSequential(orders=orders)
-    assert len(peg.orders) == 3
-    assert peg.timezone is None
-    assert peg.duration == 12
-    assert peg.peg_every == 4
-    assert peg.done is False
+def test_peg_sequential_defaults(order_list):
+    orders = order_list
+    known = pendulum.datetime(2022, 1, 1, 9, 10)
+    with pendulum.test(known):
+        peg = PegSequential(orders=orders)
+        assert len(peg.orders) == 3
+        assert peg.timezone is None
+        assert peg.duration == 12
+        assert peg.peg_every == 4
+        assert peg.done is False
+        assert peg._start_time == known
 
 
 def test_peg_sequential_valid_orders():
@@ -383,38 +382,59 @@ def test_peg_sequential_pending_orders(order_list):
         order.status = "COMPLETE"
     assert peg.all_complete is True
 
+
 def test_peg_sequential_get_current_order(order_list):
     orders = order_list
     peg = PegSequential(orders=orders, peg_every=3)
-    peg_args = dict(duration=12,peg_every=3,lock_duration=2)
-    peg_order = PegExisting(order=orders[0],**peg_args)
+    peg_args = dict(duration=12, peg_every=3, lock_duration=2)
+    peg_order = PegExisting(order=orders[0], **peg_args)
     assert peg.get_current_order() == peg_order
     assert peg.order is None
     orders[0].filled_quantity = 10
-    peg_order = PegExisting(order=orders[1],**peg_args)
+    peg_order = PegExisting(order=orders[1], **peg_args)
     assert peg.get_current_order() == peg_order
     orders[1].filled_quantity = 5
     assert peg.get_current_order() == peg_order
     orders[1].cancelled_quantity = 5
     assert peg.get_current_order() != peg_order
-    assert peg.get_current_order() == PegExisting(order=orders[-1],**peg_args)
-    orders[2].status = 'COMPLETE'
+    assert peg.get_current_order() == PegExisting(order=orders[-1], **peg_args)
+    orders[2].status = "COMPLETE"
     assert peg.get_current_order() is None
+
 
 def test_peg_sequential_set_current_order(order_list):
     orders = order_list
     peg = PegSequential(orders=orders, peg_every=3)
-    peg_args = dict(duration=12,peg_every=3,lock_duration=2)
-    peg_order = PegExisting(order=orders[0],**peg_args)
+    peg_args = dict(duration=12, peg_every=3, lock_duration=2)
+    peg_order = PegExisting(order=orders[0], **peg_args)
     assert peg.order is None
     peg.set_current_order()
     assert peg.order == peg_order
     orders[0].filled_quantity = 10
-    peg_order = PegExisting(order=orders[1],**peg_args)
+    peg_order = PegExisting(order=orders[1], **peg_args)
     peg.set_current_order()
     assert peg.order == peg_order
     orders[1].filled_quantity = 5
     orders[1].cancelled_quantity = 5
-    orders[2].status = 'COMPLETE'
+    orders[2].status = "COMPLETE"
     peg.set_current_order()
     assert peg.order is None
+
+
+def test_peg_sequential_has_expired(order_list):
+    orders = order_list
+    known = pendulum.datetime(2022, 1, 1, 10, 10)
+    with pendulum.test(known):
+        peg = PegSequential(orders=order_list, duration=10)
+        assert peg.has_expired is False
+    with pendulum.test(known.add(seconds=25)):
+        assert peg.has_expired is False
+    with pendulum.test(known.add(seconds=31)):
+        assert peg.has_expired is True
+
+    with pendulum.test(known):
+        peg = PegSequential(orders=order_list + order_list, duration=30)
+    with pendulum.test(known.add(seconds=180)):
+        assert peg.has_expired is False
+    with pendulum.test(known.add(seconds=181)):
+        assert peg.has_expired is True
