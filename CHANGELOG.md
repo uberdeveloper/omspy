@@ -1,5 +1,10 @@
+## 0.6.0
+### Features
+* Broker support added for **finvasia**
+* New order type `PegSequential` added to peg orders in sequence
+
 ## 0.5.1
-### Improvements 
+### Improvements
 * Order Lock mechanism added
 * ExistingPeg to check for time expiry before next peg
 
@@ -19,7 +24,7 @@
 ### Fixes
 * #13 do not change existing timestamp fixed
 * cloning an order creates a new timestamp instead of the original one
-* keyword arguments passed to `modify` method to update order attributes and then modify the broker order 
+* keyword arguments passed to `modify` method to update order attributes and then modify the broker order
 * peg order attributes carried to child orders
 
 ## 0.3.0
@@ -31,7 +36,7 @@
 * new **utils** module added that contains utility and helper functions. Functions added
 	* create_basic_positions_from_orders_dict
 	* dict_filter
-	* tick 
+	* tick
 	* stop_loss_step_decimal
 * mandatory arguments for order placement for zerodha broker added. `order_place, order_modify, order_cancel` would now add default arguments for the broker automatically (such as variety);you could override them with kwargs.
 * cover_orders function added to broker class, this checks for all valid orders and place stop loss in case of non-matching orders
