@@ -249,6 +249,7 @@ class PegSequential(BaseModel):
             if order.is_pending:
                 return PegExisting(
                     order=order,
+                    broker=self.broker,
                     timezone=self.timezone,
                     duration=self.duration,
                     peg_every=self.peg_every,
@@ -259,8 +260,15 @@ class PegSequential(BaseModel):
     def set_current_order(self) -> Union[PegExisting, None]:
         """
         Set the current order for pegging
+        Note
+        ----
+        1) Set the current order only when a existing peg
+        order is complete or there is no peg order
         """
-        self._order = self.get_current_order()
+        if self.order is None:
+            self._order = self.get_current_order()
+        elif self.order.order.is_complete:
+            self._order = self.get_current_order()
         return self.order
 
     def execute_all(self):
@@ -272,7 +280,16 @@ class PegSequential(BaseModel):
         pass
 
     def run(self, ltp: Dict[str, float]):
-        pass
+        self.set_current_order()
+        peg = self.order
+        # Run only when there is an order
+        if peg:
+            if not (peg.order.order_id):
+                # Place the order if it has not been placed yet
+                peg.execute()
+            symbol = peg.order.symbol
+            last_price = ltp.get(symbol, 0)
+            peg.run(ltp=last_price)
 
     def _mark_done(self):
         pass
