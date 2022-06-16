@@ -1,3 +1,7 @@
+## 0.6.1
+### Improvements
+* Extra order mappings for SLM and SLL added to finvasia
+
 ## 0.6.0
 ### Features
 * Broker support added for **finvasia**

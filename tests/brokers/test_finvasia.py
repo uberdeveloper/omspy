@@ -43,6 +43,10 @@ def test_get_order_type(broker):
     assert broker.get_order_type("limit") == "LMT"
     assert broker.get_order_type("SLM") == "SL-MKT"
     assert broker.get_order_type("STOP") == "MKT"
+    assert broker.get_order_type("SLL") == "SL-LMT"
+    assert broker.get_order_type("SLL") == "SL-LMT"
+    assert broker.get_order_type("SL-L") == "SL-LMT"
+    assert broker.get_order_type("SL-M") == "SL-MKT"
 
 
 def test_place_order(broker):

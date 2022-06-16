@@ -76,7 +76,11 @@ class Finvasia(Broker):
         broker's order type string
         returns MKT if the order_type is not matching
         """
-        order_types = dict(LIMIT="LMT", MARKET="MKT", SL="SL-LMT", SLM="SL-MKT")
+        order_types = dict(
+            LIMIT="LMT", MARKET="MKT", SL="SL-LMT", SLM="SL-MKT", SLL="SL-LMT"
+        )
+        order_types["SL-M"] = "SL-MKT"
+        order_types["SL-L"] = "SL-LMT"
         return order_types.get(order_type.upper(), "MKT")
 
     @pre
