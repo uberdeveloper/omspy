@@ -56,8 +56,14 @@ class ShortStraddle(BaseStrategy):
     def order(self) -> CompoundOrder:
         return self._order
 
-    def get_order(self, name: str):
-        pass
+    def get_order(self, name: str) -> Union[Order, None]:
+        """
+        Get order by name/key
+        Note
+        ----
+        1) Orders are named entry1, exit1, entry2, exit2 for easy reference
+        """
+        return self._order_map.get(name)
 
     def create_order(self):
         com = self._order
@@ -81,6 +87,10 @@ class ShortStraddle(BaseStrategy):
         order2stop.order_type = "SL"
         order2stop.side = "buy"
         com.add(order2stop)
+        self._order_map["entry1"] = order1
+        self._order_map["exit1"] = order1stop
+        self._order_map["entry2"] = order2
+        self._order_map["exit2"] = order2stop
         return self.order
 
     def check_sell_both_sides(self) -> bool:

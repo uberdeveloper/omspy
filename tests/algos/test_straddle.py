@@ -106,3 +106,15 @@ def test_short_straddle_limit_prices(price_straddle):
     assert order.orders[3].trigger_price == 268
     assert order.orders[2].price == 242
     assert order.orders[3].price == 270
+
+
+def test_short_straddle_get_order(simple_straddle):
+    straddle = simple_straddle
+    assert straddle.order.count == 0
+    assert straddle.get_order("entry1") is None
+    straddle.create_order()
+    assert straddle.get_order("entry1") == straddle._order.orders[0]
+    assert straddle.get_order("exit1") == straddle._order.orders[2]
+    assert straddle.get_order("entry2") == straddle._order.orders[1]
+    assert straddle.get_order("exit2") == straddle._order.orders[3]
+    assert straddle.get_order("exit5") is None
