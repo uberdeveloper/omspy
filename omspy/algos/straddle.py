@@ -93,11 +93,51 @@ class ShortStraddle(BaseStrategy):
         self._order_map["exit2"] = order2stop
         return self.order
 
-    def check_sell_both_sides(self) -> bool:
+    @staticmethod
+    def _check_orders_complete(one, two) -> bool:
         """
-        Check whether the sell order is placed on both the
-        sides and the orders are completed
+        returns whether the first leg of the order is complete
+        Note
+        ----
+        1) returns True if both orders are complete or rejected or canceled
+        2) returns True even if one order is rejected and other order is canceled
         """
-        orders = self.order.orders
-        if orders[0].is_complete and orders[1].is_complete:
+        statuses = ("REJECTED", "CANCELED", "CANCELLED")
+        if one.is_complete and two.is_complete:
             return True
+        elif one.status in statuses and two.status in statuses:
+            return True
+        else:
+            return False
+
+    @property
+    def is_first_leg_complete(self) -> bool:
+        """
+        returns whether the first leg of the order is complete
+        Note
+        ----
+        1) returns True if both orders are complete or rejected or canceled
+        2) returns True even if one order is rejected and other order is canceled
+        """
+        one = self.get_order("entry1")
+        two = self.get_order("exit1")
+        if one is None or two is None:
+            return False
+        else:
+            return self._check_orders_complete(one, two)
+
+    @property
+    def is_second_leg_complete(self) -> bool:
+        """
+        returns whether the first leg of the order is complete
+        Note
+        ----
+        1) returns True if both orders are complete or rejected or canceled
+        2) returns True even if one order is rejected and other order is canceled
+        """
+        one = self.get_order("entry2")
+        two = self.get_order("exit2")
+        if one is None or two is None:
+            return False
+        else:
+            return self._check_orders_complete(one, two)

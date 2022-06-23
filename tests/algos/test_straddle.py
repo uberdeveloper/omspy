@@ -118,3 +118,41 @@ def test_short_straddle_get_order(simple_straddle):
     assert straddle.get_order("entry2") == straddle._order.orders[1]
     assert straddle.get_order("exit2") == straddle._order.orders[3]
     assert straddle.get_order("exit5") is None
+
+
+def test_check_orders_complete(simple_straddle):
+    straddle = simple_straddle
+    straddle.create_order()
+    order1 = straddle.order.orders[0]
+    order2 = straddle.order.orders[2]
+    check = straddle._check_orders_complete(order1, order2)
+    assert check is False
+    order1.status = order2.status = "COMPLETE"
+    check = straddle._check_orders_complete(order1, order2)
+    assert check is True
+    order1.status = "REJECTED"
+    check = straddle._check_orders_complete(order1, order2)
+    assert check is False
+    order2.status = "CANCELED"
+    check = straddle._check_orders_complete(order1, order2)
+    assert check is True
+
+
+def test_is_first_leg_complete(simple_straddle):
+    straddle = simple_straddle
+    assert straddle.is_first_leg_complete is False
+    straddle.create_order()
+    assert straddle.is_first_leg_complete is False
+    straddle.order.orders[0].status = "COMPLETE"
+    straddle.order.orders[2].status = "COMPLETE"
+    assert straddle.is_first_leg_complete is True
+
+
+def test_is_second_leg_complete(simple_straddle):
+    straddle = simple_straddle
+    assert straddle.is_second_leg_complete is False
+    straddle.create_order()
+    assert straddle.is_second_leg_complete is False
+    straddle.order.orders[1].status = "REJECTED"
+    straddle.order.orders[3].status = "REJECTED"
+    assert straddle.is_second_leg_complete is True
