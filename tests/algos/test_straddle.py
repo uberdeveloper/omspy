@@ -156,3 +156,43 @@ def test_is_second_leg_complete(simple_straddle):
     straddle.order.orders[1].status = "REJECTED"
     straddle.order.orders[3].status = "REJECTED"
     assert straddle.is_second_leg_complete is True
+
+
+def test_check_sell_without_buy(simple_straddle):
+    straddle = simple_straddle
+    straddle.create_order()
+    one = straddle.order.orders[0]
+    two = straddle.order.orders[2]
+    assert straddle._check_sell_without_buy(one, two) is False
+    one.status = "COMPLETE"
+    assert straddle._check_sell_without_buy(one, two) is False
+    one.status = two.status = "PENDING"
+    assert straddle._check_sell_without_buy(one, two) is False
+    one.status, two.status = "REJECTED", "COMPLETE"
+    assert straddle._check_sell_without_buy(one, two) is False
+    one.status, two.status = "COMPLETE", "CANCELED"
+    assert straddle._check_sell_without_buy(one, two) is True
+    one.status, two.status = "OPEN", "CANCELLED"
+    assert straddle._check_sell_without_buy(one, two) is True
+    one.status, two.status = "OPEN", "TRIGGER PENDING"
+    assert straddle._check_sell_without_buy(one, two) is False
+
+
+def test_check_sell_without_buy(simple_straddle):
+    straddle = simple_straddle
+    straddle.create_order()
+    one = straddle.order.orders[1]
+    two = straddle.order.orders[3]
+    assert straddle._check_sell_without_buy(two, one) is False
+    two.status = "COMPLETE"
+    assert straddle._check_sell_without_buy(two, one) is False
+    two.status = one.status = "PENDING"
+    assert straddle._check_sell_without_buy(two, one) is False
+    two.status, one.status = "REJECTED", "COMPLETE"
+    assert straddle._check_sell_without_buy(two, one) is False
+    two.status, one.status = "COMPLETE", "CANCELED"
+    assert straddle._check_sell_without_buy(two, one) is True
+    two.status, one.status = "OPEN", "CANCELLED"
+    assert straddle._check_sell_without_buy(two, one) is True
+    two.status, one.status = "OPEN", "TRIGGER PENDING"
+    assert straddle._check_sell_without_buy(two, one) is False

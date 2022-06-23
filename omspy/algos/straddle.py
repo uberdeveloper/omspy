@@ -94,7 +94,7 @@ class ShortStraddle(BaseStrategy):
         return self.order
 
     @staticmethod
-    def _check_orders_complete(one, two) -> bool:
+    def _check_orders_complete(one: Order, two: Order) -> bool:
         """
         returns whether the first leg of the order is complete
         Note
@@ -141,3 +141,38 @@ class ShortStraddle(BaseStrategy):
             return False
         else:
             return self._check_orders_complete(one, two)
+
+    def _check_sell_without_buy(self, one: Order, two: Order) -> bool:
+        """
+        one
+            the sell order
+        two
+            the corresponding buy order
+        returns True if a sell order is without a buy order
+        Note
+        ----
+        If this returns True, then it is not valid
+        """
+        status_one = one.status
+        status_two = two.status
+        statuses = ("REJECTED", "CANCELED", "CANCELLED")
+        if one.is_complete and status_two in statuses:
+            return True
+        elif one.is_pending and status_two in statuses:
+            return True
+        else:
+            return False
+
+    def _check_buy_without_sell(self, one: Order, two: Order) -> bool:
+        """
+        one
+            the sell order
+        two
+            the corresponding buy order
+        returns True if a buy order is without a sell order
+        Note
+        ----
+        If this returns True, then it is not valid
+        """
+        # Just swapping the arguments
+        return self._check_sell_without_buy(two, one)
