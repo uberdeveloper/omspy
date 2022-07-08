@@ -56,7 +56,7 @@ class ShortStraddle(BaseStrategy):
     exclude_stop: bool = False
     ltp: Dict[str, float] = {}
     _order: Optional[CompoundOrder] = None
-    _order_map: Optional[Dict[str, CompoundOrder]] = None
+    _order_map: Optional[Dict[str, Order]] = None
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -81,6 +81,8 @@ class ShortStraddle(BaseStrategy):
         return self._order_map.get(name)
 
     def create_order(self):
+        if len(self._order.orders) > 0:
+            return
         com = self._order
         s1, s2 = self.symbols
         order1 = Order(symbol=s1, side="sell", quantity=self.quantity)
@@ -205,3 +207,23 @@ class ShortStraddle(BaseStrategy):
             if count >= num:
                 break
         return self.ltp
+
+    def _make_sequential_orders(self):
+        """
+        Make sequential peg orders
+        """
+        if len(self._pegs) == 0 and len(self.order.orders) == 4:
+            seq1 = PegSequential(
+                broker=self.broker,
+                timezone=self.timezone,
+                start_time=self.start_time,
+                orders=[self.get_order("entry1"), self.get_order("exit1")],
+            )
+            seq2 = PegSequential(
+                broker=self.broker,
+                timezone=self.timezone,
+                start_time=self.start_time,
+                orders=[self.get_order("entry2"), self.get_order("exit2")],
+            )
+            self._pegs.append(seq1)
+            self._pegs.append(seq2)

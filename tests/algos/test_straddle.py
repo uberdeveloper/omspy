@@ -88,6 +88,9 @@ def test_short_straddle_defaults(simple_straddle):
 def test_short_straddle_create_order_defaults(simple_straddle):
     straddle = simple_straddle
     assert straddle.order.count == 0
+    # Should create order only once despite calling many times
+    straddle.create_order()
+    straddle.create_order()
     straddle.create_order()
     assert straddle.order.count == 4
     assert [x.side for x in straddle.order.orders] == ["sell", "sell", "buy", "buy"]
@@ -228,3 +231,34 @@ def test_short_straddle_update_orders(price_straddle):
     )
     assert straddle.order.orders[0].filled_quantity == 50
     assert straddle.order.orders[-1].status == "COMPLETE"
+
+
+def test_short_straddle_make_sequential_orders_not_before_and_after_time(
+    price_straddle,
+):
+    straddle = price_straddle
+    known = pendulum.datetime(2022, 1, 1, 10, 5)
+    with pendulum.test(known):
+        straddle.create_order()
+        assert len(straddle.order.orders) == 4
+        straddle._make_sequential_orders()
+        assert len(straddle._pegs) == 0
+    known = pendulum.datetime(2022, 2, 1, 10, 5)
+    with pendulum.test(known):
+        straddle.create_order()
+        assert len(straddle.order.orders) == 4
+        straddle._make_sequential_orders()
+        assert straddle._pegs[0].has_expired is True
+
+
+def test_short_straddle_make_sequential_orders(price_straddle):
+    known = pendulum.datetime(2022, 1, 1, 10, 11)
+    with pendulum.test(known):
+        straddle = price_straddle
+        straddle._make_sequential_orders()
+        assert len(straddle._pegs) == 0
+        straddle.create_order()
+        straddle._make_sequential_orders()
+        assert len(straddle._pegs) == 2
+        assert straddle._pegs[0].orders[0] == straddle.order.orders[0]
+        assert straddle._pegs[1].orders[1] == straddle.order.orders[3]
