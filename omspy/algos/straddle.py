@@ -34,6 +34,18 @@ class BaseStrategy(BaseModel):
     def timer(self):
         return self._timer
 
+    def update_orders(self, orders: Optional[Dict[str, Dict]] = None):
+        """
+        Update existing orders
+        """
+        if orders is None:
+            orders = self.broker.orders
+        if hasattr(self, "_order"):
+            for order in self._order.orders:
+                o = orders.get(order.id)
+                if o:
+                    order.update(o)
+
 
 class ShortStraddle(BaseStrategy):
     symbols: Tuple[str, str]
@@ -42,7 +54,7 @@ class ShortStraddle(BaseStrategy):
     stop_price: Optional[Tuple[float, float]] = (0.0, 0.0)
     quantity: int = 1
     exclude_stop: bool = False
-    ltp:Dict[str,float] = {}
+    ltp: Dict[str, float] = {}
     _order: Optional[CompoundOrder] = None
     _order_map: Optional[Dict[str, CompoundOrder]] = None
 
@@ -180,7 +192,7 @@ class ShortStraddle(BaseStrategy):
         # Just swapping the arguments
         return self._check_sell_without_buy(two, one)
 
-    def update_ltp(self, ltp:Dict[str,float]):
+    def update_ltp(self, ltp: Dict[str, float]):
         """
         Update ltp for the given symbols
         """
@@ -189,7 +201,7 @@ class ShortStraddle(BaseStrategy):
         for symbol, last_price in ltp.items():
             if symbol in self.ltp:
                 self.ltp[symbol] = last_price
-                count+=1
-            if count >=num:
+                count += 1
+            if count >= num:
                 break
         return self.ltp
