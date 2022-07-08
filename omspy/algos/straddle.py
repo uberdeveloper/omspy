@@ -42,6 +42,7 @@ class ShortStraddle(BaseStrategy):
     stop_price: Optional[Tuple[float, float]] = (0.0, 0.0)
     quantity: int = 1
     exclude_stop: bool = False
+    ltp:Dict[str,float] = {}
     _order: Optional[CompoundOrder] = None
     _order_map: Optional[Dict[str, CompoundOrder]] = None
 
@@ -51,6 +52,8 @@ class ShortStraddle(BaseStrategy):
             broker=self.broker, connection=self.connection, timezone=self.timezone
         )
         self._order_map = dict(entry1=None, exit1=None, entry2=None, exit2=None)
+        for symbol in self.symbols:
+            self.ltp[symbol] = 0
 
     @property
     def order(self) -> CompoundOrder:
@@ -176,3 +179,17 @@ class ShortStraddle(BaseStrategy):
         """
         # Just swapping the arguments
         return self._check_sell_without_buy(two, one)
+
+    def update_ltp(self, ltp:Dict[str,float]):
+        """
+        Update ltp for the given symbols
+        """
+        num = len(self.symbols)
+        count = 0
+        for symbol, last_price in ltp.items():
+            if symbol in self.ltp:
+                self.ltp[symbol] = last_price
+                count+=1
+            if count >=num:
+                break
+        return self.ltp

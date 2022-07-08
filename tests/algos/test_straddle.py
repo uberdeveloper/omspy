@@ -81,6 +81,7 @@ def test_short_straddle_defaults(simple_straddle):
         "exit2",
     ]
     assert simple_straddle._pegs == []
+    assert simple_straddle.ltp == {'nifty22may17500ce':0, 'nifty22may17500pe': 0}
 
 
 def test_short_straddle_create_order_defaults(simple_straddle):
@@ -178,21 +179,37 @@ def test_check_sell_without_buy(simple_straddle):
     assert straddle._check_sell_without_buy(one, two) is False
 
 
-def test_check_sell_without_buy(simple_straddle):
+def test_check_buy_without_sell(simple_straddle):
     straddle = simple_straddle
     straddle.create_order()
     one = straddle.order.orders[1]
     two = straddle.order.orders[3]
-    assert straddle._check_sell_without_buy(two, one) is False
-    two.status = "COMPLETE"
-    assert straddle._check_sell_without_buy(two, one) is False
-    two.status = one.status = "PENDING"
-    assert straddle._check_sell_without_buy(two, one) is False
-    two.status, one.status = "REJECTED", "COMPLETE"
-    assert straddle._check_sell_without_buy(two, one) is False
-    two.status, one.status = "COMPLETE", "CANCELED"
-    assert straddle._check_sell_without_buy(two, one) is True
-    two.status, one.status = "OPEN", "CANCELLED"
-    assert straddle._check_sell_without_buy(two, one) is True
-    two.status, one.status = "OPEN", "TRIGGER PENDING"
-    assert straddle._check_sell_without_buy(two, one) is False
+    assert straddle._check_buy_without_sell(one, two) is False
+    one.status = "COMPLETE"
+    assert straddle._check_buy_without_sell(one, two) is False
+    one.status = two.status = "PENDING"
+    assert straddle._check_buy_without_sell(one, two) is False
+    one.status, two.status = "REJECTED", "COMPLETE"
+    assert straddle._check_buy_without_sell(one, two) is True
+
+    one.status, two.status = "COMPLETE", "CANCELED"
+    assert straddle._check_buy_without_sell(one, two) is False
+    one.status, two.status = "OPEN", "CANCELLED"
+    assert straddle._check_buy_without_sell(one, two) is False 
+
+    one.status, two.status = "CANCELED", "PENDING"
+    assert straddle._check_buy_without_sell(one, two) is True 
+    one.status, two.status = "TRIGGER PENDING", "OPEN"
+    assert straddle._check_buy_without_sell(one, two) is False
+
+def test_short_straddle_update_ltp(simple_straddle):
+    straddle = simple_straddle
+    straddle.update_ltp({'nifty':4500})
+    assert straddle.ltp == {'nifty22may17500ce':0, 'nifty22may17500pe': 0}
+    straddle.update_ltp({'nifty22may17500ce':120})
+    assert straddle.ltp == {'nifty22may17500ce':120, 'nifty22may17500pe': 0}
+    straddle.update_ltp({'nifty22may17500pe':150})
+    assert straddle.ltp == {'nifty22may17500ce':120, 'nifty22may17500pe': 150}
+    straddle.update_ltp({'a':25, 'b':75, 'nifty22may17500pe':130, 'nifty22may17500ce':115})
+    assert straddle.ltp == {'nifty22may17500ce':115, 'nifty22may17500pe': 130}
+
