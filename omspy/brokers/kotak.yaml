@@ -1,5 +1,5 @@
 order_place:
-  side: transaction_type
+  ot: order_type
 positions:
   netTrdQtyLot: quantity
 orders:

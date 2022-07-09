@@ -294,6 +294,7 @@ class Kotak(Broker):
     def _get_order_type(self) -> Dict:
         pass
 
+    @pre
     def order_place(
         self, symbol: str, side: str, exchange: str = "NSE", quantity: int = 1, **kwargs
     ) -> Union[str, None]:
