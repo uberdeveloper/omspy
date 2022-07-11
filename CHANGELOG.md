@@ -1,6 +1,7 @@
 ## 0.6.1
 ### Improvements
-* Extra order mappings for SLM and SLL added to finvasia
+* Extra order mappings for SLM and SLL added to finvasia broker
+* `order_type` argument resolved for kotak broker
 
 ## 0.6.0
 ### Features
