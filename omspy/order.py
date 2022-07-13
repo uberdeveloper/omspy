@@ -167,6 +167,18 @@ class Order(BaseModel):
             return False
 
     @property
+    def is_done(self) -> bool:
+        """
+        returns True if the order is either COMPLETE or CANCELED or REJECTED else False
+        """
+        if self.is_complete:
+            return True
+        elif self.status in ("CANCELLED", "CANCELED", "REJECTED"):
+            return True
+        else:
+            return False
+
+    @property
     def time_to_expiry(self) -> int:
         now = pendulum.now(tz=self.timezone)
         ts = self.timestamp

@@ -999,3 +999,28 @@ def test_order_is_pending_rejected():
     order.status = "REJECTED"
     assert order.filled_quantity == order.cancelled_quantity == 0
     assert order.is_pending is False
+
+
+def test_order_is_done():
+    order = Order(symbol="aapl", side="buy", quantity=10, filled_quantity=10)
+    assert order.is_complete is True
+    assert order.is_done is True
+    order = Order(
+        symbol="aapl", side="buy", quantity=10, filled_quantity=5, cancelled_quantity=5
+    )
+    assert order.is_done is True
+
+
+def test_order_is_done_not_complete():
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    assert order.is_done is False
+    order.status = "CANCELED"
+    assert order.is_complete is False
+    assert order.is_pending is False
+    assert order.is_done is True
+
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    order.status = "REJECTED"
+    assert order.is_complete is False
+    assert order.is_pending is False
+    assert order.is_done is True
