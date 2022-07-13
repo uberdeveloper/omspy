@@ -278,7 +278,8 @@ class Order(BaseModel):
         """
         Cancel an existing order
         """
-        broker.order_cancel(order_id=self.order_id)
+        if self.order_id is not None:
+            broker.order_cancel(order_id=self.order_id)
 
     def save_to_db(self) -> bool:
         """

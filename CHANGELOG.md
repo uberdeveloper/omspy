@@ -1,3 +1,10 @@
+## 0.7
+### Improvements
+* `is_done` method added to `Order` - returns True when the order is either complete or canceled or rejected.
+
+### Fixes
+* `order_cancel` not to be called when no  order_id is None
+
 ## 0.6.1
 ### Improvements
 * Extra order mappings for SLM and SLL added to finvasia broker

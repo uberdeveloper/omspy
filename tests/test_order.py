@@ -1024,3 +1024,16 @@ def test_order_is_done_not_complete():
     assert order.is_complete is False
     assert order.is_pending is False
     assert order.is_done is True
+
+
+def test_simple_order_cancel_none():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order = Order(
+            symbol="aapl",
+            side="buy",
+            quantity=10,
+            order_type="LIMIT",
+            price=650,
+        )
+        order.cancel(broker=broker)
+        broker.order_cancel.assert_not_called()
