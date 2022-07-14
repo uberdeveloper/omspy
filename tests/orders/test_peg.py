@@ -42,8 +42,8 @@ def sequential_peg(order_list):
     order_list.append(Order(symbol="dow", side="buy", quantity=10))
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        broker.order_place.side_effect = range(10000, 10009)
-        broker.order_modify.side_effect = range(10000, 10009)
+        broker.order_place.side_effect = range(10000, 10099)
+        broker.order_modify.side_effect = range(10000, 10099)
         with pendulum.test(known):
             peg = PegSequential(orders=order_list, broker=broker)
             return peg
@@ -158,6 +158,7 @@ def test_peg_market_cancel_on_expiry(broker):
         order_args={"product": "mis", "validity": "day"},
     )
     peg.convert_to_market_after_expiry = False
+    peg.orders[0].order_id = "abcdef"
     pendulum.set_test_now(known.add(seconds=61))
     peg.run()
     broker.order_cancel.assert_called_once()
@@ -478,15 +479,16 @@ def test_peg_sequential_run(sequential_peg):
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
     peg.run(ltp=ltp1)
+
     assert peg.order.order.symbol == "aapl"
     with pendulum.test(known.add(seconds=15)):
         assert peg.order.order.symbol == "aapl"
         peg.broker.order_place.assert_called_once()
-    for i in range(4):
-        peg.orders[i].filled_quantity = 10
-        assert len(peg.pending) == 4 - (i + 1)
-        assert len(peg.completed) == i + 1
-        peg.run(ltp=ltp1)
+        for i in range(4):
+            peg.orders[i].filled_quantity = 10
+            assert len(peg.pending) == 4 - (i + 1)
+            assert len(peg.completed) == i + 1
+            peg.run(ltp=ltp1)
     assert peg.broker.order_place.call_count == 4
     assert peg.all_complete is True
 
@@ -518,4 +520,26 @@ def test_peg_sequential_execute_all(sequential_peg):
 def test_peg_sequential_cancel_all(sequential_peg):
     peg = sequential_peg
     peg.cancel_all()
+    peg.broker.order_cancel.assert_not_called()
+    for (order, num) in zip(peg.orders, range(10000, 10009)):
+        order.order_id = num
+    peg.cancel_all()
     assert peg.broker.order_cancel.call_count == 4
+
+
+def test_peg_sequential_dont_execute_after_time(sequential_peg):
+    peg = sequential_peg
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    for i in (5, 10, 30, 50, 60):
+        k = known.add(seconds=i)
+        if i == 10:
+            peg.orders[0].filled_quantity = 10
+        if i > 30:
+            for order in peg.orders[1:]:
+                if order.status is None:
+                    order.status = "CANCELED"
+        with pendulum.test(k):
+            peg.run(ltp=ltp1)
+    assert peg.broker.order_place.call_count == 2
+    assert peg.broker.order_cancel.call_count == 1

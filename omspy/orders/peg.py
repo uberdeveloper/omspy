@@ -281,7 +281,34 @@ class PegSequential(BaseModel):
         for order in self.orders:
             order.cancel(broker=self.broker)
 
+    def _process_order_after_expiry(self, order: Order) -> None:
+        """
+        Process an order after expiry based on the given flags
+        """
+        if not order.order_id:
+            order.status = "CANCELED"
+            return
+        if order.cancel_after_expiry:
+            order.cancel(broker=self.broker)
+        elif order.convert_to_market_after_expiry:
+            order.price = 0
+            order.order_type = "MARKET"
+            order.modify(broker=self.broker)
+
+    def run_after_expiry(self):
+        """
+        Run this function after the overall peg time has expired.
+        This function could be overriden to match customized functionality
+        """
+        if self.done:
+            return
+        for order in self.orders:
+            if order.is_pending:
+                self._process_order_after_expiry(order)
+
     def run(self, ltp: Dict[str, float]):
+        if self.done:
+            return
         self.set_current_order()
         peg = self.order
         # Run only when there is an order
@@ -293,5 +320,7 @@ class PegSequential(BaseModel):
             last_price = ltp.get(symbol, 0)
             peg.run(ltp=last_price)
 
+        self._mark_done()
+
     def _mark_done(self):
-        pass
+        self.done = all([order.is_done for order in self.orders])
