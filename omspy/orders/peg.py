@@ -136,17 +136,15 @@ class PegExisting(BaseModel):
         """
         Mark whether the order is done
         """
-        if self.order.is_complete:
+        if self.order.is_done:
             self.done = True
-        elif not (self.order.is_pending):
-            self.done = True
-        return self.done
 
     def run(self, ltp: float):
         if self.done:
             logging.warning("Order already done")
             return
 
+        self._mark_done()
         order = self.order
         now = pendulum.now(self.timezone)
         if order.is_pending:
@@ -164,7 +162,6 @@ class PegExisting(BaseModel):
                 if self.lock.can_modify:
                     order.modify(broker=self.broker, price=ltp)
                     self.lock.modify(self.lock_duration)
-        self._mark_done()
 
 
 class PegSequential(BaseModel):
@@ -267,7 +264,7 @@ class PegSequential(BaseModel):
         """
         if self.order is None:
             self._order = self.get_current_order()
-        elif self.order.order.is_complete:
+        elif self.order.order.is_done:
             self._order = self.get_current_order()
         return self.order
 

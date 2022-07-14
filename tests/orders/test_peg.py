@@ -543,3 +543,62 @@ def test_peg_sequential_dont_execute_after_time(sequential_peg):
             peg.run(ltp=ltp1)
     assert peg.broker.order_place.call_count == 2
     assert peg.broker.order_cancel.call_count == 1
+
+
+def test_peg_sequential_dont_execute_after_time2(sequential_peg):
+    peg = sequential_peg
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    k = known.add(seconds=60)
+    with pendulum.test(k):
+        peg.run(ltp=ltp1)
+    assert peg.broker.order_place.call_count == 1
+    assert peg.broker.order_cancel.call_count == 0
+
+
+def test_peg_sequential_modify_after_time(sequential_peg):
+    peg = sequential_peg
+    for order in peg.orders:
+        order.convert_to_market_after_expiry = True
+        order.cancel_after_expiry = False
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    for i in range(30):
+        k = known.add(seconds=i)
+        with pendulum.test(k):
+            peg.run(ltp=ltp1)
+            if i == 3:
+                peg.orders[0].update({"filled_quantity": 10})
+            if i == 10:
+                peg.orders[1].update({"filled_quantity": 10})
+            if i == 13:
+                peg.orders[2].update({"filled_quantity": 10})
+            if i == 27:
+                peg.orders[3].update({"filled_quantity": 10})
+    assert peg.broker.order_place.call_count == 4
+    assert peg.broker.order_modify.call_count == 4
+
+
+def test_peg_sequential_modify_after_time2(sequential_peg):
+    peg = sequential_peg
+    peg.duration = 3
+    peg.peg_every = 3
+    for order in peg.orders:
+        order.convert_to_market_after_expiry = True
+        order.cancel_after_expiry = False
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    for i in range(20):
+        k = known.add(seconds=i)
+        with pendulum.test(k):
+            peg.run(ltp=ltp1)
+            if i == 4:
+                peg.orders[0].update({"filled_quantity": 10})
+            if i == 9:
+                peg.orders[1].update({"filled_quantity": 10})
+            if i == 14:
+                peg.orders[2].update({"filled_quantity": 10})
+            if i == 19:
+                peg.orders[3].update({"filled_quantity": 10})
+    assert peg.broker.order_place.call_count == 4
+    assert peg.broker.order_modify.call_count == 4
