@@ -177,6 +177,7 @@ class PegSequential(BaseModel):
     peg_every: int = 4
     lock_duration: int = 2
     done: bool = False
+    skip_subsequent_if_failed = False
     _order: Optional[PegExisting] = None
     _start_time: Optional[pendulum.DateTime] = None
 
@@ -302,6 +303,22 @@ class PegSequential(BaseModel):
         for order in self.orders:
             if order.is_pending:
                 self._process_order_after_expiry(order)
+
+    def _mark_subsequent_orders_as_canceled(self):
+        """
+        Mark all subsequent orders as canceled if the
+        existing order status is canceled or rejected
+        """
+        index = 0
+        flag = False
+        for i, order in enumerate(self.orders):
+            if order.status in ("CANCELED", "CANCELLED", "REJECTED"):
+                index = i
+                flag = True
+                break
+        if flag and (index < len(self.orders) - 1):
+            for i in range(index + 1, len(self.orders)):
+                self.orders[i].status = "CANCELED"
 
     def run(self, ltp: Dict[str, float]):
         if self.done:

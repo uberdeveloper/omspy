@@ -602,3 +602,52 @@ def test_peg_sequential_modify_after_time2(sequential_peg):
                 peg.orders[3].update({"filled_quantity": 10})
     assert peg.broker.order_place.call_count == 4
     assert peg.broker.order_modify.call_count == 4
+
+
+def test_mark_subsequent_orders_as_canceled(sequential_peg):
+    peg = sequential_peg
+    peg._mark_subsequent_orders_as_canceled()
+    assert [order.status for order in peg.orders] == [None] * 4
+
+    for order in peg.orders:
+        order.status = None
+    peg.orders[0].status = "COMPLETE"
+    peg.orders[1].status = "COMPLETE"
+    peg.orders[2].status = "REJECTED"
+    peg._mark_subsequent_orders_as_canceled()
+    assert [order.status for order in peg.orders] == [
+        "COMPLETE",
+        "COMPLETE",
+        "REJECTED",
+        "CANCELED",
+    ]
+    peg._mark_done()
+    assert peg.done is True
+
+
+def test_mark_subsequent_orders_as_canceled_complete(sequential_peg):
+    peg = sequential_peg
+
+    peg._mark_subsequent_orders_as_canceled()
+    peg.orders[0].status = "CANCELED"
+    peg._mark_subsequent_orders_as_canceled()
+    assert [order.status for order in peg.orders] == [
+        "CANCELED",
+        "CANCELED",
+        "CANCELED",
+        "CANCELED",
+    ]
+    peg._mark_done()
+    assert peg.done is True
+
+    for order in peg.orders:
+        order.status = "COMPLETE"
+    peg._mark_subsequent_orders_as_canceled()
+    assert [order.status for order in peg.orders] == [
+        "COMPLETE",
+        "COMPLETE",
+        "COMPLETE",
+        "COMPLETE",
+    ]
+    peg._mark_done()
+    assert peg.done is True
