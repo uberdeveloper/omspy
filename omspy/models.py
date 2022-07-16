@@ -3,6 +3,7 @@ This module contains the list of basic models
 """
 from pydantic import BaseModel, validator, PrivateAttr
 from typing import Optional, List
+from copy import deepcopy
 import pendulum
 
 
@@ -207,3 +208,92 @@ class OrderLock(BaseModel):
             if pendulum.now(tz=self.timezone) > self.cancellation_lock_till
             else False
         )
+
+
+class Candle(BaseModel):
+    """
+    A model representing a single candle
+    """
+
+    timestamp: pendulum.DateTime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: Optional[float]
+    info: Optional[str]
+
+
+class CandleStick(BaseModel):
+    """
+    Class to work on candlesticks
+    """
+
+    symbol: str
+    candles: List[Candle] = []
+    initial_price: float = 0
+    ltp: float = 0
+    high: float = -1e100  # Initialize to a impossible value
+    low: float = 1e100  # Initialize to a impossible value
+    bar_high: float = -1e100  # Initialize to a impossible value
+    bar_low: float = 1e100  # Initialize to a impossible value
+
+    def add_candle(self, candle: Candle) -> None:
+        """
+        Add a candle
+        """
+        self.candles.append(deepcopy(candle))
+
+    def update(self, ltp: float):
+        """
+        Update running candle
+        """
+        self.ltp = ltp
+        if self.initial_price == 0:
+            self.initial_price = self.ltp
+        self.bar_high = max(self.bar_high, ltp)
+        self.bar_low = min(self.bar_low, ltp)
+        self.high = max(self.high, ltp)
+        self.low = min(self.low, ltp)
+
+    def update_candle(self, timestamp: pendulum.DateTime = pendulum.now()) -> Candle:
+        """
+        Update and append the existing candle
+        returns the updated candle
+        """
+        if len(self.candles) == 0:
+            open_price = self.initial_price
+        else:
+            open_price = self.candles[-1].close
+        candle = Candle(
+            timestamp=timestamp,
+            open=open_price,
+            high=self.bar_high,
+            low=self.bar_low,
+            close=self.ltp,
+        )
+        self.add_candle(candle)
+        self.bar_high = self.bar_low = self.ltp
+        return candle
+
+    @property
+    def bullish_bars(self) -> int:
+        """
+        Returns the number of bullish bars
+        """
+        count = 0
+        for candle in self.candles:
+            if candle.close > candle.open:
+                count += 1
+        return count
+
+    @property
+    def bearish_bars(self) -> int:
+        """
+        Returns the number of bullish bars
+        """
+        count = 0
+        for candle in self.candles:
+            if candle.close < candle.open:
+                count += 1
+        return count
