@@ -627,7 +627,6 @@ def test_mark_subsequent_orders_as_canceled(sequential_peg):
 
 def test_mark_subsequent_orders_as_canceled_complete(sequential_peg):
     peg = sequential_peg
-
     peg._mark_subsequent_orders_as_canceled()
     peg.orders[0].status = "CANCELED"
     peg._mark_subsequent_orders_as_canceled()
@@ -650,4 +649,28 @@ def test_mark_subsequent_orders_as_canceled_complete(sequential_peg):
         "COMPLETE",
     ]
     peg._mark_done()
+    assert peg.done is True
+
+
+def test_peg_sequential_skip_subsequent_if_failed(sequential_peg):
+    peg = sequential_peg
+    peg.skip_subsequent_if_failed = True
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    for i in range(5, 40):
+        k = known.add(seconds=i)
+        if i == 10:
+            peg.orders[0].filled_quantity = 10
+            peg.orders[0].status = "COMPLETE"
+        if i > 20:
+            peg.orders[1].status = "CANCELED"
+        with pendulum.test(k):
+            peg.run(ltp=ltp1)
+    assert peg.broker.order_place.call_count == 2
+    assert [order.status for order in peg.orders] == [
+        "COMPLETE",
+        "CANCELED",
+        "CANCELED",
+        "CANCELED",
+    ]
     assert peg.done is True

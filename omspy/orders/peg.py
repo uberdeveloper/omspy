@@ -323,6 +323,8 @@ class PegSequential(BaseModel):
     def run(self, ltp: Dict[str, float]):
         if self.done:
             return
+        if self.skip_subsequent_if_failed:
+            self._mark_subsequent_orders_as_canceled()
         self.set_current_order()
         peg = self.order
         # Run only when there is an order
