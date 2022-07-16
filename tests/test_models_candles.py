@@ -1,6 +1,7 @@
 from omspy.models import Candle, CandleStick
 import pytest
 import pendulum
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -23,18 +24,30 @@ def ohlc_data():
     return candles
 
 
-def test_candlestick_initial_settings():
-    cdl = CandleStick(symbol="NIFTY")
-    assert cdl.symbol == "NIFTY"
-    assert cdl.high == -1e100
-    assert cdl.bar_high == -1e100
-    assert cdl.low == 1e100
-    assert cdl.bar_low == 1e100
-    assert cdl.ltp == 0
+@pytest.fixture
+def simple_candlestick():
+    known = pendulum.datetime(2022, 1, 1, 0, 0)
+    with pendulum.test(known):
+        return CandleStick(symbol="NIFTY")
 
 
-def test_candlestick_update():
-    cdl = CandleStick(symbol="NIFTY")
+def test_candlestick_initial_settings(simple_candlestick):
+    known = pendulum.datetime(2022, 1, 1)
+    with pendulum.test(known):
+        cdl = simple_candlestick
+        assert cdl.symbol == "NIFTY"
+        assert cdl.high == -1e100
+        assert cdl.bar_high == -1e100
+        assert cdl.low == 1e100
+        assert cdl.bar_low == 1e100
+        assert cdl.ltp == 0
+        assert cdl.interval == 300
+        assert cdl.timer.start_time == pendulum.today().add(hours=9, minutes=15)
+        assert cdl.timer.end_time == pendulum.today().add(hours=15, minutes=30)
+
+
+def test_candlestick_update(simple_candlestick):
+    cdl = simple_candlestick
     cdl.update(100)
     assert cdl.high == cdl.low == 100
     assert cdl.bar_high == cdl.low == 100
@@ -50,8 +63,9 @@ def test_candlestick_update():
     assert cdl.low == cdl.bar_low == 99
 
 
-def test_candlestick_add_candle():
-    cdl = CandleStick(symbol="SBIN")
+def test_candlestick_add_candle(simple_candlestick):
+    cdl = simple_candlestick
+    cdl.symbol = "SBIN"
     candle = Candle(
         timestamp=pendulum.now(tz="local"),
         open=100,
@@ -65,8 +79,9 @@ def test_candlestick_add_candle():
     assert cdl.candles[0] == candle
 
 
-def test_candlestick_add_candle_extra_info():
-    cdl = CandleStick(symbol="SBIN")
+def test_candlestick_add_candle_extra_info(simple_candlestick):
+    cdl = simple_candlestick
+    cdl.symbol = "SBIN"
     candle = Candle(
         timestamp=pendulum.now(tz="local"),
         open=100,
@@ -82,8 +97,8 @@ def test_candlestick_add_candle_extra_info():
     assert cdl.candles[1].info == "some extra info"
 
 
-def test_candlestick_update_initial_price():
-    cdl = CandleStick(symbol="NIFTY")
+def test_candlestick_update_initial_price(simple_candlestick):
+    cdl = simple_candlestick
     cdl.update(100)
     assert cdl.initial_price == 100
 
@@ -92,8 +107,8 @@ def test_candlestick_update_initial_price():
     assert cdl.high == 101
 
 
-def test_candlestick_update_candle():
-    cdl = CandleStick(symbol="AAPL")
+def test_candlestick_update_candle(simple_candlestick):
+    cdl = simple_candlestick
     for i in [100, 101, 102, 101, 103, 101, 99, 102]:
         cdl.update(i)
     ts = pendulum.now(tz="Asia/Kolkata")
@@ -104,8 +119,8 @@ def test_candlestick_update_candle():
     assert cdl.bar_high == cdl.bar_low == cdl.ltp == 102
 
 
-def test_candlestick_update_multiple_candles():
-    cdl = CandleStick(symbol="AAPL")
+def test_candlestick_update_multiple_candles(simple_candlestick):
+    cdl = simple_candlestick
     for i in [100, 101, 102, 101, 103, 101, 99, 102]:
         cdl.update(i)
     ts = pendulum.parse("2020-01-01T09:00:00")
@@ -125,15 +140,15 @@ def test_candlestick_update_multiple_candles():
     assert cdl.low == 99
 
 
-def test_bullish_bars(ohlc_data):
-    cdl = CandleStick(symbol="sample")
+def test_bullish_bars(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
     # TODO: Change this into a mock
     cdl.candles = ohlc_data
     assert cdl.bullish_bars == 4
 
 
-def test_bearish_bars(ohlc_data):
-    cdl = CandleStick(symbol="sample")
+def test_bearish_bars(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
     # TODO: Change this into a mock
     cdl.candles = ohlc_data
     assert cdl.bearish_bars == 2

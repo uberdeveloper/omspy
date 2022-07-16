@@ -232,11 +232,25 @@ class CandleStick(BaseModel):
     symbol: str
     candles: List[Candle] = []
     initial_price: float = 0
+    interval: int = 300  # in seconds
+    timer: Optional[Timer] = None
     ltp: float = 0
     high: float = -1e100  # Initialize to a impossible value
     low: float = 1e100  # Initialize to a impossible value
     bar_high: float = -1e100  # Initialize to a impossible value
     bar_low: float = 1e100  # Initialize to a impossible value
+
+    class Config:
+        underscore_attribs_are_private = True
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.timer is None:
+            timer = Timer(
+                start_time=pendulum.today(tz="local").add(hours=9, minutes=15),
+                end_time=pendulum.today(tz="local").add(hours=15, minutes=30),
+            )
+            self.timer = timer
 
     def add_candle(self, candle: Candle) -> None:
         """
