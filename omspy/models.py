@@ -100,18 +100,30 @@ class Timer(BaseModel):
         return v
 
     @property
-    def has_started(self):
+    def has_started(self) -> bool:
         """
         Whether tracking has started
         """
         return True if pendulum.now(tz=self.timezone) > self.start_time else False
 
     @property
-    def has_completed(self):
+    def has_completed(self) -> bool:
         """
         Whether tracking has completed
         """
         return True if pendulum.now(tz=self.timezone) > self.end_time else False
+
+    @property
+    def is_running(self) -> bool:
+        """
+        Whether the timer is in progress
+        returns True if it has started and not completed
+        else False
+        """
+        if self.has_started and not (self.has_completed):
+            return True
+        else:
+            return False
 
 
 class TimeTracker(Tracker, Timer):
@@ -288,20 +300,21 @@ class CandleStick(BaseModel):
         Update and append the existing candle
         returns the updated candle
         """
-        if len(self.candles) == 0:
-            open_price = self.initial_price
-        else:
-            open_price = self.candles[-1].close
-        candle = Candle(
-            timestamp=timestamp,
-            open=open_price,
-            high=self.bar_high,
-            low=self.bar_low,
-            close=self.ltp,
-        )
-        self.add_candle(candle)
-        self.bar_high = self.bar_low = self.ltp
-        return candle
+        if self.timer.has_started and not (self.timer.has_completed):
+            if len(self.candles) == 0:
+                open_price = self.initial_price
+            else:
+                open_price = self.candles[-1].close
+            candle = Candle(
+                timestamp=timestamp,
+                open=open_price,
+                high=self.bar_high,
+                low=self.bar_low,
+                close=self.ltp,
+            )
+            self.add_candle(candle)
+            self.bar_high = self.bar_low = self.ltp
+            return candle
 
     @property
     def bullish_bars(self) -> int:

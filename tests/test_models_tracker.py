@@ -101,3 +101,16 @@ def test_time_tracker_inherit(time_tracker):
     assert tracker.last_price == 216
     assert tracker.high == 224
     assert tracker.low == 199
+
+
+def test_timer_is_running(time_tracker):
+    tracker = time_tracker
+    known = pendulum.datetime(2022, 4, 1)
+    with pendulum.test(known):
+        assert tracker.is_running is False
+    with pendulum.test(known.add(minutes=600)):
+        assert tracker.is_running is True
+    with pendulum.test(known.add(minutes=920)):
+        assert tracker.is_running is True
+    with pendulum.test(known.add(minutes=921)):
+        assert tracker.is_running is False
