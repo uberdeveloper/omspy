@@ -239,6 +239,8 @@ class CandleStick(BaseModel):
     low: float = 1e100  # Initialize to a impossible value
     bar_high: float = -1e100  # Initialize to a impossible value
     bar_low: float = 1e100  # Initialize to a impossible value
+    next_interval: Optional[pendulum.DateTime] = None
+    _periods: List[pendulum.DateTime] = []
 
     class Config:
         underscore_attribs_are_private = True
@@ -251,6 +253,17 @@ class CandleStick(BaseModel):
                 end_time=pendulum.today(tz="local").add(hours=15, minutes=30),
             )
             self.timer = timer
+        period = pendulum.period(self.timer.start_time, self.timer.end_time)
+        for p in period.range("seconds", self.interval):
+            self._periods.append(p)
+        # The first period is popped since it is the start
+        self._periods.pop(0)
+        if self.next_interval is None:
+            self.next_interval = self._periods.pop(0)
+
+    @property
+    def periods(self):
+        return periods
 
     def add_candle(self, candle: Candle) -> None:
         """

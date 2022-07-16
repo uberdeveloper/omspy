@@ -44,6 +44,7 @@ def test_candlestick_initial_settings(simple_candlestick):
         assert cdl.interval == 300
         assert cdl.timer.start_time == pendulum.today().add(hours=9, minutes=15)
         assert cdl.timer.end_time == pendulum.today().add(hours=15, minutes=30)
+        assert cdl.next_interval == pendulum.today().add(hours=9, minutes=20)
 
 
 def test_candlestick_update(simple_candlestick):
