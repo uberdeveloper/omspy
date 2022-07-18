@@ -1,4 +1,4 @@
-from omspy.models import Candle, CandleStick
+from omspy.models import Candle, CandleStick, Timer
 import pytest
 import pendulum
 from unittest.mock import patch
@@ -112,25 +112,29 @@ def test_candlestick_update_candle(simple_candlestick):
     cdl = simple_candlestick
     for i in [100, 101, 102, 101, 103, 101, 99, 102]:
         cdl.update(i)
-    ts = pendulum.now(tz="Asia/Kolkata")
-    cdl.update_candle(timestamp=ts)
-    candle = Candle(timestamp=ts, open=100, high=103, low=99, close=102)
-    assert len(cdl.candles) == 1
-    assert cdl.candles[0] == candle
-    assert cdl.bar_high == cdl.bar_low == cdl.ltp == 102
+    known = pendulum.datetime(2022, 1, 1, 9, 18)
+    with pendulum.test(known):
+        ts = pendulum.now(tz="Asia/Kolkata")
+        cdl.update_candle(timestamp=ts)
+        candle = Candle(timestamp=ts, open=100, high=103, low=99, close=102)
+        assert len(cdl.candles) == 1
+        assert cdl.candles[0] == candle
+        assert cdl.bar_high == cdl.bar_low == cdl.ltp == 102
 
 
 def test_candlestick_update_multiple_candles(simple_candlestick):
     cdl = simple_candlestick
     for i in [100, 101, 102, 101, 103, 101, 99, 102]:
         cdl.update(i)
-    ts = pendulum.parse("2020-01-01T09:00:00")
-    cdl.update_candle(timestamp=ts)
-    for i in [102.5, 104, 103, 102, 103]:
-        cdl.update(i)
-    ts = pendulum.parse("2020-01-01T09:30:00")
-    cdl.update_candle(timestamp=ts)
-    c1, c2 = cdl.candles[0], cdl.candles[1]
+    ts = pendulum.parse("2022-01-01T09:16:00")
+    with pendulum.test(ts):
+        cdl.update_candle(timestamp=ts)
+        for i in [102.5, 104, 103, 102, 103]:
+            cdl.update(i)
+    ts = pendulum.parse("2022-01-01T09:30:00")
+    with pendulum.test(ts):
+        cdl.update_candle(timestamp=ts)
+        c1, c2 = cdl.candles[0], cdl.candles[1]
     assert len(cdl.candles) == 2
     assert c1.close == c2.open
     assert c2.timestamp == ts
@@ -141,15 +145,31 @@ def test_candlestick_update_multiple_candles(simple_candlestick):
     assert cdl.low == 99
 
 
-def test_bullish_bars(ohlc_data, simple_candlestick):
+def test_candlestick_bullish_bars(ohlc_data, simple_candlestick):
     cdl = simple_candlestick
     # TODO: Change this into a mock
     cdl.candles = ohlc_data
     assert cdl.bullish_bars == 4
 
 
-def test_bearish_bars(ohlc_data, simple_candlestick):
+def test_candlestick_bearish_bars(ohlc_data, simple_candlestick):
     cdl = simple_candlestick
     # TODO: Change this into a mock
     cdl.candles = ohlc_data
     assert cdl.bearish_bars == 2
+
+
+@pytest.mark.parametrize(
+    "interval,expected1,expected2",
+    [
+        (60, 374, pendulum.datetime(2022, 1, 1, 9, 16, tz="local")),
+        (90, 249, pendulum.datetime(2022, 1, 1, 9, 16, 30, tz="local")),
+        (300, 74, pendulum.datetime(2022, 1, 1, 9, 20, tz="local")),
+    ],
+)
+def test_candlestick_periods(interval, expected1, expected2):
+    known = pendulum.datetime(2022, 1, 1, tz="local")
+    with pendulum.test(known.add(hours=9)):
+        cdl = CandleStick(symbol="NIFTY", interval=interval)
+        assert len(cdl.periods) == expected1
+        assert cdl.next_interval == expected2
