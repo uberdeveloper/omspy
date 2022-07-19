@@ -2,7 +2,7 @@
 This module contains the list of basic models
 """
 from pydantic import BaseModel, validator, PrivateAttr
-from typing import Optional, List
+from typing import Optional, List, Union
 from copy import deepcopy
 import pendulum
 
@@ -246,6 +246,7 @@ class CandleStick(BaseModel):
     initial_price: float = 0
     interval: int = 300  # in seconds
     timer: Optional[Timer] = None
+    timezone: Optional[str] = "local"
     ltp: float = 0
     high: float = -1e100  # Initialize to a impossible value
     low: float = 1e100  # Initialize to a impossible value
@@ -261,8 +262,8 @@ class CandleStick(BaseModel):
         super().__init__(**data)
         if self.timer is None:
             timer = Timer(
-                start_time=pendulum.today(tz="local").add(hours=9, minutes=15),
-                end_time=pendulum.today(tz="local").add(hours=15, minutes=30),
+                start_time=pendulum.today(tz=self.timezone).add(hours=9, minutes=15),
+                end_time=pendulum.today(tz=self.timezone).add(hours=15, minutes=30),
             )
             self.timer = timer
         period = pendulum.period(self.timer.start_time, self.timer.end_time)
@@ -333,3 +334,11 @@ class CandleStick(BaseModel):
             if candle.close < candle.open:
                 count += 1
         return count
+
+    def get_next_interval(self) -> Union[pendulum.DateTime, None]:
+        """
+        Get the next time interval
+        returns None if all intervals are completed
+        """
+        if len(self.periods) == 0:
+            return None

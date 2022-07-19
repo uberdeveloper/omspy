@@ -173,3 +173,16 @@ def test_candlestick_periods(interval, expected1, expected2):
         cdl = CandleStick(symbol="NIFTY", interval=interval)
         assert len(cdl.periods) == expected1
         assert cdl.next_interval == expected2
+
+
+def test_candlestick_timezone():
+    known = pendulum.datetime(2022, 1, 1, 0, 0)
+    with pendulum.test(known):
+        cdl = CandleStick(symbol="NIFTY", timezone="Asia/Kolkata")
+        assert cdl.timer.start_time.timezone_name == "Asia/Kolkata"
+        assert cdl.periods[0].timezone_name == "Asia/Kolkata"
+
+    with pendulum.test(known):
+        cdl = CandleStick(symbol="EURONEXT", timezone="Europe/Paris")
+        assert cdl.timer.start_time.timezone_name == "Europe/Paris"
+        assert cdl.periods[0].timezone_name == "Europe/Paris"
