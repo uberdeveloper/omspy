@@ -186,3 +186,28 @@ def test_candlestick_timezone():
         cdl = CandleStick(symbol="EURONEXT", timezone="Europe/Paris")
         assert cdl.timer.start_time.timezone_name == "Europe/Paris"
         assert cdl.periods[0].timezone_name == "Europe/Paris"
+
+
+def test_candlestick_get_next_interval(simple_candlestick):
+    cdl = simple_candlestick
+    known = pendulum.datetime(2022, 1, 1, tz="local")
+    with pendulum.test(known):
+        assert cdl.next_interval == pendulum.datetime(2022, 1, 1, 9, 20, tz="local")
+        assert len(cdl.periods) == 74
+    with pendulum.test(known.add(hours=9, minutes=37)):
+        assert cdl.get_next_interval() == pendulum.datetime(
+            2022, 1, 1, 9, 40, tz="local"
+        )
+        assert len(cdl.periods) == 70
+        assert cdl.periods[0] == pendulum.datetime(2022, 1, 1, 9, 45, tz="local")
+    with pendulum.test(known.add(hours=15, minutes=21)):
+        assert cdl.get_next_interval() == pendulum.datetime(
+            2022, 1, 1, 15, 25, tz="local"
+        )
+        assert len(cdl.periods) == 1
+        assert cdl.periods[0] == pendulum.datetime(2022, 1, 1, 15, 30, tz="local")
+    with pendulum.test(known.add(hours=15, minutes=40)):
+        assert cdl.get_next_interval() is None
+        print(cdl.periods)
+        assert len(cdl.periods) == 0
+        assert cdl.periods == []

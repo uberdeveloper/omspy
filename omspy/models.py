@@ -5,6 +5,7 @@ from pydantic import BaseModel, validator, PrivateAttr
 from typing import Optional, List, Union
 from copy import deepcopy
 import pendulum
+import logging
 
 
 class QuantityMatch(BaseModel):
@@ -342,3 +343,18 @@ class CandleStick(BaseModel):
         """
         if len(self.periods) == 0:
             return None
+        to_remove = []
+        period = None
+        for p in self.periods:
+            if p > pendulum.now(tz=self.timezone):
+                period = p
+                to_remove.append(p)
+                break
+            else:
+                to_remove.append(p)
+        for p in to_remove:
+            try:
+                self.periods.remove(p)
+            except ValueError:
+                logging.error(f"Period {period} cannot be found in the list of periods")
+        return period
