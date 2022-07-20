@@ -204,3 +204,33 @@ def test_candlestick_update():
         ),
     ]
     assert cdl.candles == candles
+    assert cdl.ltp == 15706.25
+    assert cdl._last_ltp == 15703.25
+
+
+def test_candlestick_update_interval():
+    known = pendulum.datetime(2022, 7, 1, 0, 0)
+    with pendulum.test(known):
+        cdl = CandleStick(symbol="NIFTY", interval=120)
+    df = pd.read_csv("tests/data/nifty_ticks.csv", parse_dates=["timestamp"])
+    expected = pd.read_csv(
+        "tests/data/nifty_candles_2min.csv", parse_dates=["timestamp"]
+    )
+    candles = []
+    for i, row in expected.iterrows():
+        c = Candle(
+            timestamp=pendulum.instance(row["timestamp"], tz="local"),
+            open=row["open"],
+            high=row["high"],
+            low=row["low"],
+            close=row["close"],
+        )
+        candles.append(c)
+    for i, row in df.iterrows():
+        ts = pendulum.instance(row["timestamp"], tz="local")
+        ltp = row["last_price"]
+        with pendulum.test(ts):
+            cdl.update(ltp)
+    assert cdl.candles == candles
+    assert cdl.ltp == 15706.25
+    assert cdl._last_ltp == 15703.25
