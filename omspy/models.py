@@ -251,16 +251,19 @@ class CandleStick(BaseModel):
     ltp: float = 0
     high: float = -1e100  # Initialize to a impossible value
     low: float = 1e100  # Initialize to a impossible value
+    bar_open: float = 0
     bar_high: float = -1e100  # Initialize to a impossible value
     bar_low: float = 1e100  # Initialize to a impossible value
     next_interval: Optional[pendulum.DateTime] = None
     periods: List[pendulum.DateTime] = []
+    _last_ltp: float = PrivateAttr()  # to track bar close price
 
     class Config:
         underscore_attribs_are_private = True
 
     def __init__(self, **data):
         super().__init__(**data)
+        self._last_ltp = 0
         if self.timer is None:
             timer = Timer(
                 start_time=pendulum.today(tz=self.timezone).add(hours=9, minutes=15),
@@ -281,13 +284,15 @@ class CandleStick(BaseModel):
         """
         self.candles.append(deepcopy(candle))
 
-    def update(self, ltp: float):
+    def _update_prices(self):
         """
         Update running candle
         """
-        self.ltp = ltp
+        ltp = self.ltp
         if self.initial_price == 0:
-            self.initial_price = self.ltp
+            self.initial_price = ltp
+        if self.bar_open == 0:
+            self.bar_open = ltp
         self.bar_high = max(self.bar_high, ltp)
         self.bar_low = min(self.bar_low, ltp)
         self.high = max(self.high, ltp)
@@ -298,21 +303,23 @@ class CandleStick(BaseModel):
         Update and append the existing candle
         returns the updated candle
         """
-        if self.timer.is_running:
-            if len(self.candles) == 0:
-                open_price = self.initial_price
-            else:
-                open_price = self.candles[-1].close
-            candle = Candle(
-                timestamp=timestamp,
-                open=open_price,
-                high=self.bar_high,
-                low=self.bar_low,
-                close=self.ltp,
-            )
-            self.add_candle(candle)
-            self.bar_high = self.bar_low = self.ltp
-            return candle
+        if len(self.candles) == 0:
+            open_price = self.initial_price
+        else:
+            open_price = self.bar_open
+        candle = Candle(
+            timestamp=timestamp,
+            open=open_price,
+            high=self.bar_high,
+            low=self.bar_low,
+            close=self._last_ltp,
+        )
+        self.add_candle(candle)
+        self.bar_high = -1e100
+        self.bar_low = 1e100
+        self.bar_open = 0
+        self._update_prices()
+        return candle
 
     @property
     def bullish_bars(self) -> int:
@@ -358,3 +365,14 @@ class CandleStick(BaseModel):
             except ValueError:
                 logging.error(f"Period {period} cannot be found in the list of periods")
         return period
+
+    def update(self, ltp: float):
+        if self.timer.is_running:
+            self._last_ltp = self.ltp
+            self.ltp = ltp
+            now = pendulum.now(tz=self.timezone)
+            if now > self.next_interval:
+                self.update_candle(timestamp=self.next_interval)
+                self.next_interval = self.get_next_interval()
+            else:
+                self._update_prices()

@@ -2,6 +2,7 @@ from omspy.models import Candle, CandleStick, Timer
 import pytest
 import pendulum
 from unittest.mock import patch
+import pandas as pd
 
 
 @pytest.fixture
@@ -47,23 +48,6 @@ def test_candlestick_initial_settings(simple_candlestick):
         assert cdl.next_interval == pendulum.today().add(hours=9, minutes=20)
 
 
-def test_candlestick_update(simple_candlestick):
-    cdl = simple_candlestick
-    cdl.update(100)
-    assert cdl.high == cdl.low == 100
-    assert cdl.bar_high == cdl.low == 100
-
-    cdl.update(102)
-    assert cdl.high == cdl.bar_high == 102
-
-    cdl.update(99)
-    assert cdl.low == cdl.bar_low == 99
-
-    cdl.update(101)
-    assert cdl.high == cdl.bar_high == 102
-    assert cdl.low == cdl.bar_low == 99
-
-
 def test_candlestick_add_candle(simple_candlestick):
     cdl = simple_candlestick
     cdl.symbol = "SBIN"
@@ -98,51 +82,32 @@ def test_candlestick_add_candle_extra_info(simple_candlestick):
     assert cdl.candles[1].info == "some extra info"
 
 
-def test_candlestick_update_initial_price(simple_candlestick):
+def test_candlestick_update_prices_initial_price(simple_candlestick):
     cdl = simple_candlestick
-    cdl.update(100)
+    cdl.ltp = 100
+    cdl._update_prices()
     assert cdl.initial_price == 100
 
-    cdl.update(101)
+    cdl.ltp = 101
+    cdl._update_prices()
     assert cdl.initial_price == 100
     assert cdl.high == 101
 
 
-def test_candlestick_update_candle(simple_candlestick):
+def test_candlestick_update_prices_candle(simple_candlestick):
     cdl = simple_candlestick
     for i in [100, 101, 102, 101, 103, 101, 99, 102]:
-        cdl.update(i)
-    known = pendulum.datetime(2022, 1, 1, 9, 18)
+        # Manually changing properties
+        cdl._last_ltp = cdl.ltp
+        cdl.ltp = i
+        cdl._update_prices()
+    known = pendulum.datetime(2022, 1, 1, 9, 20, tz="local")
     with pendulum.test(known):
         ts = pendulum.now(tz="Asia/Kolkata")
         cdl.update_candle(timestamp=ts)
-        candle = Candle(timestamp=ts, open=100, high=103, low=99, close=102)
+        candle = Candle(timestamp=ts, open=100, high=103, low=99, close=99)
         assert len(cdl.candles) == 1
         assert cdl.candles[0] == candle
-        assert cdl.bar_high == cdl.bar_low == cdl.ltp == 102
-
-
-def test_candlestick_update_multiple_candles(simple_candlestick):
-    cdl = simple_candlestick
-    for i in [100, 101, 102, 101, 103, 101, 99, 102]:
-        cdl.update(i)
-    ts = pendulum.parse("2022-01-01T09:16:00")
-    with pendulum.test(ts):
-        cdl.update_candle(timestamp=ts)
-        for i in [102.5, 104, 103, 102, 103]:
-            cdl.update(i)
-    ts = pendulum.parse("2022-01-01T09:30:00")
-    with pendulum.test(ts):
-        cdl.update_candle(timestamp=ts)
-        c1, c2 = cdl.candles[0], cdl.candles[1]
-    assert len(cdl.candles) == 2
-    assert c1.close == c2.open
-    assert c2.timestamp == ts
-    assert c2.open == 102
-    assert c2.high == 104
-    assert c2.low == 102
-    assert cdl.high == 104
-    assert cdl.low == 99
 
 
 def test_candlestick_bullish_bars(ohlc_data, simple_candlestick):
@@ -208,6 +173,34 @@ def test_candlestick_get_next_interval(simple_candlestick):
         assert cdl.periods[0] == pendulum.datetime(2022, 1, 1, 15, 30, tz="local")
     with pendulum.test(known.add(hours=15, minutes=40)):
         assert cdl.get_next_interval() is None
-        print(cdl.periods)
         assert len(cdl.periods) == 0
         assert cdl.periods == []
+
+
+def test_candlestick_update():
+    known = pendulum.datetime(2022, 7, 1, 0, 0)
+    with pendulum.test(known):
+        cdl = CandleStick(symbol="NIFTY")
+    df = pd.read_csv("tests/data/nifty_ticks.csv", parse_dates=["timestamp"])
+    for i, row in df.iterrows():
+        ts = pendulum.instance(row["timestamp"], tz="local")
+        ltp = row["last_price"]
+        with pendulum.test(ts):
+            cdl.update(ltp)
+    candles = [
+        Candle(
+            timestamp=pendulum.datetime(2022, 7, 1, 9, 20, tz="local"),
+            open=15695.7,
+            high=15700.15,
+            low=15651.35,
+            close=15686.15,
+        ),
+        Candle(
+            timestamp=pendulum.datetime(2022, 7, 1, 9, 25, tz="local"),
+            open=15690.05,
+            high=15715.80,
+            low=15683.00,
+            close=15712.5,
+        ),
+    ]
+    assert cdl.candles == candles
