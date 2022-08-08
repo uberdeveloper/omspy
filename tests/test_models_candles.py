@@ -15,7 +15,7 @@ def ohlc_data():
         [1038, 1038, 984, 988],
         [988, 1031, 970, 1024],
     ]
-    periods = pendulum.today() - pendulum.datetime(2020, 1, 1, 0, 0)
+    periods = pendulum.today(tz="local") - pendulum.datetime(2020, 1, 1, 0, tz="local")
     candles = []
     for p, prices in zip(periods, ohlc):
         candle = Candle(
@@ -245,3 +245,45 @@ def test_candlestick_last_bullish_bar_index(ohlc_data, simple_candlestick):
 def test_candlestick_last_bullish_bar_index_no_candle(ohlc_data, simple_candlestick):
     cdl = simple_candlestick
     assert cdl.last_bullish_bar_index == 0
+
+
+def test_candlestick_last_bearish_bar_index(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
+    cdl.candles = ohlc_data
+    assert cdl.last_bearish_bar_index == 5
+
+
+def test_candlestick_last_bearish_bar_index_no_bar(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
+    cdl.candles = ohlc_data[:3]
+    assert cdl.last_bearish_bar_index == 0
+
+
+def test_candlestick_last_bullish_bar(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
+    cdl.candles = ohlc_data
+    assert cdl.last_bullish_bar == Candle(
+        timestamp=pendulum.datetime(2020, 1, 6, tz="local"),
+        open=988,
+        high=1031,
+        low=970,
+        close=1024,
+    )
+
+
+def test_candlestick_last_bearish_bar(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
+    cdl.candles = ohlc_data
+    assert cdl.last_bearish_bar == Candle(
+        timestamp=pendulum.datetime(2020, 1, 5, tz="local"),
+        open=1038,
+        high=1038,
+        low=984,
+        close=988,
+    )
+
+
+def test_candlestick_last_bars_no_bars(simple_candlestick):
+    cdl = simple_candlestick
+    assert cdl.last_bearish_bar is None
+    assert cdl.last_bullish_bar is None

@@ -390,3 +390,45 @@ class CandleStick(BaseModel):
                 return l - i
         # If no bullish candle
         return 0
+
+    @property
+    def last_bearish_bar_index(self) -> int:
+        """
+        Get the index of the last bullish bar candle
+        """
+        l = len(self.candles)
+        if l == 0:
+            return 0
+        for i, candle in enumerate(reversed(self.candles)):
+            if candle.close < candle.open:
+                return l - i
+        # If no bearish candle
+        return 0
+
+    @property
+    def last_bullish_bar(self) -> Union[Candle, None]:
+        """
+        Return the latest bullish bar
+        """
+        l = len(self.candles)
+        if l == 0:
+            return
+        i = self.last_bullish_bar_index
+        if i == 0:
+            return
+        else:
+            return self.candles[i - 1]
+
+    @property
+    def last_bearish_bar(self) -> Union[Candle, None]:
+        """
+        Return the latest bearish bar
+        """
+        l = len(self.candles)
+        if l == 0:
+            return
+        i = self.last_bearish_bar_index
+        if i == 0:
+            return
+        else:
+            return self.candles[i - 1]
