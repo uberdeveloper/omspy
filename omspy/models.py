@@ -376,3 +376,17 @@ class CandleStick(BaseModel):
                 self.next_interval = self.get_next_interval()
             else:
                 self._update_prices()
+
+    @property
+    def last_bullish_bar_index(self) -> int:
+        """
+        Get the index of the last bullish bar candle
+        """
+        l = len(self.candles)
+        if l == 0:
+            return 0
+        for i, candle in enumerate(reversed(self.candles)):
+            if candle.close > candle.open:
+                return l - i
+        # If no bullish candle
+        return 0

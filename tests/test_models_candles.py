@@ -234,3 +234,14 @@ def test_candlestick_update_interval():
     assert cdl.candles == candles
     assert cdl.ltp == 15706.25
     assert cdl._last_ltp == 15703.25
+
+
+def test_candlestick_last_bullish_bar_index(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
+    cdl.candles = ohlc_data
+    assert cdl.last_bullish_bar_index == 6
+
+
+def test_candlestick_last_bullish_bar_index_no_candle(ohlc_data, simple_candlestick):
+    cdl = simple_candlestick
+    assert cdl.last_bullish_bar_index == 0
