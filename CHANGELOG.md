@@ -1,6 +1,11 @@
 ## 0.7
+### Features
+* CandleStick class added to models
+* Cancel subsequent orders in `PegSequential` if one of the orders fail
+
 ### Improvements
 * `is_done` method added to `Order` - returns True when the order is either complete or canceled or rejected.
+* cancel peg orders after expiry
 
 ### Fixes
 * `order_cancel` not to be called when no  order_id is None
