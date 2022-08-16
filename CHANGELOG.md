@@ -1,4 +1,12 @@
-## 0.7
+## 0.7.1
+This is a bug-fix version and enhancement version
+
+### Fixes
+* #20 You can now pass order arguments to `PegExisting` and `PegSequential`
+* #18 timezone to default to local instead of UTC
+* #11 pending quantity to be automatically updated
+
+## 0.7.0
 ### Features
 * CandleStick class added to models
 * Cancel subsequent orders in `PegSequential` if one of the orders fail
