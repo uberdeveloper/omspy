@@ -207,13 +207,48 @@ def test_existing_peg_defaults():
         assert peg._max_pegs == 3
 
 
+def test_existing_peg_order_place(existing_peg):
+    peg = existing_peg
+    peg.execute()
+    peg.broker.order_place.assert_called_once()
+    call_args = peg.broker.order_place.call_args_list
+    assert call_args[0].kwargs == dict(
+        symbol="GOOG",
+        quantity=200,
+        side="BUY",
+        price=250,
+        order_type="LIMIT",
+        disclosed_quantity=0,
+        trigger_price=0,
+    )
+
+
+def test_existing_peg_order_place_order_args(existing_peg):
+    peg = existing_peg
+    peg.order_args = {"product": "MIS", "exchange": "NFO"}
+    peg.execute()
+    peg.broker.order_place.assert_called_once()
+    call_args = peg.broker.order_place.call_args_list
+    assert call_args[0].kwargs == dict(
+        symbol="GOOG",
+        quantity=200,
+        side="BUY",
+        price=250,
+        order_type="LIMIT",
+        disclosed_quantity=0,
+        trigger_price=0,
+        exchange="NFO",
+        product="MIS",
+    )
+
+
 @patch("omspy.brokers.zerodha.Zerodha")
 def test_existing_peg_run(broker):
     known = pendulum.datetime(2022, 4, 1, 10, 0)
     order = Order(symbol="amzn", quantity=20, side="buy")
     with pendulum.test(known):
         peg = PegExisting(order=order, broker=broker)
-        peg.execute(broker=broker)
+        peg.execute()
         broker.order_place.assert_called_once()
         peg.run(ltp=228)
         assert order.price is None
@@ -243,7 +278,7 @@ def test_existing_peg_full_run(existing_peg):
     order, broker = peg.order, peg.broker
     assert order.order_type == "LIMIT"
     with pendulum.test(known):
-        peg.execute(broker=broker)
+        peg.execute()
         broker.order_place.assert_called_once()
         for price in (271, 264, 268):
             peg.run(ltp=price)
@@ -285,7 +320,7 @@ def test_existing_peg_full_run_cancel(existing_peg):
     order, broker = peg.order, peg.broker
     order.convert_to_market_after_expiry = False
     with pendulum.test(known):
-        peg.execute(broker=broker)
+        peg.execute()
         broker.order_place.assert_called_once()
     known = known.add(seconds=4)
     with pendulum.test(known):
@@ -311,7 +346,7 @@ def test_existing_peg_run_complete(existing_peg):
     order, broker = peg.order, peg.broker
     order.convert_to_market_after_expiry = False
     with pendulum.test(known):
-        peg.execute(broker=broker)
+        peg.execute()
         broker.order_place.assert_called_once()
     known = known.add(seconds=4)
     with pendulum.test(known):
@@ -328,7 +363,7 @@ def test_existing_peg_run_order_lock(existing_peg):
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     order, broker = peg.order, peg.broker
     with pendulum.test(known):
-        peg.execute(broker=broker)
+        peg.execute()
         broker.order_place.assert_called_once()
     known = known.add(seconds=4)
     with pendulum.test(known):

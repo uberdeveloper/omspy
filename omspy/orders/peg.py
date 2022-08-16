@@ -91,6 +91,7 @@ class PegExisting(BaseModel):
     duration: int = 60
     peg_every: int = 10
     done: bool = False
+    order_args: Optional[Dict[str, str]] = None
     lock: Optional[OrderLock] = None
     lock_duration: int = 2
     _next_peg: Optional[pendulum.DateTime] = None
@@ -110,6 +111,8 @@ class PegExisting(BaseModel):
         self.order.order_type = "LIMIT"
         if self.lock is None:
             self.lock = OrderLock()
+        if self.order_args is None:
+            self.order_args = {}
 
     @validator("order")
     def order_should_be_pending(cls, v):
@@ -129,8 +132,8 @@ class PegExisting(BaseModel):
     def num_pegs(self) -> int:
         return self._num_pegs
 
-    def execute(self, **order_args):
-        self.order.execute(broker=self.broker)
+    def execute(self):
+        self.order.execute(broker=self.broker, **self.order_args)
 
     def _mark_done(self) -> bool:
         """
