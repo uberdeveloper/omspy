@@ -87,7 +87,7 @@ class Order(BaseModel):
     validity: str = "DAY"
     status: Optional[str] = None
     expires_in: int = 0
-    timezone: str = "UTC"
+    timezone: str = "local"
     client_id: Optional[str] = None
     convert_to_market_after_expiry: bool = False
     cancel_after_expiry: bool = True
