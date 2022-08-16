@@ -1043,3 +1043,24 @@ def test_order_timezone():
     order = Order(symbol="aapl", side="buy", quantity=10)
     assert order.timezone == "local"
     assert order.timestamp.timezone.name == "Asia/Kolkata"
+
+
+def test_order_update_pending_quantity():
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    assert order.pending_quantity == order.quantity == 10
+    assert order.filled_quantity == 0
+    order.update({"filled_quantity": 5})
+    assert order.pending_quantity == order.filled_quantity == 5
+
+
+def test_order_update_pending_quantity_in_data():
+    """
+    Data is inconsistent with the order but we
+    take the broker data as the true version
+    """
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    assert order.pending_quantity == order.quantity == 10
+    assert order.filled_quantity == 0
+    order.update({"filled_quantity": 5, "pending_quantity": 2})
+    assert order.pending_quantity == 2
+    assert order.filled_quantity == 5

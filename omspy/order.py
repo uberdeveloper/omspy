@@ -208,6 +208,7 @@ class Order(BaseModel):
         ----
         1) Information is updated only for those keys specified in attrs
         2) Information is updated only when the order is not completed
+        3) Update pending quantity if it is not in data
         """
         if not (self.is_complete):
             for att in self._attrs:
@@ -215,6 +216,8 @@ class Order(BaseModel):
                 if val:
                     setattr(self, att, val)
             self.last_updated_at = pendulum.now(tz=self.timezone)
+            if not ("pending_quantity" in data):
+                self.pending_quantity = self.quantity - self.filled_quantity
             if self.connection and save:
                 self.save_to_db()
             return True
