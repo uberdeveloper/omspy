@@ -709,3 +709,67 @@ def test_peg_sequential_skip_subsequent_if_failed(sequential_peg):
         "CANCELED",
     ]
     assert peg.done is True
+
+
+def test_peg_sequential_order_place_order_args(order_list):
+    order_list.append(Order(symbol="dow", side="buy", quantity=10))
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10099)
+        broker.order_modify.side_effect = range(10000, 10099)
+        with pendulum.test(known):
+            peg = PegSequential(
+                orders=order_list,
+                broker=broker,
+                order_args={"validity": "day", "exchange": "nfo"},
+            )
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    for i in range(5, 40):
+        k = known.add(seconds=i)
+        if i == 10:
+            peg.orders[0].filled_quantity = 10
+            peg.orders[0].status = "COMPLETE"
+        with pendulum.test(k):
+            peg.run(ltp=ltp1)
+    call_args = peg.broker.order_place.call_args_list
+    assert call_args[0].kwargs == dict(
+        symbol="AAPL",
+        side="BUY",
+        order_type="LIMIT",
+        quantity=10,
+        disclosed_quantity=0,
+        trigger_price=0,
+        price=None,
+        exchange="nfo",
+        validity="day",
+    )
+
+
+def test_peg_sequential_execute_all_order_args(order_list):
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10099)
+        broker.order_modify.side_effect = range(10000, 10099)
+        with pendulum.test(known):
+            peg = PegSequential(
+                orders=order_list,
+                broker=broker,
+                order_args={"validity": "day", "exchange": "nfo"},
+            )
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    with pendulum.test(known):
+        peg.execute_all()
+    assert peg.broker.order_place.call_count == 3
+    call_args = peg.broker.order_place.call_args_list
+    assert call_args[1].kwargs == dict(
+        symbol="GOOG",
+        side="BUY",
+        order_type="LIMIT",
+        quantity=10,
+        disclosed_quantity=0,
+        trigger_price=0,
+        price=None,
+        exchange="nfo",
+        validity="day",
+    )

@@ -179,6 +179,7 @@ class PegSequential(BaseModel):
     duration: int = 12
     peg_every: int = 4
     lock_duration: int = 2
+    order_args: Optional[Dict[str, str]] = None
     done: bool = False
     skip_subsequent_if_failed = False
     _order: Optional[PegExisting] = None
@@ -189,6 +190,8 @@ class PegSequential(BaseModel):
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
+        if self.order_args is None:
+            self.order_args = {}
         # Validate whether orders could be pegged
         for order in self.orders:
             peg = PegExisting(
@@ -197,6 +200,7 @@ class PegSequential(BaseModel):
                 duration=self.duration,
                 peg_every=self.peg_every,
                 lock_duration=self.lock_duration,
+                order_args=self.order_args,
             )
         self._start_time = pendulum.now(tz=self.timezone)
 
@@ -255,6 +259,7 @@ class PegSequential(BaseModel):
                     duration=self.duration,
                     peg_every=self.peg_every,
                     lock_duration=self.lock_duration,
+                    order_args=self.order_args,
                 )
         return None
 
@@ -275,7 +280,7 @@ class PegSequential(BaseModel):
     def execute_all(self):
         # Execute all pending orders
         for order in self.orders:
-            order.execute(broker=self.broker)
+            order.execute(broker=self.broker, **self.order_args)
 
     def cancel_all(self):
         # Cancel all pending orders
