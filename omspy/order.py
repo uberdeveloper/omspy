@@ -530,3 +530,24 @@ class CompoundOrder(BaseModel):
             for order in self.orders:
                 order.save_to_db()
         pass
+
+
+class OrderStrategy(BaseModel):
+    """
+    An order strategy is a list of strategies that
+    is made up of a list of compound orders
+    """
+
+    broker: Any
+    id: Optional[str] = None
+    ltp: defaultdict = Field(default_factory=defaultdict)
+    orders: List[CompoundOrder] = Field(default_factory=list)
+
+    class Config:
+        underscore_attrs_are_private = True
+        arbitrary_types_allowed = True
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+        if not (self.id):
+            self.id = uuid.uuid4().hex
