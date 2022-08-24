@@ -71,3 +71,17 @@ def test_order_strategy_update_orders(strategy):
     )
     assert s.orders[0].orders[0].exchange_order_id == 11111
     assert s.orders[1].orders[1].exchange_order_id == 11112
+
+
+def test_order_strategy_mtm(strategy):
+    s = strategy
+    s.update_ltp(dict(goog=100, amzn=110, dow=105))
+    print(s.mtm)
+    for o in s.orders:
+        print(o.mtm)
+    assert s.mtm == {
+        "goog": 19 * (100 - 102),
+        "amzn": 29 * (110 - 110),
+        "dow": 0,
+        "aapl": -900,
+    }

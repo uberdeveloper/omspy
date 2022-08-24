@@ -563,6 +563,8 @@ class OrderStrategy(BaseModel):
     def update_ltp(self, last_price: Dict[str, float]):
         for symbol, ltp in last_price.items():
             self.ltp[symbol] = ltp
+        for order in self.orders:
+            order.update_ltp(last_price)
         return self.ltp
 
     def update_orders(self, data: Dict[str, Dict[str, Any]]) -> Dict[str, bool]:
@@ -573,3 +575,11 @@ class OrderStrategy(BaseModel):
         """
         for order in self.orders:
             order.update_orders(data)
+
+    @property
+    def mtm(self) -> Counter:
+        c: Counter = Counter()
+        for order in self.orders:
+            mtm = order.mtm
+            c.update(mtm)
+        return c
