@@ -551,3 +551,12 @@ class OrderStrategy(BaseModel):
         super().__init__(**data)
         if not (self.id):
             self.id = uuid.uuid4().hex
+
+    @property
+    def positions(self) -> Counter:
+        c: Counter = Counter()
+        for order in self.orders:
+            pos = order.positions
+            c.update(pos)
+        return c
+        pass
