@@ -8,6 +8,7 @@ from copy import deepcopy
 import sqlite3
 import json
 from sqlite_utils import Database
+from omspy.models import OrderLock
 
 
 @pytest.fixture
@@ -106,6 +107,7 @@ def test_order_simple():
     assert order.timestamp is not None
     assert order.id is not None
     assert order.timezone == "Europe/Paris"
+    assert order.lock == OrderLock()
 
 
 def test_order_id_custom():

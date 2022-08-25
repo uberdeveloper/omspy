@@ -9,6 +9,7 @@ from collections import Counter, defaultdict
 from omspy.base import *
 from copy import deepcopy
 from sqlite_utils import Database
+from omspy.models import OrderLock
 
 
 def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
@@ -115,6 +116,7 @@ class Order(BaseModel):
         "average_price",
     )
     _exclude_fields: Set[str] = {"connection"}
+    _lock: Optional[OrderLock] = None
 
     class Config:
         underscore_attrs_are_private = True
@@ -136,6 +138,8 @@ class Order(BaseModel):
             ).seconds
         else:
             self.expires_in = abs(self.expires_in)
+        if self._lock is None:
+            self._lock = OrderLock()
 
     @validator("quantity", always=True, allow_reuse=True)
     def quantity_not_negative(cls, v):
@@ -197,6 +201,10 @@ class Order(BaseModel):
     @property
     def has_parent(self) -> bool:
         return True if self.parent_id else False
+
+    @property
+    def lock(self) -> Union[OrderLock, None]:
+        return self._lock
 
     def update(self, data: Dict[str, Any], save: bool = True) -> bool:
         """
