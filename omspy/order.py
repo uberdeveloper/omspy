@@ -268,6 +268,11 @@ class Order(BaseModel):
         """
         Modify an existing order
         """
+        if not (self.lock.can_modify):
+            logging.debug(
+                f"Order not modified since lock is modified till {self.lock.modification_lock_till}"
+            )
+            return
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
@@ -289,6 +294,11 @@ class Order(BaseModel):
         """
         Cancel an existing order
         """
+        if not (self.lock.can_modify):
+            logging.debug(
+                f"Order not canceled since lock is modified till {self.lock.cancellation_lock_till}"
+            )
+            return
         if self.order_id is not None:
             broker.order_cancel(order_id=self.order_id)
 
@@ -315,6 +325,22 @@ class Order(BaseModel):
         dct = self.dict(exclude={"id", "parent_id", "timestamp"})
         order = Order(**dct)
         return order
+
+    def add_lock(self, code: int, seconds: float):
+        """
+        Create a lock on the modify or cancel function
+        code
+            1 to lock modify and 2 to lock cancel
+        seconds
+            duration to lock the function
+        Note
+        ----
+        1) Lock is created only on modify or cancel
+        """
+        if code == 1:
+            self.lock.modify(seconds=seconds)
+        elif code == 2:
+            self.lock.cancel(seconds=seconds)
 
 
 class CompoundOrder(BaseModel):

@@ -1066,3 +1066,40 @@ def test_order_update_pending_quantity_in_data():
     order.update({"filled_quantity": 5, "pending_quantity": 2})
     assert order.pending_quantity == 2
     assert order.filled_quantity == 5
+
+
+def test_order_lock_no_lock():
+    known = pendulum.datetime(2022, 1, 1, 10, 10)
+    with patch("omspy.brokers.paper.Paper") as broker:
+        with pendulum.test(known):
+            order = Order(symbol="aapl", side="buy", quantity=10)
+            order.execute(broker=broker)
+        for i in range(10):
+            with pendulum.test(known.add(seconds=i + 1)):
+                order.modify(broker=broker)
+        broker.order_place.assert_called_once()
+        assert broker.order_modify.call_count == 10
+        for i in range(6):
+            with pendulum.test(known.add(seconds=i + 1)):
+                order.cancel(broker=broker)
+        assert broker.order_cancel.call_count == 6
+
+
+def test_order_lock_modify_and_cancel():
+    known = pendulum.datetime(2022, 1, 1, 10, 10)
+    with patch("omspy.brokers.paper.Paper") as broker:
+        with pendulum.test(known):
+            order = Order(symbol="aapl", side="buy", quantity=10)
+            order.execute(broker=broker)
+        for i in range(10):
+            with pendulum.test(known.add(seconds=i + 1)):
+                if i == 5:
+                    order.add_lock(1, 3)
+                order.modify(broker=broker)
+        assert broker.order_modify.call_count == 6
+        for i in range(6):
+            with pendulum.test(known):
+                order.add_lock(2, 10)
+            with pendulum.test(known.add(seconds=i + 1)):
+                order.cancel(broker=broker)
+        broker.order_cancel.assert_not_called()
