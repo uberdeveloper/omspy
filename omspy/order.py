@@ -617,3 +617,14 @@ class OrderStrategy(BaseModel):
             mtm = order.mtm
             c.update(mtm)
         return c
+
+    def run(self, ltp: Dict[str, float]):
+        """
+        Run all orders with the given data
+        ltp
+            last price data as a dictionary
+        """
+        for order in self.orders:
+            if hasattr(order, "run"):
+                if callable(getattr(order, "run")):
+                    order.run(ltp)

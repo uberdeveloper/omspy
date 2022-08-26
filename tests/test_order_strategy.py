@@ -6,6 +6,22 @@ from collections import Counter
 from omspy.brokers.zerodha import Zerodha
 
 
+class CompoundOrderNoRun(CompoundOrder):
+    d = 0
+
+    # This should not be called by order strategy run
+    @property
+    def run(self):
+        self.d = 100
+
+
+class CompoundOrderRun(CompoundOrder):
+    d = 0
+
+    def run(self, data):
+        self.d = data.get("xom")
+
+
 @pytest.fixture
 def new_db():
     return create_db()
@@ -49,7 +65,7 @@ def test_order_strategy_defaults(simple):
     assert s.orders == []
 
 
-def test_order_strategy_counter(strategy):
+def test_order_strategy_positions(strategy):
     s = strategy
     assert s.positions == Counter(dict(aapl=9, goog=19, amzn=39, dow=29))
 
@@ -85,3 +101,16 @@ def test_order_strategy_mtm(strategy):
         "dow": 0,
         "aapl": -900,
     }
+
+
+def test_order_strategy_run(strategy):
+    s = strategy
+    com = CompoundOrderRun(broker=strategy.broker)
+    com.add(Order(symbol="xom", quantity=100, side="buy"))
+    com2 = CompoundOrderNoRun(broker=strategy.broker)
+    com2.add(Order(symbol="xom", quantity=100, side="buy"))
+    s.orders.append(com)
+    s.orders.append(com2)
+    s.run(dict(goog=100, amzn=110, xom=105))
+    assert s.orders[-2].d == 105
+    # TODO: assert s.orders[-1].d == 0
