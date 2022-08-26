@@ -1,3 +1,8 @@
+## 0.8.0
+### Features
+* New `OrderStrategy` class added, an abstraction over CompoundOrder
+* OrderLock mechanism added to `Order` so that each order would have its own unique lock
+
 ## 0.7.1
 This is a bug-fix version and enhancement version
 
