@@ -114,3 +114,12 @@ def test_order_strategy_run(strategy):
     s.run(dict(goog=100, amzn=110, xom=105))
     assert s.orders[-2].d == 105
     # TODO: assert s.orders[-1].d == 0
+
+
+def test_order_strategy_add(strategy):
+    s = strategy
+    assert len(s.orders) == 2
+    com = CompoundOrderRun(broker=strategy.broker)
+    com.add(Order(symbol="xom", quantity=100, side="buy"))
+    s.orders.append(com)
+    assert len(s.orders) == 3

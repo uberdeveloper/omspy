@@ -628,3 +628,20 @@ class OrderStrategy(BaseModel):
             if hasattr(order, "run"):
                 if callable(getattr(order, "run")):
                     order.run(ltp)
+
+    def add(self, order: CompoundOrder):
+        """
+        Add a compound order to the existing strategy
+        """
+        self.orders.append(order)
+
+    def save(self):
+        """
+        Save all orders to database
+        Note
+        ----
+        1) Orders are saved based on the preferences of each compound order; so this doesn't save everything
+        """
+        for order in self.orders:
+            order.save()
+        pass
