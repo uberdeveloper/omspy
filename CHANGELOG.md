@@ -1,3 +1,8 @@
+## 0.8.1
+### Improvements
+* TOTP authentication added to Finvasia broker
+* TOTP autentication added to MasterTrust broker
+
 ## 0.8.0
 ### Features
 * New `OrderStrategy` class added, an abstraction over CompoundOrder
