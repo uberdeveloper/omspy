@@ -2,6 +2,7 @@ from omspy.brokers.api_helper import ShoonyaApiPy
 from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict, Union
 import pendulum
+import pyotp
 
 
 class Finvasia(Broker):
@@ -31,7 +32,7 @@ class Finvasia(Broker):
         return self.finvasia.login(
             userid=self._user_id,
             password=self._password,
-            twoFA=self._pin,
+            twoFA=pyotp.TOTP(self._pin).now(),
             vendor_code=self._vendor_code,
             api_secret=self._app_key,
             imei=self._imei,
