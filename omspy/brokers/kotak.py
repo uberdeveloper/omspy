@@ -95,7 +95,7 @@ def convert_strike(strike: Union[int, float]) -> Union[int, float]:
     if (strike - int(strike)) == 0:
         return int(strike)
     else:
-        return round(strike, 2)
+        return round(strike, 3)
 
 
 def download_file(url: str) -> pd.DataFrame:
@@ -107,6 +107,7 @@ def download_file(url: str) -> pd.DataFrame:
     try:
         df = pd.read_csv(url, delimiter="|", parse_dates=["expiry"])
         df = df.rename(columns=lambda x: x.lower())
+        print("into file", df.shape)
         return df.drop_duplicates(subset=["instrumenttoken"])
     except Exception as e:
         logging.error(e)
@@ -116,7 +117,7 @@ def download_file(url: str) -> pd.DataFrame:
 def add_name(data, segment: Optional[str] = "cash") -> pd.DataFrame:
     """
     add name to the given dataframe and return it
-    data
+    tdata
         dataframe with the instrument data
     segment
         segment to add name to either cash or fno
@@ -160,9 +161,12 @@ def create_instrument_master() -> Dict[str, int]:
     # TODO: Handle error in case of no instruments
     cash = download_file(get_url(segment="cash"))
     fno = download_file(get_url(segment="fno"))
+    print(cash.shape, fno.shape)
     cash = add_name(cash, segment="cash")
     fno = add_name(fno, segment="fno")
+    print(cash.shape, fno.shape)
     df = pd.concat([cash, fno]).drop_duplicates(subset=["instrumenttoken"])
+    print("altere", len(df))
     return {k: int(v) for k, v in zip(df.inst_name.values, df.instrumenttoken.values)}
 
 
