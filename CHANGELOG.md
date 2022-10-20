@@ -1,3 +1,9 @@
+## 0.8.2
+### Improvements
+* Instrument master for broker `kotak` could be generated for any combination of columns
+### Fixes
+* Instrument master fro broker `kotak` to handle strike prices till 3 decimal places (for currency strikes)
+
 ## 0.8.1
 ### Improvements
 * TOTP authentication added to Finvasia broker

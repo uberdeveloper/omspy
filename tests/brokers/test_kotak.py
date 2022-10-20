@@ -149,7 +149,7 @@ def test_add_name_random():
 
 
 @pytest.mark.skipif(os.environ.get("SLOW") == "slow", reason="slow test")
-def est_create_instrument_master():
+def test_create_instrument_master():
     df = pd.read_csv("tests/data/kotak_cash.csv")
     df2 = pd.read_csv("tests/data/kotak_fno.csv")
     with open("tests/data/kotak_master.json") as f:
@@ -157,7 +157,6 @@ def est_create_instrument_master():
     with patch("pandas.read_csv") as get:
         get.side_effect = [df, df2, df, df2]
         master = create_instrument_master()
-        print(len(master), len(expected), len(df), len(df2))
         assert master == expected
 
 
@@ -189,7 +188,6 @@ def test_get_instrument_token(mock_kotak):
 def test_order_place(mock_kotak):
     broker = mock_kotak
     broker.order_place(symbol="SYM", quantity=10, side="buy", exchange="NSE")
-    print(broker.client.place_order.call_args_list)
     broker.client.place_order.assert_called_once()
     # TODO: Check kwargs passed
 
@@ -287,3 +285,41 @@ def test_get_status(mock_kotak):
     assert broker.get_status("OPN") == "PENDING"
     assert broker.get_status("CAN") == "CANCELED"
     assert broker.get_status("MRF") == "PENDING"
+
+
+def test_create_instrument_master_default():
+    df = pd.read_csv("tests/data/kotak_cash.csv").iloc[:100]
+    df2 = pd.read_csv("tests/data/kotak_fno.csv").iloc[:100]
+    with patch("pandas.read_csv") as get:
+        get.side_effect = [df, df2, df, df2]
+        master = create_instrument_master()
+    cash = add_name(df)
+    fno = add_name(df2, "fno")
+    df3 = pd.concat([cash, fno])
+    expected = {
+        k: int(v) for k, v in zip(df3.inst_name.values, df3.instrumenttoken.values)
+    }
+    assert master == expected
+
+
+def test_create_instrument_master_different_columns():
+    df = pd.read_csv("tests/data/kotak_cash.csv").iloc[:100]
+    df2 = pd.read_csv("tests/data/kotak_fno.csv").iloc[:100]
+    with patch("pandas.read_csv") as get:
+        get.side_effect = [df, df2, df, df2]
+        master = create_instrument_master(token="exchangetoken")
+    cash = add_name(df)
+    fno = add_name(df2, "fno")
+    df3 = pd.concat([cash, fno])
+    expected = {
+        k: int(v) for k, v in zip(df3.inst_name.values, df3.exchangetoken.values)
+    }
+    assert master == expected
+
+    with patch("pandas.read_csv") as get:
+        get.side_effect = [df, df2, df, df2]
+        master = create_instrument_master(name="instrumenttoken", token="exchangetoken")
+    expected = {
+        k: int(v) for k, v in zip(df3.instrumenttoken.values, df3.exchangetoken.values)
+    }
+    assert master == expected

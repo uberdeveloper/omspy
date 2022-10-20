@@ -107,7 +107,6 @@ def download_file(url: str) -> pd.DataFrame:
     try:
         df = pd.read_csv(url, delimiter="|", parse_dates=["expiry"])
         df = df.rename(columns=lambda x: x.lower())
-        print("into file", df.shape)
         return df.drop_duplicates(subset=["instrumenttoken"])
     except Exception as e:
         logging.error(e)
@@ -151,23 +150,26 @@ def add_name(data, segment: Optional[str] = "cash") -> pd.DataFrame:
         return data
 
 
-def create_instrument_master() -> Dict[str, int]:
+def create_instrument_master(
+    name: str = "inst_name", token: str = "instrumenttoken"
+) -> Dict[str, int]:
     """
     Create the instrument master
+    name
+        column name representing the symbol column
+    token
+        column name representing the token
     Note
     ----
-    Takes no arguments and returns the entire instrument_master as a dictionary with key as name and values as instrument token
+    Takes no arguments by default and returns the entire instrument_master as a dictionary with key as name and values as instrument token
     """
     # TODO: Handle error in case of no instruments
     cash = download_file(get_url(segment="cash"))
     fno = download_file(get_url(segment="fno"))
-    print(cash.shape, fno.shape)
     cash = add_name(cash, segment="cash")
     fno = add_name(fno, segment="fno")
-    print(cash.shape, fno.shape)
     df = pd.concat([cash, fno]).drop_duplicates(subset=["instrumenttoken"])
-    print("altere", len(df))
-    return {k: int(v) for k, v in zip(df.inst_name.values, df.instrumenttoken.values)}
+    return {k: int(v) for k, v in zip(df[name].values, df[token].values)}
 
 
 class Kotak(Broker):
