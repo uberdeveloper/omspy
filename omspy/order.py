@@ -273,9 +273,23 @@ class Order(BaseModel):
                 f"Order not modified since lock is modified till {self.lock.modification_lock_till}"
             )
             return
+        other_args = dict()
+        args_to_add = dict()
+        keys = [
+            "order_id",
+            "quantity",
+            "price",
+            "trigger_price",
+            "order_type",
+            "disclosed_quantity",
+        ]
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
+                if k not in keys:
+                    args_to_add[k] = v
+            else:
+                other_args[k] = v
         order_args = {
             "order_id": self.order_id,
             "quantity": self.quantity,
@@ -284,6 +298,8 @@ class Order(BaseModel):
             "order_type": self.order_type.upper(),
             "disclosed_quantity": self.disclosed_quantity,
         }
+        order_args.update(other_args)
+        order_args.update(args_to_add)
         if self._num_modifications < self.max_modifications:
             broker.order_modify(**order_args)
             self._num_modifications += 1

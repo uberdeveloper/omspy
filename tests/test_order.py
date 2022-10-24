@@ -979,11 +979,31 @@ def test_order_modify_by_attribute():
         )
         order.quantity = 100
         order.price = 600
-        order.modify(broker=broker)
+        order.modify(broker=broker, exchange="NSE")
         broker.order_modify.assert_called_once()
         kwargs = broker.order_modify.call_args_list[0].kwargs
         assert kwargs["quantity"] == 100
         assert kwargs["price"] == 600
+        assert kwargs["exchange"] == "NSE"
+
+
+def test_order_modify_quantity_extra_attributes():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order = Order(
+            symbol="aapl",
+            side="buy",
+            quantity=10,
+            order_type="LIMIT",
+            price=650,
+            order_id="abcdef",
+            exchange="NSE",
+            validity="DAY",
+        )
+        order.modify(broker=broker, price=630, quantity=20, exchange="NFO")
+        broker.order_modify.assert_called_once()
+        assert order.quantity == 20
+        assert order.price == 630
+        assert order.validity == "DAY"
 
 
 def test_order_is_pending_canceled():
