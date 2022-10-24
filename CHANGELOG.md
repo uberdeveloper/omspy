@@ -1,8 +1,11 @@
 ## 0.8.2
 ### Improvements
 * Instrument master for broker `kotak` could be generated for any combination of columns
+* `modify` order could now take extra attributes to be passed on to broker
+
 ### Fixes
-* Instrument master fro broker `kotak` to handle strike prices till 3 decimal places (for currency strikes)
+* Instrument master for  broker `kotak` to handle strike prices till 3 decimal places (for currency strikes)
+* `modify_order` for broker `kotak` to correctly handle order types, especially MARKET
 
 ## 0.8.1
 ### Improvements

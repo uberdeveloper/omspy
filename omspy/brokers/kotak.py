@@ -343,6 +343,11 @@ class Kotak(Broker):
         Modify an order
         """
         try:
+            order_type = kwargs.get("order_type")
+            if order_type:
+                kwargs.pop("order_type")
+                if order_type == "MARKET":
+                    kwargs["price"] = 0
             order_id = str(order_id)
             response = self.client.modify_order(order_id=order_id, **kwargs)
             response = self._response(response)

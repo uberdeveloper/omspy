@@ -254,16 +254,49 @@ def tests_orders_status(mock_kotak):
 
 def test_order_modify(mock_kotak):
     broker = mock_kotak
-    broker.order_modify(order_id=123456, quantity=10, side="buy")
+    broker.order_modify(order_id=123456, quantity=10, price=120, order_type="LIMIT")
     broker.client.modify_order.assert_called_once()
-    # TODO: Check kwargs passed
+    broker.client.modify_order.assert_called_with(
+        order_id="123456", quantity=10, price=120
+    )
+
+
+def test_order_modify_market(mock_kotak):
+    broker = mock_kotak
+    broker.order_modify(order_id=123456, quantity=10, price=120, order_type="MARKET")
+    broker.client.modify_order.assert_called_once()
+    broker.client.modify_order.assert_called_with(
+        order_id="123456", quantity=10, price=0
+    )
+
+
+def test_order_modify_market_sl(mock_kotak):
+    broker = mock_kotak
+    broker.order_modify(
+        order_id=123456, quantity=10, price=120, order_type="SL", trigger_price=115
+    )
+    broker.client.modify_order.assert_called_once()
+    broker.client.modify_order.assert_called_with(
+        order_id="123456", quantity=10, price=120, trigger_price=115
+    )
+
+
+def test_order_modify_extra_attributes(mock_kotak):
+    broker = mock_kotak
+    broker.order_modify(
+        order_id=123456, quantity=10, price=120, order_type="MARKET", validity="GFD"
+    )
+    broker.client.modify_order.assert_called_once()
+    broker.client.modify_order.assert_called_with(
+        order_id="123456", quantity=10, price=0, validity="GFD"
+    )
 
 
 def test_order_cancel(mock_kotak):
     broker = mock_kotak
     broker.order_cancel(order_id=123456)
     broker.client.cancel_order.assert_called_once()
-    # TODO: Check kwargs passed
+    broker.client.cancel_order.assert_called_with(order_id="123456")
 
 
 def test_response(mock_kotak, mock_order_response):
