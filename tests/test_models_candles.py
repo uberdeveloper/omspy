@@ -106,7 +106,7 @@ def test_candlestick_update_prices_candle(simple_candlestick):
         cdl._update_prices()
     known = pendulum.datetime(2022, 1, 1, 9, 20, tz="local")
     with pendulum.test(known):
-        ts = pendulum.now(tz="Asia/Kolkata")
+        ts = pendulum.now(tz="local")
         cdl.update_candle(timestamp=ts)
         candle = Candle(timestamp=ts, open=100, high=103, low=99, close=99)
         assert len(cdl.candles) == 1

@@ -442,7 +442,7 @@ def test_simple_order_do_not_execute_completed_order():
 
 
 def test_order_expires():
-    known = pendulum.datetime(2021, 1, 1, 12, tz="Asia/Kolkata")
+    known = pendulum.datetime(2021, 1, 1, 12, tz="local")
     with pendulum.test(known):
         order = Order(symbol="aapl", side="buy", quantity=10)
         assert order.expires_in == (60 * 60 * 12) - 1
