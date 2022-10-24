@@ -17,6 +17,18 @@ def new_db():
 
 
 @pytest.fixture
+def simple_order():
+    return Order(
+        symbol="aapl",
+        side="buy",
+        quantity=10,
+        order_type="LIMIT",
+        price=650,
+        order_id="abcdef",
+    )
+
+
+@pytest.fixture
 def compound_order():
     con = create_db()
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
@@ -108,6 +120,7 @@ def test_order_simple():
     assert order.id is not None
     assert order.timezone == "Europe/Paris"
     assert order.lock == OrderLock()
+    assert order._frozen_attrs == {"symbol", "side"}
 
 
 def test_order_id_custom():
@@ -374,16 +387,9 @@ def test_simple_order_execute_do_not_update_existing_kwargs():
         )
 
 
-def test_simple_order_modify():
+def test_simple_order_modify(simple_order):
+    order = simple_order
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        order = Order(
-            symbol="aapl",
-            side="buy",
-            quantity=10,
-            order_type="LIMIT",
-            price=650,
-            order_id="abcdef",
-        )
         order.price = 630
         order.modify(broker=broker)
         broker.order_modify.assert_called_once()
@@ -949,34 +955,19 @@ def test_new_db_all_values():
             assert expected[k] == v
 
 
-def test_order_modify_quantity():
+def test_order_modify_quantity(simple_order):
+    order = simple_order
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        order = Order(
-            symbol="aapl",
-            side="buy",
-            quantity=10,
-            order_type="LIMIT",
-            price=650,
-            order_id="abcdef",
-            exchange="NSE",
-        )
+        order.exchange = "NSE"
         order.modify(broker=broker, price=630, quantity=20, exchange="NFO")
         broker.order_modify.assert_called_once()
         assert order.quantity == 20
         assert order.price == 630
 
 
-def test_order_modify_by_attribute():
+def test_order_modify_by_attribute(simple_order):
+    order = simple_order
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        order = Order(
-            symbol="aapl",
-            side="buy",
-            quantity=10,
-            order_type="LIMIT",
-            price=650,
-            order_id="abcdef",
-            exchange="NSE",
-        )
         order.quantity = 100
         order.price = 600
         order.modify(broker=broker, exchange="NSE")
@@ -987,23 +978,34 @@ def test_order_modify_by_attribute():
         assert kwargs["exchange"] == "NSE"
 
 
-def test_order_modify_quantity_extra_attributes():
+def test_order_modify_extra_attributes(simple_order):
+    order = simple_order
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        order = Order(
-            symbol="aapl",
-            side="buy",
-            quantity=10,
-            order_type="LIMIT",
-            price=650,
-            order_id="abcdef",
-            exchange="NSE",
-            validity="DAY",
+        order.modify(
+            broker=broker, price=630, quantity=20, exchange="NFO", validity="GFD"
         )
-        order.modify(broker=broker, price=630, quantity=20, exchange="NFO")
         broker.order_modify.assert_called_once()
-        assert order.quantity == 20
-        assert order.price == 630
-        assert order.validity == "DAY"
+        kwargs = broker.order_modify.call_args_list[0].kwargs
+        assert kwargs["quantity"] == 20
+        assert kwargs["price"] == 630
+        assert kwargs["validity"] == "GFD"
+
+
+def test_order_modify_frozen(simple_order):
+    order = simple_order
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order.modify(
+            broker=broker,
+            price=630,
+            quantity=20,
+            exchange="NFO",
+            validity="GFD",
+            symbol="meta",
+            tsym="meta",
+        )
+        kwargs = broker.order_modify.call_args_list[0].kwargs
+        assert "symbol" not in kwargs
+        assert kwargs["tsym"] == "meta"
 
 
 def test_order_is_pending_canceled():

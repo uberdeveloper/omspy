@@ -67,6 +67,14 @@ def create_db(dbname: str = ":memory:") -> Union[Database, None]:
 
 
 class Order(BaseModel):
+    """
+    The basic Order Class
+    _attrs
+        attributes to update when data received from broker
+    _frozen_attrs
+        attributes frozen; cannot be changed when modifying orders
+    """
+
     symbol: str
     side: str
     quantity: int = 1
@@ -117,6 +125,7 @@ class Order(BaseModel):
     )
     _exclude_fields: Set[str] = {"connection"}
     _lock: Optional[OrderLock] = None
+    _frozen_attrs: Set[str] = {"symbol", "side"}
 
     class Config:
         underscore_attrs_are_private = True
@@ -284,12 +293,13 @@ class Order(BaseModel):
             "disclosed_quantity",
         ]
         for k, v in kwargs.items():
-            if hasattr(self, k):
-                setattr(self, k, v)
-                if k not in keys:
-                    args_to_add[k] = v
-            else:
-                other_args[k] = v
+            if k not in self._frozen_attrs:
+                if hasattr(self, k):
+                    setattr(self, k, v)
+                    if k not in keys:
+                        args_to_add[k] = v
+                else:
+                    other_args[k] = v
         order_args = {
             "order_id": self.order_id,
             "quantity": self.quantity,
