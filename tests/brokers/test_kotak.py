@@ -281,6 +281,17 @@ def test_order_modify_market_sl(mock_kotak):
     )
 
 
+def test_order_modify_extra_attributes(mock_kotak):
+    broker = mock_kotak
+    broker.order_modify(
+        order_id=123456, quantity=10, price=120, order_type="MARKET", validity="GFD"
+    )
+    broker.client.modify_order.assert_called_once()
+    broker.client.modify_order.assert_called_with(
+        order_id="123456", quantity=10, price=0, validity="GFD"
+    )
+
+
 def test_order_cancel(mock_kotak):
     broker = mock_kotak
     broker.order_cancel(order_id=123456)
