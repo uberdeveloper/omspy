@@ -1,11 +1,13 @@
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from omspy.models import Candle, CandleStick, Timer
 import pytest
 import pendulum
 from unittest.mock import patch
 import pandas as pd
+
+ROOT = PurePath(__file__).parent.parent / "tests" / "data"
 
 
 @pytest.fixture
@@ -182,12 +184,10 @@ def test_candlestick_get_next_interval(simple_candlestick):
 
 def test_candlestick_update():
     # @@@ assumption [add test case]: this file location change breaks below paths
-    test_root = Path(__file__).parent.parent
-    test_data_root = f'{os.path.join(str(test_root), "tests", "data")}'
     known = pendulum.datetime(2022, 7, 1, 0, 0)
     with pendulum.test(known):
         cdl = CandleStick(symbol="NIFTY")
-    df = pd.read_csv(f'{os.path.join(test_data_root, "nifty_ticks.csv")}', parse_dates=["timestamp"])
+    df = pd.read_csv(ROOT / "nifty_ticks.csv", parse_dates=["timestamp"])
     for i, row in df.iterrows():
         ts = pendulum.instance(row["timestamp"], tz="local")
         ltp = row["last_price"]
@@ -216,16 +216,15 @@ def test_candlestick_update():
 
 def test_candlestick_update_interval():
     # @@@ assumption [add test case]: this file location change breaks below paths
-    test_root = Path(__file__).parent.parent
-    test_data_root = f'{os.path.join(str(test_root), "tests", "data")}'
-
     known = pendulum.datetime(2022, 7, 1, 0, 0, tz="local")
+    df = pd.read_csv(ROOT / "nifty_ticks.csv", parse_dates=["timestamp"])
+    # Only selecting the first 5 rows
+    # TODO: To sync ticks with candles
+    expected = pd.read_csv(
+        ROOT / "nifty_candles_2min.csv", parse_dates=["timestamp"]
+    ).iloc[:5]
     with pendulum.test(known):
         cdl = CandleStick(symbol="NIFTY", interval=120)
-    df = pd.read_csv(f'{os.path.join(test_data_root, "nifty_ticks.csv")}', parse_dates=["timestamp"])
-    expected = pd.read_csv(
-        f'{os.path.join(test_data_root, "nifty_candles_2min.csv")}', parse_dates=["timestamp"]
-    )
     candles = []
     for i, row in expected.iterrows():
         c = Candle(
@@ -241,6 +240,8 @@ def test_candlestick_update_interval():
         ltp = row["last_price"]
         with pendulum.test(ts):
             cdl.update(ltp)
+    print(len(cdl.candles))
+    print(len(candles))
     assert cdl.candles == candles
     assert cdl.ltp == 15706.25
     assert cdl._last_ltp == 15703.25
