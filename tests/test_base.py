@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import json
 import pytest
 from unittest.mock import patch, call
@@ -6,14 +9,17 @@ from copy import deepcopy
 from omspy.base import Broker, pre, post
 from omspy.brokers.paper import Paper
 
+# @@@ assumption [add test case]: this file location change breaks below paths
+test_root = Path(__file__).parent.parent
+test_data_root = f'{os.path.join(str(test_root), "tests", "data")}'
 # Load some mock data
-with open("tests/data/kiteconnect/orders.json") as f:
+with open(f'{os.path.join(test_data_root, "kiteconnect", "orders.json")}') as f:
     orders = json.load(f)["data"]
     for order in orders:
         order["status"] = "pending"
-with open("tests/data/kiteconnect/trades.json") as f:
+with open(f'{os.path.join(test_data_root, "kiteconnect", "trades.json")}') as f:
     trades = json.load(f)["data"]
-with open("tests/data/kiteconnect/positions.json") as f:
+with open(f'{os.path.join(test_data_root, "kiteconnect", "positions.json")}') as f:
     positions = json.load(f)["data"]["day"]
 
 
@@ -63,7 +69,7 @@ class Dummy(Broker):
 
 @pytest.fixture
 def broker():
-    return Dummy(override_file="tests/data/zerodha.yaml")
+    return Dummy(override_file=f'{os.path.join(test_data_root, "zerodha.yaml")}')
 
 
 def test_dummy_broker_values(broker):

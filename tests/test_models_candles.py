@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from omspy.models import Candle, CandleStick, Timer
 import pytest
 import pendulum
@@ -103,7 +106,7 @@ def test_candlestick_update_prices_candle(simple_candlestick):
         cdl._update_prices()
     known = pendulum.datetime(2022, 1, 1, 9, 20, tz="local")
     with pendulum.test(known):
-        ts = pendulum.now(tz="Asia/Kolkata")
+        ts = pendulum.now(tz="local")
         cdl.update_candle(timestamp=ts)
         candle = Candle(timestamp=ts, open=100, high=103, low=99, close=99)
         assert len(cdl.candles) == 1
@@ -178,10 +181,13 @@ def test_candlestick_get_next_interval(simple_candlestick):
 
 
 def test_candlestick_update():
+    # @@@ assumption [add test case]: this file location change breaks below paths
+    test_root = Path(__file__).parent.parent
+    test_data_root = f'{os.path.join(str(test_root), "tests", "data")}'
     known = pendulum.datetime(2022, 7, 1, 0, 0)
     with pendulum.test(known):
         cdl = CandleStick(symbol="NIFTY")
-    df = pd.read_csv("tests/data/nifty_ticks.csv", parse_dates=["timestamp"])
+    df = pd.read_csv(f'{os.path.join(test_data_root, "nifty_ticks.csv")}', parse_dates=["timestamp"])
     for i, row in df.iterrows():
         ts = pendulum.instance(row["timestamp"], tz="local")
         ltp = row["last_price"]
@@ -209,12 +215,16 @@ def test_candlestick_update():
 
 
 def test_candlestick_update_interval():
-    known = pendulum.datetime(2022, 7, 1, 0, 0)
+    # @@@ assumption [add test case]: this file location change breaks below paths
+    test_root = Path(__file__).parent.parent
+    test_data_root = f'{os.path.join(str(test_root), "tests", "data")}'
+
+    known = pendulum.datetime(2022, 7, 1, 0, 0, tz="local")
     with pendulum.test(known):
         cdl = CandleStick(symbol="NIFTY", interval=120)
-    df = pd.read_csv("tests/data/nifty_ticks.csv", parse_dates=["timestamp"])
+    df = pd.read_csv(f'{os.path.join(test_data_root, "nifty_ticks.csv")}', parse_dates=["timestamp"])
     expected = pd.read_csv(
-        "tests/data/nifty_candles_2min.csv", parse_dates=["timestamp"]
+        f'{os.path.join(test_data_root, "nifty_candles_2min.csv")}', parse_dates=["timestamp"]
     )
     candles = []
     for i, row in expected.iterrows():

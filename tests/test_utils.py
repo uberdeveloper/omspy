@@ -1,14 +1,21 @@
+import os
+from pathlib import Path
+
 from omspy.utils import *
 from copy import deepcopy
 import pytest
 import pandas as pd
 import itertools
 
+# @@@ assumption [add test case]: this file location change breaks below paths
+test_root = Path(__file__).parent.parent
+test_data_root = f'{os.path.join(str(test_root), "tests", "data")}'
+
 
 @pytest.fixture
 def load_orders():
     records = (
-        pd.read_csv("tests/data/real_orders.csv")
+        pd.read_csv(f'{os.path.join(test_data_root, "real_orders.csv")}')
         .sort_values(by="symbol")
         .to_dict(orient="records")
     )
