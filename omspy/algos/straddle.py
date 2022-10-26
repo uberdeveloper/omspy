@@ -16,8 +16,8 @@ class BaseStrategy(BaseModel):
     done: bool = False
     broker: Optional[Type[Broker]] = None
     connection: Optional[sqlite_utils.Database] = None
-    timezone: Optional[str] = "local"  # "local" is same as None - just makes the intention more explicit
-    _timer: Optional[Timer] = None
+    timezone: Optional[str] = "local"  # "local" is same as None - when used with Timer (make intention explicit)
+    _timer: Optional[Timer] = None  # BaseStrategy __init__ uses timezone above in __init__ call of Timer
     _pegs: List[Union[PegExisting, PegSequential]] = []
 
     class Config:
