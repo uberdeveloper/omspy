@@ -242,7 +242,7 @@ def test_short_straddle_make_sequential_orders_not_before_and_after_time(
         straddle.create_order()
         assert len(straddle.order.orders) == 4
         straddle._make_sequential_orders()
-        assert len(straddle._pegs) == 0
+        assert len(straddle._pegs) == 2
     known = pendulum.datetime(2022, 2, 1, 10, 5, tz="local")
     with pendulum.test(known):
         straddle.create_order()
