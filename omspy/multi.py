@@ -36,7 +36,7 @@ class UserOrder(BaseModel):
 
 class MultiUser:
     """
-    Multi-userimplementation
+    Multi-user implementation
     """
 
     def __init__(self, users: List[User]):
@@ -99,8 +99,7 @@ class MultiOrder(Order):
         save or update the order to db
         """
         if self.connection:
-            values = []
-            values.append(self.dict(exclude=self._exclude_fields))
+            values = [self.dict(exclude=self._exclude_fields)]
             for order in self.orders:
                 values.append(order.order.dict(exclude=self._exclude_fields))
             self.connection["orders"].upsert_all(values, pk="id")
@@ -143,7 +142,7 @@ class MultiOrder(Order):
         for order in self.orders:
             order.order.cancel(order.user.broker)
 
-    def update(self, data: Dict[str, Dict]):
+    def update(self, data: Dict[str, Dict]) -> None:
         """
         Update order based on information received from broker
         data

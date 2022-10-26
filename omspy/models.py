@@ -168,7 +168,7 @@ class OrderLock(BaseModel):
         Lock the create_order function for the given number of seconds
         """
         seconds = min(seconds, self.max_order_creation_lock_time)
-        self._creation_lock_till = pendulum.now(tz=self.timezone).add(seconds=seconds)
+        self._creation_lock_till = pendulum.now(tz=self.timezone).add(seconds=int(seconds))
         return self.creation_lock_till
 
     def modify(self, seconds: float) -> pendulum.DateTime:
@@ -177,7 +177,7 @@ class OrderLock(BaseModel):
         """
         seconds = min(seconds, self.max_order_modification_lock_time)
         self._modification_lock_till = pendulum.now(tz=self.timezone).add(
-            seconds=seconds
+            seconds=int(seconds)
         )
         return self.modification_lock_till
 
@@ -187,7 +187,7 @@ class OrderLock(BaseModel):
         """
         seconds = min(seconds, self.max_order_cancellation_lock_time)
         self._cancellation_lock_till = pendulum.now(tz=self.timezone).add(
-            seconds=seconds
+            seconds=int(seconds)
         )
         return self.cancellation_lock_till
 
@@ -261,7 +261,7 @@ class CandleStick(BaseModel):
     class Config:
         underscore_attribs_are_private = True
 
-    def __init__(self, **data):
+    def __init__(self, **data) -> None:
         super().__init__(**data)
         self._last_ltp = 0
         if self.timer is None:
@@ -366,7 +366,7 @@ class CandleStick(BaseModel):
                 logging.error(f"Period {period} cannot be found in the list of periods")
         return period
 
-    def update(self, ltp: float):
+    def update(self, ltp: float) -> None:
         if self.timer.is_running:
             self._last_ltp = self.ltp
             self.ltp = ltp

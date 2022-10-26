@@ -28,7 +28,7 @@ class MarketDepth(BaseModel):
         """
         return self.asks[n].price
 
-    def sort(self):
+    def sort(self) -> None:
         """
         Sort asks and bids based on price
         sorting is done in place replacing asks and bids
