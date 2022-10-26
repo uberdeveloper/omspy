@@ -83,6 +83,7 @@ class BracketOrder(StopOrder):
         """
         Check whether the given target is hit
         """
+        ltp: float = 0
         for k, v in self.ltp.items():
             # We assume a single symbol only so breaking
             # TO DO: A better way is appreciated

@@ -135,7 +135,7 @@ class PegExisting(BaseModel):
     def execute(self) -> None:
         self.order.execute(broker=self.broker, **self.order_args)
 
-    def _mark_done(self) -> bool:
+    def _mark_done(self) -> None:
         """
         Mark whether the order is done
         """

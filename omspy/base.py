@@ -247,7 +247,7 @@ class Broker:
         for order in self.orders:
             status = order.get("status")
             if not (status):
-                status == "PENDING"
+                status = "PENDING"
             else:
                 status = str(status).upper()
             order_id = order.get("order_id")
