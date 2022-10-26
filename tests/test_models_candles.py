@@ -148,9 +148,9 @@ def test_candlestick_periods(interval, expected1, expected2):
 def test_candlestick_timezone():
     known = pendulum.datetime(2022, 1, 1, 0, 0)
     with pendulum.test(known):
-        cdl = CandleStick(symbol="NIFTY", timezone="Asia/Kolkata")
-        assert cdl.timer.start_time.timezone_name == "Asia/Kolkata"
-        assert cdl.periods[0].timezone_name == "Asia/Kolkata"
+        cdl = CandleStick(symbol="NIFTY", timezone="local")
+        assert cdl.timer.start_time.timezone_name == pendulum.now(tz="local").timezone_name
+        assert cdl.periods[0].timezone_name == pendulum.now(tz="local").timezone_name
 
     with pendulum.test(known):
         cdl = CandleStick(symbol="EURONEXT", timezone="Europe/Paris")
