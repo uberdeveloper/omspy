@@ -1,10 +1,13 @@
+from pathlib import PurePath
 from omspy.brokers.fyers import Fyers
 from unittest.mock import patch, call
 import pytest
 import json
 from copy import deepcopy
 
-with open("tests/data/fyers.json") as f:
+# @@@ assumption [add test case]: this file location change breaks below paths
+DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
+with open(DATA_ROOT / "fyers.json") as f:
     mock_data = json.load(f)
 
 

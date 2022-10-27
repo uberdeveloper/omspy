@@ -1,5 +1,5 @@
 import os
-from pathlib import Path, PurePath
+from pathlib import PurePath
 
 from omspy.utils import *
 from copy import deepcopy
@@ -7,13 +7,13 @@ import pytest
 import pandas as pd
 import itertools
 
-ROOT = PurePath(__file__).parent.parent / "tests" / "data"
+DATA_ROOT = PurePath(__file__).parent.parent / "tests" / "data"
 
 
 @pytest.fixture
 def load_orders():
     records = (
-        pd.read_csv(ROOT / "real_orders.csv")
+        pd.read_csv(DATA_ROOT / "real_orders.csv")
         .sort_values(by="symbol")
         .to_dict(orient="records")
     )

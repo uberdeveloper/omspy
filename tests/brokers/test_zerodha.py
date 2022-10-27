@@ -1,8 +1,13 @@
+from pathlib import PurePath
+
 from omspy.brokers.zerodha import Zerodha
 from unittest.mock import patch, call
 import pytest
 import json
 from copy import deepcopy
+
+# @@@ assumption [add test case]: this file location change breaks below paths
+KITE_CONNECT_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data" / "kiteconnect"
 
 
 @pytest.fixture
@@ -15,7 +20,7 @@ def mock_kite():
 
 def test_profile(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/profile.json") as f:
+    with open(KITE_CONNECT_ROOT / "profile.json") as f:
         mock_data = json.load(f)
     broker.kite.profile.return_value = mock_data
     profile = broker.profile
@@ -25,7 +30,7 @@ def test_profile(mock_kite):
 
 def test_orders(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/orders.json") as f:
+    with open(KITE_CONNECT_ROOT / "orders.json") as f:
         mock_data = json.load(f).get("data")
     broker.kite.orders.return_value = mock_data
     orders = broker.orders
@@ -61,7 +66,7 @@ def test_orders_empty_orderbook(mock_kite):
 
 def test_trades(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/trades.json") as f:
+    with open(KITE_CONNECT_ROOT / "trades.json") as f:
         mock_data = json.load(f).get("data")
     broker.kite.trades.return_value = mock_data
     trades = broker.trades
@@ -79,7 +84,7 @@ def test_trades(mock_kite):
 
 def test_positions(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/positions.json") as f:
+    with open(KITE_CONNECT_ROOT / "positions.json") as f:
         mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
     positions = broker.positions
@@ -97,7 +102,7 @@ def test_positions(mock_kite):
 
 def test_positions_side(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/positions.json") as f:
+    with open(KITE_CONNECT_ROOT / "positions.json") as f:
         mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
     positions = broker.positions
@@ -108,7 +113,7 @@ def test_positions_side(mock_kite):
 
 def test_order_place(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/order_response.json") as f:
+    with open(KITE_CONNECT_ROOT / "order_response.json") as f:
         mock_data = json.load(f)
     broker.kite.place_order.return_value = mock_data
     broker.order_place(symbol="goog", side="BUY", quantity=1, order_type="MARKET")
@@ -128,7 +133,7 @@ def test_order_place(mock_kite):
 
 def test_order_place_kwargs(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/order_response.json") as f:
+    with open(KITE_CONNECT_ROOT / "order_response.json") as f:
         mock_data = json.load(f)
     broker.kite.place_order.return_value = mock_data
     broker.order_place(
@@ -157,7 +162,7 @@ def test_order_place_kwargs(mock_kite):
 
 def test_order_modify(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/order_response.json") as f:
+    with open(KITE_CONNECT_ROOT / "order_response.json") as f:
         mock_data = json.load(f)
     broker.kite.modify_order.return_value = mock_data
     broker.order_modify(order_id="abcde12345", quantity=100, order_type="market")
@@ -173,7 +178,7 @@ def test_order_modify(mock_kite):
 
 def test_order_modify_return_error(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/order_response.json") as f:
+    with open(KITE_CONNECT_ROOT / "order_response.json") as f:
         mock_data = json.load(f)
     broker.kite.modify_order.return_value = mock_data
     response = broker.order_modify(quantity=100, order_type="market")
@@ -184,7 +189,7 @@ def test_order_modify_return_error(mock_kite):
 
 def test_order_cancel(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/order_response.json") as f:
+    with open(KITE_CONNECT_ROOT / "order_response.json") as f:
         mock_data = json.load(f)
     broker.kite.cancel_order.return_value = mock_data
     broker.order_cancel(order_id="abcde12345", variety="regular")
@@ -195,7 +200,7 @@ def test_order_cancel(mock_kite):
 
 def test_order_cancel_return_error(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/order_response.json") as f:
+    with open(KITE_CONNECT_ROOT / "order_response.json") as f:
         mock_data = json.load(f)
     broker.kite.cancel_order.return_value = mock_data
     response = broker.order_cancel(order_type="market")
@@ -205,7 +210,7 @@ def test_order_cancel_return_error(mock_kite):
 
 def test_close_all_positions(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/positions.json") as f:
+    with open(KITE_CONNECT_ROOT / "positions.json") as f:
         mock_data = json.load(f).get("data")
     broker.kite.positions.return_value = mock_data
     broker.close_all_positions(keys_to_copy=("exchange", "product", "product"))
@@ -241,7 +246,7 @@ def test_close_all_positions(mock_kite):
 
 def test_cancel_all_orders(mock_kite):
     broker = mock_kite
-    with open("tests/data/kiteconnect/orders.json") as f:
+    with open(KITE_CONNECT_ROOT / "orders.json") as f:
         mock_data = json.load(f).get("data")
         mock_data[3]["status"] = "PENDING"
     broker.kite.orders.return_value = mock_data
