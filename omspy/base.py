@@ -54,7 +54,7 @@ class Broker:
     match the keys of the API.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """
         All initial conditions go here
         kwargs
@@ -107,7 +107,7 @@ class Broker:
     def authenticate(self):
         """
         Authenticate the user usually via an interface.
-        This methods takes no arguments. Any arguments
+        This method takes no arguments. Any arguments
         should be passed in the __init__ method
         """
         raise NotImplementedError
@@ -190,7 +190,7 @@ class Broker:
         keys_to_copy: Optional[Tuple] = None,
         keys_to_add: Optional[Dict] = None,
         **kwargs,
-    ):
+    ) -> None:
         """
         Close all existing positions.
         For all existing positions, a MARKET order in
@@ -198,7 +198,7 @@ class Broker:
         Note
         ----
         Use this only if you want to close all orders in a
-        panic situation or you have orders not controlled
+        panic situation, or you have orders not controlled
         by the system. Do not forget to cancel the existing
         open orders
         """
@@ -235,7 +235,7 @@ class Broker:
         keys_to_copy: Optional[Tuple] = None,
         keys_to_add: Optional[Dict] = None,
         **kwargs,
-    ):
+    ) -> None:
         """
         Cancel all existing open orders
         """
@@ -247,7 +247,7 @@ class Broker:
         for order in self.orders:
             status = order.get("status")
             if not (status):
-                status == "PENDING"
+                status = "PENDING"
             else:
                 status = str(status).upper()
             order_id = order.get("order_id")

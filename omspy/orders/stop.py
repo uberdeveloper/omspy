@@ -83,6 +83,7 @@ class BracketOrder(StopOrder):
         """
         Check whether the given target is hit
         """
+        ltp: float = 0
         for k, v in self.ltp.items():
             # We assume a single symbol only so breaking
             # TO DO: A better way is appreciated
@@ -121,22 +122,22 @@ class TrailingStopOrder(StopLimitOrder):
         self.quantity: int = kwargs.get("quantity", 1)
 
     @property
-    def stop(self):
+    def stop(self) -> float:
         return self._stop
 
     @property
-    def maxmtm(self):
+    def maxmtm(self) -> float:
         return self._maxmtm
 
-    def _update_maxmtm(self):
+    def _update_maxmtm(self) -> None:
         self._maxmtm = max(self.total_mtm, self._maxmtm)
 
-    def _update_stop(self):
+    def _update_stop(self) -> None:
         mtm_per_unit = self.maxmtm / self.quantity
         multiplier = self.trail_small / self.trail_big
         self._stop = self.initial_stop + (mtm_per_unit * multiplier)
 
-    def watch(self):
+    def watch(self) -> None:
         self._update_maxmtm()
         self._update_stop()
         ltp = self.ltp.get(self.symbol)

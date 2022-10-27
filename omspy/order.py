@@ -273,7 +273,7 @@ class Order(BaseModel):
         else:
             return self.order_id
 
-    def modify(self, broker: Any, **kwargs):
+    def modify(self, broker: Any, **kwargs) -> None:
         """
         Modify an existing order
         """
@@ -316,7 +316,7 @@ class Order(BaseModel):
         else:
             logging.info(f"Maximum number of modifications exceeded")
 
-    def cancel(self, broker: Any):
+    def cancel(self, broker: Any) -> None:
         """
         Cancel an existing order
         """
@@ -354,7 +354,7 @@ class Order(BaseModel):
 
     def add_lock(self, code: int, seconds: float):
         """
-        Create a lock on the modify or cancel function
+        Create a lock on modify or cancel function
         code
             1 to lock modify and 2 to lock cancel
         seconds
@@ -551,7 +551,7 @@ class CompoundOrder(BaseModel):
             order_args.update(kwargs)
             order.execute(broker=self.broker, **order_args)
 
-    def check_flags(self):
+    def check_flags(self) -> None:
         """
         Check for flags on each order and take suitable action
         """
@@ -582,7 +582,7 @@ class CompoundOrder(BaseModel):
         self.orders.append(order)
         return order.id
 
-    def save(self):
+    def save(self) -> None:
         """
         Save all orders to database
         """
@@ -627,7 +627,7 @@ class OrderStrategy(BaseModel):
             order.update_ltp(last_price)
         return self.ltp
 
-    def update_orders(self, data: Dict[str, Dict[str, Any]]) -> Dict[str, bool]:
+    def update_orders(self, data: Dict[str, Dict[str, Any]]) -> None:
         """
         Update all orders
         data
@@ -644,7 +644,7 @@ class OrderStrategy(BaseModel):
             c.update(mtm)
         return c
 
-    def run(self, ltp: Dict[str, float]):
+    def run(self, ltp: Dict[str, float]) -> None:
         """
         Run all orders with the given data
         ltp
@@ -655,13 +655,13 @@ class OrderStrategy(BaseModel):
                 if callable(getattr(order, "run")):
                     order.run(ltp)
 
-    def add(self, order: CompoundOrder):
+    def add(self, order: CompoundOrder) -> None:
         """
         Add a compound order to the existing strategy
         """
         self.orders.append(order)
 
-    def save(self):
+    def save(self) -> None:
         """
         Save all orders to database
         Note

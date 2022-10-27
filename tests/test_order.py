@@ -1066,7 +1066,7 @@ def test_simple_order_cancel_none():
 def test_order_timezone():
     order = Order(symbol="aapl", side="buy", quantity=10)
     assert order.timezone == "local"
-    assert order.timestamp.timezone.name == "Asia/Kolkata"
+    assert order.timestamp.timezone.name == pendulum.now(tz="local").timezone_name
 
 
 def test_order_update_pending_quantity():

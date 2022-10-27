@@ -132,17 +132,17 @@ class PegExisting(BaseModel):
     def num_pegs(self) -> int:
         return self._num_pegs
 
-    def execute(self):
+    def execute(self) -> None:
         self.order.execute(broker=self.broker, **self.order_args)
 
-    def _mark_done(self) -> bool:
+    def _mark_done(self) -> None:
         """
         Mark whether the order is done
         """
         if self.order.is_done:
             self.done = True
 
-    def run(self, ltp: float):
+    def run(self, ltp: float) -> None:
         if self.done:
             logging.warning("Order already done")
             return
@@ -268,7 +268,7 @@ class PegSequential(BaseModel):
         Set the current order for pegging
         Note
         ----
-        1) Set the current order only when a existing peg
+        1) Set the current order only when an existing peg
         order is complete or there is no peg order
         """
         if self.order is None:
@@ -277,12 +277,12 @@ class PegSequential(BaseModel):
             self._order = self.get_current_order()
         return self.order
 
-    def execute_all(self):
+    def execute_all(self) -> None:
         # Execute all pending orders
         for order in self.orders:
             order.execute(broker=self.broker, **self.order_args)
 
-    def cancel_all(self):
+    def cancel_all(self) -> None:
         # Cancel all pending orders
         for order in self.orders:
             order.cancel(broker=self.broker)
@@ -301,7 +301,7 @@ class PegSequential(BaseModel):
             order.order_type = "MARKET"
             order.modify(broker=self.broker)
 
-    def run_after_expiry(self):
+    def run_after_expiry(self) -> None:
         """
         Run this function after the overall peg time has expired.
         This function could be overriden to match customized functionality
@@ -312,7 +312,7 @@ class PegSequential(BaseModel):
             if order.is_pending:
                 self._process_order_after_expiry(order)
 
-    def _mark_subsequent_orders_as_canceled(self):
+    def _mark_subsequent_orders_as_canceled(self) -> None:
         """
         Mark all subsequent orders as canceled if the
         existing order status is canceled or rejected
@@ -328,7 +328,7 @@ class PegSequential(BaseModel):
             for i in range(index + 1, len(self.orders)):
                 self.orders[i].status = "CANCELED"
 
-    def run(self, ltp: Dict[str, float]):
+    def run(self, ltp: Dict[str, float]) -> None:
         if self.done:
             return
         if self.skip_subsequent_if_failed:
@@ -346,5 +346,5 @@ class PegSequential(BaseModel):
 
         self._mark_done()
 
-    def _mark_done(self):
+    def _mark_done(self) -> None:
         self.done = all([order.is_done for order in self.orders])

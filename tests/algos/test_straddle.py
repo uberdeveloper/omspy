@@ -16,11 +16,11 @@ def simple_straddle():
 
 @pytest.fixture
 def price_straddle():
-    known = pendulum.datetime(2022, 1, 1)
+    known = pendulum.datetime(2022, 1, 1, tz="local")
     with pendulum.test(known):
         return ShortStraddle(
-            start_time=pendulum.datetime(2022, 1, 1, 10, 10),
-            end_time=pendulum.datetime(2022, 1, 1, 15, 10),
+            start_time=pendulum.datetime(2022, 1, 1, 10, 10, tz="local"),
+            end_time=pendulum.datetime(2022, 1, 1, 15, 10, tz="local"),
             symbols=("nifty22may17500ce", "nifty22may17500pe"),
             limit_price=(200, 210.4),
             trigger_price=(240, 268),
@@ -237,13 +237,13 @@ def test_short_straddle_make_sequential_orders_not_before_and_after_time(
     price_straddle,
 ):
     straddle = price_straddle
-    known = pendulum.datetime(2022, 1, 1, 10, 5)
+    known = pendulum.datetime(2022, 1, 1, 10, 5, tz="local")
     with pendulum.test(known):
         straddle.create_order()
         assert len(straddle.order.orders) == 4
         straddle._make_sequential_orders()
-        assert len(straddle._pegs) == 0
-    known = pendulum.datetime(2022, 2, 1, 10, 5)
+        assert len(straddle._pegs) == 2
+    known = pendulum.datetime(2022, 2, 1, 10, 5, tz="local")
     with pendulum.test(known):
         straddle.create_order()
         assert len(straddle.order.orders) == 4
