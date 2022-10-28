@@ -7,7 +7,9 @@ import json
 from copy import deepcopy
 
 # @@@ assumption [add test case]: this file location change breaks below paths
-KITE_CONNECT_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data" / "kiteconnect"
+KITE_CONNECT_ROOT = (
+    PurePath(__file__).parent.parent.parent / "tests" / "data" / "kiteconnect"
+)
 
 
 @pytest.fixture

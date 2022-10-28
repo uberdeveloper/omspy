@@ -22,7 +22,8 @@ def broker():
 
 @pytest.fixture
 def mod():
-    with open(BROKERS_ROOT / "finvasia.yaml") as f:
+    YAML_PATH = PurePath(__file__).parent.parent.parent / "omspy"
+    with open(YAML_PATH / "brokers" / "finvasia.yaml") as f:
         return yaml.safe_load(f)
 
 
@@ -183,6 +184,7 @@ def test_place_order_without_eq(broker):
 
 
 def test_orders(broker, mod):
+    print(DATA_ROOT / "finvasia" / "orders.json")
     with open(DATA_ROOT / "finvasia" / "orders.json", "r") as f:
         orders = json.load(f)
     broker.finvasia.get_order_book.return_value = orders
