@@ -1,8 +1,13 @@
+from pathlib import PurePath
 from omspy.brokers.finvasia import *
 import pytest
 import yaml
 import json
 from unittest.mock import patch
+
+# @@@ assumption [add test case]: this file location change breaks below paths
+DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
+BROKERS_ROOT = PurePath(__file__).parent
 
 
 @pytest.fixture
@@ -17,7 +22,7 @@ def broker():
 
 @pytest.fixture
 def mod():
-    with open("omspy/brokers/finvasia.yaml") as f:
+    with open(BROKERS_ROOT / "finvasia.yaml") as f:
         return yaml.safe_load(f)
 
 
@@ -178,7 +183,7 @@ def test_place_order_without_eq(broker):
 
 
 def test_orders(broker, mod):
-    with open("tests/data/finvasia/orders.json", "r") as f:
+    with open(DATA_ROOT / "finvasia" / "orders.json", "r") as f:
         orders = json.load(f)
     broker.finvasia.get_order_book.return_value = orders
     fetched = broker.orders
@@ -189,7 +194,7 @@ def test_orders(broker, mod):
 
 
 def test_trades(broker, mod):
-    with open("tests/data/finvasia/trades.json", "r") as f:
+    with open(DATA_ROOT / "finvasia" / "trades.json", "r") as f:
         trades = json.load(f)
     broker.finvasia.get_trade_book.return_value = trades
     fetched = broker.trades
@@ -201,7 +206,7 @@ def test_trades(broker, mod):
 
 
 def test_positions(broker, mod):
-    with open("tests/data/finvasia/positions.json", "r") as f:
+    with open(DATA_ROOT / "finvasia" / "positions.json", "r") as f:
         positions = json.load(f)
     broker.finvasia.get_positions.return_value = positions
     fetched = broker.positions

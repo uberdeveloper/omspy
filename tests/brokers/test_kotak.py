@@ -1,9 +1,14 @@
+from pathlib import PurePath
+
 from omspy.brokers.kotak import *
 from unittest.mock import patch, call
 import pytest
 import pendulum
 import json
 import os
+
+# @@@ assumption [add test case]: this file location change breaks below paths
+DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
 
 
 @pytest.fixture
@@ -111,7 +116,7 @@ def test_get_name_for_fno_symbol(test_input, expected):
 
 def test_download_file():
     url = get_url()
-    test_df = pd.read_csv("tests/data/kotak_cash.csv")
+    test_df = pd.read_csv(DATA_ROOT / "kotak_cash.csv")
     with patch("pandas.read_csv") as get:
         get.return_value = test_df
         df = download_file(url)
@@ -120,8 +125,8 @@ def test_download_file():
 
 @pytest.mark.skipif(os.environ.get("SLOW") == "slow", reason="slow test")
 def test_add_name_cash():
-    df = pd.read_csv("tests/data/kotak_cash.csv")
-    df2 = pd.read_csv("tests/data/kotak_cash_named.csv")
+    df = pd.read_csv(DATA_ROOT / "kotak_cash.csv")
+    df2 = pd.read_csv(DATA_ROOT / "kotak_cash_named.csv")
     df = add_name(df)
     assert len(df.columns) == 16
     assert "inst_name" in df
@@ -130,8 +135,8 @@ def test_add_name_cash():
 
 @pytest.mark.skipif(os.environ.get("SLOW") == "slow", reason="slow test")
 def test_add_name_fno():
-    df = pd.read_csv("tests/data/kotak_fno.csv")
-    df2 = pd.read_csv("tests/data/kotak_fno_named.csv")
+    df = pd.read_csv(DATA_ROOT / "kotak_fno.csv")
+    df2 = pd.read_csv(DATA_ROOT / "kotak_fno_named.csv")
     df = add_name(df, "fno")
     assert len(df.columns) == 16
     assert "inst_name" in df
@@ -142,7 +147,7 @@ def test_add_name_fno():
 
 
 def test_add_name_random():
-    df = pd.read_csv("tests/data/kotak_cash.csv")
+    df = pd.read_csv(DATA_ROOT / "kotak_cash.csv")
     df2 = add_name(df, "fix")
     assert len(df.columns) == 15
     pd.testing.assert_frame_equal(df, df2)
@@ -150,9 +155,9 @@ def test_add_name_random():
 
 @pytest.mark.skipif(os.environ.get("SLOW") == "slow", reason="slow test")
 def test_create_instrument_master():
-    df = pd.read_csv("tests/data/kotak_cash.csv")
-    df2 = pd.read_csv("tests/data/kotak_fno.csv")
-    with open("tests/data/kotak_master.json") as f:
+    df = pd.read_csv(DATA_ROOT / "kotak_cash.csv")
+    df2 = pd.read_csv(DATA_ROOT / "kotak_fno.csv")
+    with open(DATA_ROOT / "kotak_master.json") as f:
         expected = json.load(f)
     with patch("pandas.read_csv") as get:
         get.side_effect = [df, df2, df, df2]
@@ -196,7 +201,7 @@ def test_positions(mock_kotak):
     broker = mock_kotak
     broker.master = {"NSE:BHEL": 878, "NSE:NIFTY28APR2216400PUT": 71377}
     broker._rev_master = {v: k for k, v in broker.master.items()}
-    with open("tests/data/kotak_positions.json") as f:
+    with open(DATA_ROOT / "kotak_positions.json") as f:
         expected = json.load(f)
         broker.client.positions.side_effect = [expected]
         positions = broker.positions
@@ -215,7 +220,7 @@ def test_orders(mock_kotak):
     broker = mock_kotak
     broker.master = {"NSE:BHEL": 878, "NSE:NIFTY28APR2216400PUT": 71377}
     broker._rev_master = {v: k for k, v in broker.master.items()}
-    with open("tests/data/kotak_orders.json") as f:
+    with open(DATA_ROOT / "kotak_orders.json") as f:
         expected = json.load(f)
         broker.client.order_report.side_effect = [expected]
         orders = broker.orders
@@ -242,7 +247,7 @@ def tests_orders_status(mock_kotak):
         "NSE:MANAPPURAM": 6035,
     }
     broker._rev_master = {v: k for k, v in broker.master.items()}
-    with open("tests/data/kotak_orders2.json") as f:
+    with open(DATA_ROOT / "kotak_orders2.json") as f:
         mock_data = json.load(f)
         broker.client.order_report.side_effect = [mock_data]
         orders = broker.orders
@@ -321,8 +326,8 @@ def test_get_status(mock_kotak):
 
 
 def test_create_instrument_master_default():
-    df = pd.read_csv("tests/data/kotak_cash.csv").iloc[:100]
-    df2 = pd.read_csv("tests/data/kotak_fno.csv").iloc[:100]
+    df = pd.read_csv(DATA_ROOT / "kotak_cash.csv").iloc[:100]
+    df2 = pd.read_csv(DATA_ROOT / "kotak_fno.csv").iloc[:100]
     with patch("pandas.read_csv") as get:
         get.side_effect = [df, df2, df, df2]
         master = create_instrument_master()
@@ -336,8 +341,8 @@ def test_create_instrument_master_default():
 
 
 def test_create_instrument_master_different_columns():
-    df = pd.read_csv("tests/data/kotak_cash.csv").iloc[:100]
-    df2 = pd.read_csv("tests/data/kotak_fno.csv").iloc[:100]
+    df = pd.read_csv(DATA_ROOT / "kotak_cash.csv").iloc[:100]
+    df2 = pd.read_csv(DATA_ROOT / "kotak_fno.csv").iloc[:100]
     with patch("pandas.read_csv") as get:
         get.side_effect = [df, df2, df, df2]
         master = create_instrument_master(token="exchangetoken")
