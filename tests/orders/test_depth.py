@@ -7,14 +7,14 @@ import pytest
 def simple_depth():
     return MarketDepth(
         bids=[
-            Quote(price=100, quantity=54, orders=4),
-            Quote(price=99, quantity=1254, orders=12),
-            Quote(price=98, quantity=154, orders=4),
+            Quote(price=100, quantity=54, orders_count=4),
+            Quote(price=99, quantity=1254, orders_count=12),
+            Quote(price=98, quantity=154, orders_count=4),
         ],
         asks=[
-            Quote(price=101, quantity=99, orders=4),
-            Quote(price=102, quantity=1288, orders=61),
-            Quote(price=103, quantity=359, orders=7),
+            Quote(price=101, quantity=99, orders_count=4),
+            Quote(price=102, quantity=1288, orders_count=61),
+            Quote(price=103, quantity=359, orders_count=7),
         ],
     )
 
