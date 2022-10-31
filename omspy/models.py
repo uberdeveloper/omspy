@@ -48,7 +48,7 @@ class BasicPosition(BaseModel):
 class Quote(BaseModel):
     price: float
     quantity: int
-    orders: Optional[int] = None
+    orders_count: Optional[int] = None
 
     @property
     def value(self):
@@ -121,7 +121,7 @@ class Timer(BaseModel):
         returns True if it has started and not completed
         else False
         """
-        if self.has_started and not (self.has_completed):
+        if self.has_started and not self.has_completed:
             return True
         else:
             return False
