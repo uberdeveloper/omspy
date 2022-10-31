@@ -2,6 +2,7 @@
 ### Improvements
 * Instrument master for broker `kotak` could be generated for any combination of columns
 * `modify` order could now take extra attributes to be passed on to broker
+* tests rewritten with `PurePath` and other refactoring, credits to @soumyarai2050 for pushing these changes
 
 ### Fixes
 * Instrument master for  broker `kotak` to handle strike prices till 3 decimal places (for currency strikes)
