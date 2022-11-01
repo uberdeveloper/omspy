@@ -168,7 +168,9 @@ class OrderLock(BaseModel):
         Lock the create_order function for the given number of seconds
         """
         seconds = min(seconds, self.max_order_creation_lock_time)
-        self._creation_lock_till = pendulum.now(tz=self.timezone).add(seconds=int(seconds))
+        self._creation_lock_till = pendulum.now(tz=self.timezone).add(
+            seconds=int(seconds)
+        )
         return self.creation_lock_till
 
     def modify(self, seconds: float) -> pendulum.DateTime:
