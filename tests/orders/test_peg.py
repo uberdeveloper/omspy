@@ -29,22 +29,26 @@ def existing_peg():
 
 @pytest.fixture
 def order_list():
-    orders = [
-        Order(symbol="aapl", side="buy", quantity=10),
-        Order(symbol="goog", side="buy", quantity=10),
-        Order(symbol="amzn", side="buy", quantity=10),
-    ]
-    return orders
+    # Since order locks are acquired based on current time
+    # we are using time based analysis
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    with pendulum.test(known):
+        orders = [
+            Order(symbol="aapl", side="buy", quantity=10),
+            Order(symbol="goog", side="buy", quantity=10),
+            Order(symbol="amzn", side="buy", quantity=10),
+        ]
+        return orders
 
 
 @pytest.fixture
 def sequential_peg(order_list):
-    order_list.append(Order(symbol="dow", side="buy", quantity=10))
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10099)
         broker.order_modify.side_effect = range(10000, 10099)
         with pendulum.test(known):
+            order_list.append(Order(symbol="dow", side="buy", quantity=10))
             peg = PegSequential(orders=order_list, broker=broker)
             return peg
 
@@ -54,6 +58,7 @@ def test_basic_peg():
     assert peg.count == 1
     assert peg.orders[0].order_type == "LIMIT"
     assert peg.ltp["aapl"] == 0.0
+    assert peg.timezone == "local"
 
 
 def test_peg_market_defaults():
@@ -245,8 +250,8 @@ def test_existing_peg_order_place_order_args(existing_peg):
 @patch("omspy.brokers.zerodha.Zerodha")
 def test_existing_peg_run(broker):
     known = pendulum.datetime(2022, 4, 1, 10, 0)
-    order = Order(symbol="amzn", quantity=20, side="buy")
     with pendulum.test(known):
+        order = Order(symbol="amzn", quantity=20, side="buy")
         peg = PegExisting(order=order, broker=broker)
         peg.execute()
         broker.order_place.assert_called_once()
@@ -564,13 +569,16 @@ def test_peg_sequential_cancel_all(sequential_peg):
 
 def test_peg_sequential_dont_execute_after_time(sequential_peg):
     peg = sequential_peg
+    print(peg.duration, peg.peg_every)
+    print([o.symbol for o in peg.orders])
+    print([o.convert_to_market_after_expiry for o in peg.orders])
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
     for i in (5, 10, 30, 50, 60):
         k = known.add(seconds=i)
         if i == 10:
             peg.orders[0].filled_quantity = 10
-        if i > 30:
+        if i > 40:
             for order in peg.orders[1:]:
                 if order.status is None:
                     order.status = "CANCELED"
@@ -616,24 +624,24 @@ def test_peg_sequential_modify_after_time(sequential_peg):
 
 def test_peg_sequential_modify_after_time2(sequential_peg):
     peg = sequential_peg
-    peg.duration = 3
+    peg.duration = 5
     peg.peg_every = 3
     for order in peg.orders:
         order.convert_to_market_after_expiry = True
         order.cancel_after_expiry = False
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
-    for i in range(20):
+    for i in range(25):
         k = known.add(seconds=i)
         with pendulum.test(k):
             peg.run(ltp=ltp1)
-            if i == 4:
+            if i == 5:
                 peg.orders[0].update({"filled_quantity": 10})
-            if i == 9:
+            if i == 10:
                 peg.orders[1].update({"filled_quantity": 10})
-            if i == 14:
+            if i == 15:
                 peg.orders[2].update({"filled_quantity": 10})
-            if i == 19:
+            if i == 20:
                 peg.orders[3].update({"filled_quantity": 10})
     assert peg.broker.order_place.call_count == 4
     assert peg.broker.order_modify.call_count == 4

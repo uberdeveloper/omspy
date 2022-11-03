@@ -11,7 +11,7 @@ class BasicPeg(CompoundOrder):
     symbol: str
     side: str
     quantity: int
-    timezone: str = "UTC"
+    timezone: str = "local"
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
