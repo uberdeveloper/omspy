@@ -320,7 +320,7 @@ class Order(BaseModel):
         """
         Cancel an existing order
         """
-        if not (self.lock.can_modify):
+        if not (self.lock.can_cancel):
             logging.debug(
                 f"Order not canceled since lock is modified till {self.lock.cancellation_lock_till}"
             )

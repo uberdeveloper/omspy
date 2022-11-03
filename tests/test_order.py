@@ -417,7 +417,6 @@ def test_simple_order_cancel():
         order.cancel(broker=broker)
         broker.order_cancel.assert_called_once()
         kwargs = dict(order_id="abcdef")
-        print(call(**kwargs))
         assert broker.order_cancel.call_args_list[0] == call(**kwargs)
 
 
@@ -673,7 +672,6 @@ def test_compound_order_save_to_db_add_order(simple_compound_order):
     order.add_order(symbol="beta", quantity=17, side="buy")
     result = con.execute("select * from orders").fetchall()
     assert len(result) == 4
-    print(result)
     assert result[-1][0] == "beta"
 
 
@@ -1125,3 +1123,19 @@ def test_order_lock_modify_and_cancel():
             with pendulum.test(known.add(seconds=i + 1)):
                 order.cancel(broker=broker)
         broker.order_cancel.assert_not_called()
+
+
+def test_order_lock_cancel():
+    known = pendulum.datetime(2022, 1, 1, 10, 10)
+    with patch("omspy.brokers.paper.Paper") as broker:
+        with pendulum.test(known):
+            order = Order(symbol="aapl", side="buy", quantity=10)
+            order.execute(broker=broker)
+        for i in range(10):
+            with pendulum.test(known.add(seconds=i + 1)):
+                if i % 2 == 0:
+                    order.cancel(broker=broker)
+                if i % 6 == 0:
+                    order.add_lock(2, 4)
+
+        assert broker.order_cancel.call_count == 2
