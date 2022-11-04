@@ -293,7 +293,10 @@ def test_close_all_positions_quantity_as_error():
         ]
     )
     with patch("omspy.brokers.paper.Paper.order_place") as order_place:
-        broker.close_all_positions(keys_to_add={"variety": "regular"})
+        # Testing with a symbol transformer that is not a function
+        broker.close_all_positions(
+            keys_to_add={"variety": "regular"}, symbol_transformer="string"
+        )
     call_args = [
         dict(
             symbol="aapl",
@@ -304,6 +307,42 @@ def test_close_all_positions_quantity_as_error():
         ),
         dict(
             symbol="meta",
+            order_type="MARKET",
+            quantity=10,
+            side="buy",
+            variety="regular",
+        ),
+    ]
+    assert order_place.call_count == 2
+    assert order_place.call_args_list[0].kwargs == call_args[0]
+    assert order_place.call_args_list[1].kwargs == call_args[1]
+
+
+def test_close_all_positions_symbol_transfomer():
+    broker = Paper(
+        positions=[
+            dict(symbol="aapl", quantity="10", tag="reg"),
+            dict(symbol="meta", quantity="-10", tag="reg"),
+        ]
+    )
+
+    def transform(x):
+        return f"nyse:{x}"
+
+    with patch("omspy.brokers.paper.Paper.order_place") as order_place:
+        broker.close_all_positions(
+            keys_to_add={"variety": "regular"}, symbol_transformer=transform
+        )
+    call_args = [
+        dict(
+            symbol="nyse:aapl",
+            order_type="MARKET",
+            quantity=10,
+            side="sell",
+            variety="regular",
+        ),
+        dict(
+            symbol="nyse:meta",
             order_type="MARKET",
             quantity=10,
             side="buy",

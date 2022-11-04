@@ -189,20 +189,33 @@ class Broker:
         self,
         keys_to_copy: Optional[Tuple] = None,
         keys_to_add: Optional[Dict] = None,
+        symbol_transformer: Optional[Callable] = None,
         **kwargs,
     ) -> None:
         """
         Close all existing positions.
         For all existing positions, a MARKET order in
         the opposite side is placed to force exit
+        keys_to_copy
+            keys and values to be copied from the position dictionary when placing the order
+        keys_to_add
+            keys to be manually added when placing the order
+        symbol_transformer
+            any function to be applied to transform the symbol from position; use this if the symbol in position need to be transformed before placing an order. By default, the symbol from position is used
         Note
         ----
         Use this only if you want to close all orders in a
         panic situation, or you have orders not controlled
         by the system. Do not forget to cancel the existing
         open orders
+
         """
         STATIC_KEYS = ["quantity", "side", "symbol", "order_type"]
+        if callable(symbol_transformer):
+            func = symbol_transformer
+        else:
+            func = lambda x: x  # just return the symbol
+
         if not (keys_to_copy):
             keys_to_copy = ()
         if not (keys_to_add):
@@ -210,7 +223,7 @@ class Broker:
         for position in self.positions:
             try:
                 quantity = int(position.get("quantity"))
-                symbol = position.get("symbol")
+                symbol = func(position.get("symbol"))
                 if quantity:
                     if quantity > 0:
                         side = "sell"
