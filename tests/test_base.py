@@ -251,3 +251,65 @@ def test_cover_orders_multiple():
         print(order_place.call_args_list)
         assert order_place.call_args_list[0] == call(**kwargs[0])
         assert order_place.call_args_list[1] == call(**kwargs[1])
+
+
+def test_close_all_positions_quantity_as_string():
+    broker = Paper(
+        positions=[
+            dict(symbol="aapl", quantity="10", tag="reg"),
+            dict(symbol="meta", quantity="-10", tag="reg"),
+            dict(symbol="goog", quantity="0", tag="reg"),
+        ]
+    )
+    with patch("omspy.brokers.paper.Paper.order_place") as order_place:
+        broker.close_all_positions(keys_to_add={"variety": "regular"})
+    call_args = [
+        dict(
+            symbol="aapl",
+            order_type="MARKET",
+            quantity=10,
+            side="sell",
+            variety="regular",
+        ),
+        dict(
+            symbol="meta",
+            order_type="MARKET",
+            quantity=10,
+            side="buy",
+            variety="regular",
+        ),
+    ]
+    assert order_place.call_count == 2
+    assert order_place.call_args_list[0].kwargs == call_args[0]
+    assert order_place.call_args_list[1].kwargs == call_args[1]
+
+
+def test_close_all_positions_quantity_as_error():
+    broker = Paper(
+        positions=[
+            dict(symbol="aapl", quantity="10", tag="reg"),
+            dict(symbol="meta", quantity="-10", tag="reg"),
+            dict(symbol="goog", quantity="O", tag="reg"),
+        ]
+    )
+    with patch("omspy.brokers.paper.Paper.order_place") as order_place:
+        broker.close_all_positions(keys_to_add={"variety": "regular"})
+    call_args = [
+        dict(
+            symbol="aapl",
+            order_type="MARKET",
+            quantity=10,
+            side="sell",
+            variety="regular",
+        ),
+        dict(
+            symbol="meta",
+            order_type="MARKET",
+            quantity=10,
+            side="buy",
+            variety="regular",
+        ),
+    ]
+    assert order_place.call_count == 2
+    assert order_place.call_args_list[0].kwargs == call_args[0]
+    assert order_place.call_args_list[1].kwargs == call_args[1]

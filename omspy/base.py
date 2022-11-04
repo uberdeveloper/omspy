@@ -208,27 +208,30 @@ class Broker:
         if not (keys_to_add):
             keys_to_add = {}
         for position in self.positions:
-            quantity = position.get("quantity")
-            symbol = position.get("symbol")
-            if quantity:
-                if quantity > 0:
-                    side = "sell"
-                elif quantity < 0:
-                    side = "buy"
-                order_args = {
-                    "quantity": abs(quantity),
-                    "side": side,
-                    "symbol": symbol,
-                    "order_type": "MARKET",
-                }
-                for key in keys_to_copy:
-                    if key not in STATIC_KEYS:
-                        if position.get(key):
-                            order_args[key] = position[key]
-                final_args = {}
-                final_args.update(keys_to_add)
-                final_args.update(order_args)
-                self.order_place(**final_args)
+            try:
+                quantity = int(position.get("quantity"))
+                symbol = position.get("symbol")
+                if quantity:
+                    if quantity > 0:
+                        side = "sell"
+                    elif quantity < 0:
+                        side = "buy"
+                    order_args = {
+                        "quantity": abs(quantity),
+                        "side": side,
+                        "symbol": symbol,
+                        "order_type": "MARKET",
+                    }
+                    for key in keys_to_copy:
+                        if key not in STATIC_KEYS:
+                            if position.get(key):
+                                order_args[key] = position[key]
+                    final_args = {}
+                    final_args.update(keys_to_add)
+                    final_args.update(order_args)
+                    self.order_place(**final_args)
+            except Exception as e:
+                logging.error(e)
 
     def cancel_all_orders(
         self,
