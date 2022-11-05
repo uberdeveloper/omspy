@@ -179,14 +179,15 @@ def test_order_update_timestamp():
     with pendulum.test(known):
         order = Order(symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris")
     assert order.timestamp == known
-    known = known.add(minutes=5)
-    with pendulum.test(known):
+    with pendulum.test(known.add(minutes=5)):
         order.update(
             {"filled_quantity": 7, "average_price": 912, "exchange_order_id": "abcd"}
         )
-        assert order.last_updated_at == known
+        assert order.last_updated_at == known.add(minutes=5)
         diff = order.last_updated_at - order.timestamp
         assert diff.in_seconds() == 300
+        print(order.timestamp, known)
+        assert order.timestamp == known
 
 
 def test_order_update_non_attribute():
@@ -1183,3 +1184,11 @@ def test_order_lock_cancel():
                     order.add_lock(2, 4)
 
         assert broker.order_cancel.call_count == 2
+
+
+def test_compound_order_add_id_if_not_exist(compound_order):
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    order.id = None
+    assert order.id is None
+    compound_order.add(order)
+    assert compound_order.orders[-1].id is not None

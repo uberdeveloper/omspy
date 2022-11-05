@@ -224,7 +224,7 @@ class Order(BaseModel):
         Note
         ----
         1) Information is updated only for those keys specified in attrs
-        2) Information is updated only when the order is not completed
+        2) Information is updated only when the order is still pending; completed/rejected/canceled orders not updated
         3) Update pending quantity if it is not in data
         """
         if not (self.is_done):
@@ -578,6 +578,8 @@ class CompoundOrder(BaseModel):
         order.parent_id = self.id
         if not (order.connection):
             order.connection = self.connection
+        if not (order.id):
+            order.id = uuid.uuid4().hex
         order.save_to_db()
         self.orders.append(order)
         return order.id

@@ -2,6 +2,12 @@
 ### Improvements
 * `close_all_positions` to handle errors and valid quantity of any type
 * type conversion done for data received from broker `Finvasia`
+* #9 when an `Order` is added to `CompoundOrder` add an id automatically if there is no id
+
+### Fixes
+* tests improved for `Order` class
+* do not update `Order` if order `is_done` (completed/rejected/canceled)
+
 
 
 
