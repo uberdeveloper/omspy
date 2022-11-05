@@ -92,7 +92,7 @@ class PegExisting(BaseModel):
     peg_every: int = 10
     done: bool = False
     order_args: Optional[Dict[str, str]] = None
-    lock: Optional[OrderLock] = None
+    modify_args: Optional[Dict[str, str]] = None
     lock_duration: int = 2
     _next_peg: Optional[pendulum.DateTime] = None
     _num_pegs: int = 0
@@ -109,10 +109,10 @@ class PegExisting(BaseModel):
         self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
         self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
         self.order.order_type = "LIMIT"
-        if self.lock is None:
-            self.lock = OrderLock()
         if self.order_args is None:
             self.order_args = {}
+        if self.modify_args is None:
+            self.modify_args = {}
 
     @validator("order")
     def order_should_be_pending(cls, v):
@@ -153,18 +153,17 @@ class PegExisting(BaseModel):
         if order.is_pending:
             if now > self._expire_at:
                 if self.order.convert_to_market_after_expiry:
-                    if self.lock.can_modify:
-                        order.modify(broker=self.broker, order_type="MARKET")
-                        self.lock.modify(self.lock_duration)
+                    order.modify(
+                        broker=self.broker, order_type="MARKET", **self.modify_args
+                    )
+                    order.add_lock(1, self.lock_duration)
                 else:
-                    if self.lock.can_cancel:
-                        order.cancel(self.broker)
-                        self.lock.cancel(self.lock_duration)
+                    order.cancel(self.broker)
+                    order.add_lock(2, self.lock_duration)
             elif now > self.next_peg:
                 self._next_peg = now.add(seconds=self.peg_every)
-                if self.lock.can_modify:
-                    order.modify(broker=self.broker, price=ltp)
-                    self.lock.modify(self.lock_duration)
+                order.modify(broker=self.broker, price=ltp, **self.modify_args)
+                order.add_lock(1, self.lock_duration)
 
 
 class PegSequential(BaseModel):
@@ -180,7 +179,9 @@ class PegSequential(BaseModel):
     peg_every: int = 4
     lock_duration: int = 2
     order_args: Optional[Dict[str, str]] = None
+    modify_args: Optional[Dict[str, str]] = None
     done: bool = False
+    modify_args: Optional[Dict[str, str]] = None
     skip_subsequent_if_failed = False
     _order: Optional[PegExisting] = None
     _start_time: Optional[pendulum.DateTime] = None
@@ -192,6 +193,8 @@ class PegSequential(BaseModel):
         super().__init__(**data)
         if self.order_args is None:
             self.order_args = {}
+        if self.modify_args is None:
+            self.modify_args = {}
         # Validate whether orders could be pegged
         for order in self.orders:
             peg = PegExisting(
@@ -201,6 +204,7 @@ class PegSequential(BaseModel):
                 peg_every=self.peg_every,
                 lock_duration=self.lock_duration,
                 order_args=self.order_args,
+                modify_args=self.modify_args,
             )
         self._start_time = pendulum.now(tz=self.timezone)
 
@@ -260,6 +264,7 @@ class PegSequential(BaseModel):
                     peg_every=self.peg_every,
                     lock_duration=self.lock_duration,
                     order_args=self.order_args,
+                    modify_args=self.modify_args,
                 )
         return None
 

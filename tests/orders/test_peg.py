@@ -247,6 +247,28 @@ def test_existing_peg_order_place_order_args(existing_peg):
     )
 
 
+def test_existing_peg_order_modify_args(existing_peg):
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    peg = existing_peg
+    peg.order_args = {"product": "MIS", "exchange": "NFO"}
+    peg.modify_args = {"tag": "modified"}
+    peg.execute()
+    peg.broker.order_place.assert_called_once()
+    with pendulum.test(known.add(seconds=10)):
+        peg.run(ltp=120)
+        peg.broker.order_modify.assert_called_once()
+    call_args = peg.broker.order_modify.call_args_list
+    assert call_args[0].kwargs == dict(
+        order_id=10000,
+        quantity=200,
+        price=120,
+        trigger_price=0.0,
+        disclosed_quantity=0.0,
+        tag="modified",
+        order_type="LIMIT",
+    )
+
+
 @patch("omspy.brokers.zerodha.Zerodha")
 def test_existing_peg_run(broker):
     known = pendulum.datetime(2022, 4, 1, 10, 0)
@@ -780,4 +802,38 @@ def test_peg_sequential_execute_all_order_args(order_list):
         price=None,
         exchange="nfo",
         validity="day",
+    )
+
+
+def test_peg_sequential_order_modify_args(order_list):
+    order_list.append(Order(symbol="dow", side="buy", quantity=10))
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10099)
+        broker.order_modify.side_effect = range(10000, 10099)
+        with pendulum.test(known):
+            peg = PegSequential(
+                orders=order_list,
+                broker=broker,
+                order_args={"validity": "day", "exchange": "nfo"},
+                modify_args={"tag": "website"},
+            )
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    for i in range(5, 40):
+        k = known.add(seconds=i)
+        if i == 10:
+            peg.orders[0].filled_quantity = 10
+            peg.orders[0].status = "COMPLETE"
+        with pendulum.test(k):
+            peg.run(ltp=ltp1)
+    call_args = peg.broker.order_modify.call_args_list
+    assert call_args[0].kwargs == dict(
+        order_id=10001,
+        order_type="LIMIT",
+        quantity=10,
+        disclosed_quantity=0,
+        trigger_price=0,
+        price=200,
+        tag="website",
     )

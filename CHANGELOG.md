@@ -3,12 +3,13 @@
 * `close_all_positions` to handle errors and valid quantity of any type
 * type conversion done for data received from broker `Finvasia`
 * #9 when an `Order` is added to `CompoundOrder` add an id automatically if there is no id
+* #25 `PegSequential` order lock mechanism now dependent on `add_lock` method for each order; so each order could have its own order lock.
 
 ### Fixes
-* tests improved for `Order` class
 * do not update `Order` if order `is_done` (completed/rejected/canceled)
 
-
+### Internals
+* tests improved for `Order` class
 
 
 ## 0.8.2
