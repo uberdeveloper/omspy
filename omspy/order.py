@@ -227,7 +227,7 @@ class Order(BaseModel):
         2) Information is updated only when the order is not completed
         3) Update pending quantity if it is not in data
         """
-        if not (self.is_complete):
+        if not (self.is_done):
             for att in self._attrs:
                 val = data.get(att)
                 if val:

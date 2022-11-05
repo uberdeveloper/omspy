@@ -200,17 +200,61 @@ def test_order_update_non_attribute():
 
 def test_order_update_do_not_update_when_complete():
     order = Order(symbol="aapl", side="buy", quantity=10)
-    order.filled_quantity = 10
-    order.update({"average_price": 912})
-    assert order.average_price == 0
     order.filled_quantity = 7
-    order.update({"average_price": 912})
-    assert order.average_price == 912
-    order.average_price = 0
-    # This is wrong; this should never be updated directly
-    order.status = "COMPLETE"
     assert order.average_price == 0
+    order.update({"average_price": 920})
+    assert order.average_price == 920
+    order.status = "COMPLETE"
+    order.update({"average_price": 912, "quantity": 10})
+    # Should not update since order is marked COMPLETE
+    assert order.average_price == 920
     assert order.filled_quantity == 7
+    # We can still change the attribute directly
+    order.filled_quantity = 10
+    assert order.filled_quantity == 10
+
+
+def test_order_update_do_not_update_rejected_order():
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    order.filled_quantity = 7
+    order.average_price = 912
+    order.status = "REJECTED"
+    order.update({"average_price": 920})
+    assert order.average_price == 912
+
+
+def test_order_update_do_not_update_cancelled_order():
+    order = Order(symbol="aapl", side="buy", quantity=10)
+    order.filled_quantity = 7
+    order.average_price = 912
+    order.status = "CANCELED"
+    order.update({"average_price": 920})
+    assert order.average_price == 912
+    order.status = "CANCELLED"
+    order.update({"average_price": 920})
+    assert order.average_price == 912
+    order.status = "OPEN"
+    order.update({"average_price": 920})
+    assert order.average_price == 920
+
+
+def test_order_update_do_not_update_timestamp_for_completed_orders():
+    known = pendulum.datetime(2022, 11, 5, tz="local")
+    with pendulum.test(known):
+        order = Order(symbol="aapl", side="buy", quantity=10)
+    for i in (10, 20, 30, 40):
+        with pendulum.test(known.add(seconds=i)):
+            order.update({"filled_quantity": 10})
+            assert order.last_updated_at == known.add(seconds=10)
+
+    # Test with a rejected order
+    with pendulum.test(known):
+        order = Order(symbol="aapl", side="buy", quantity=10)
+    for i in (10, 20, 30, 40):
+        with pendulum.test(known.add(seconds=i)):
+            order.update({"filled_quantity": 5})
+            order.status = "REJECTED"
+            assert order.last_updated_at == known.add(seconds=10)
 
 
 def test_compound_order_id_custom():
