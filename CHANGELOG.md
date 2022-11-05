@@ -1,4 +1,9 @@
 ## 0.8.3
+### Features
+* `close_all_positions` could take a symbol_transformer function to transform symbols
+* `close_all_positions` can take positions as an optional argument; this would help in passing select positions to square off instead of closing all positions
+* `PegExisting` and `PeqSequential` can now take `modify_args` to add any extra broker arguments needed when modifying orders
+
 ### Improvements
 * `close_all_positions` to handle errors and valid quantity of any type
 * type conversion done for data received from broker `Finvasia`
@@ -6,7 +11,7 @@
 * #25 `PegSequential` order lock mechanism now dependent on `add_lock` method for each order; so each order could have its own order lock.
 
 ### Fixes
-* do not update `Order` if order `is_done` (completed/rejected/canceled)
+* #15 do not update `Order` if order `is_done` (completed/rejected/canceled)
 
 ### Internals
 * tests improved for `Order` class
