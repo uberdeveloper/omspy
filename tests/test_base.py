@@ -202,7 +202,6 @@ def test_cover_orders():
         )
         broker.cover_orders(stop=0.05)
         order_place.assert_called_once()
-        print(order_place.call_args)
 
 
 def test_cover_orders_multiple():
@@ -248,7 +247,6 @@ def test_cover_orders_multiple():
 
         broker.cover_orders(stop=0.05)
         assert order_place.call_count == 2
-        print(order_place.call_args_list)
         assert order_place.call_args_list[0] == call(**kwargs[0])
         assert order_place.call_args_list[1] == call(**kwargs[1])
 
@@ -352,3 +350,16 @@ def test_close_all_positions_symbol_transfomer():
     assert order_place.call_count == 2
     assert order_place.call_args_list[0].kwargs == call_args[0]
     assert order_place.call_args_list[1].kwargs == call_args[1]
+
+
+def test_close_all_positions_given_positions():
+    broker = Paper()
+    positions = [dict(symbol="aapl", quantity=10, tag="reg")]
+    with patch("omspy.brokers.paper.Paper.order_place") as order_place:
+        broker.close_all_positions(positions)
+        order_place.assert_called_once()
+        order_place.call_args_list[0] == dict(
+            symbol="aapl", order_type="market", quantity=10, side="sell"
+        )
+
+    pass

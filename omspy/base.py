@@ -187,6 +187,7 @@ class Broker:
 
     def close_all_positions(
         self,
+        positions: Optional[List[Dict]] = None,
         keys_to_copy: Optional[Tuple] = None,
         keys_to_add: Optional[Dict] = None,
         symbol_transformer: Optional[Callable] = None,
@@ -196,6 +197,8 @@ class Broker:
         Close all existing positions.
         For all existing positions, a MARKET order in
         the opposite side is placed to force exit
+        positions
+            list of positions. By default, all existing positions are closed
         keys_to_copy
             keys and values to be copied from the position dictionary when placing the order
         keys_to_add
@@ -216,11 +219,13 @@ class Broker:
         else:
             func = lambda x: x  # just return the symbol
 
+        if positions is None:
+            positions = self.positions
         if not (keys_to_copy):
             keys_to_copy = ()
         if not (keys_to_add):
             keys_to_add = {}
-        for position in self.positions:
+        for position in positions:
             try:
                 quantity = int(position.get("quantity"))
                 symbol = func(position.get("symbol"))
