@@ -184,12 +184,12 @@ def test_place_order_without_eq(broker):
 
 
 def test_orders(broker, mod):
-    print(DATA_ROOT / "finvasia" / "orders.json")
     with open(DATA_ROOT / "finvasia" / "orders.json", "r") as f:
         orders = json.load(f)
     broker.finvasia.get_order_book.return_value = orders
     fetched = broker.orders
     keys = mod["orders"]
+    # Testing original keys are not in modified dataframe
     for order in fetched:
         for k, v in keys.items():
             assert k not in order
@@ -201,6 +201,7 @@ def test_trades(broker, mod):
     broker.finvasia.get_trade_book.return_value = trades
     fetched = broker.trades
     keys = mod["trades"]
+    # Testing original keys are not in modified dataframe
     for trade in fetched:
         for k, v in keys.items():
             assert k not in trade
@@ -213,7 +214,76 @@ def test_positions(broker, mod):
     broker.finvasia.get_positions.return_value = positions
     fetched = broker.positions
     keys = mod["positions"]
+    # Testing original keys are not in modified dataframe
     for order in fetched:
         for k, v in keys.items():
             assert k not in order
             assert v in order
+
+
+def test_orders_type_conversion(broker):
+    with open(DATA_ROOT / "finvasia" / "orders.json", "r") as f:
+        orders = json.load(f)
+    broker.finvasia.get_order_book.return_value = orders
+    fetched = broker.orders
+    expected = (
+        47.5,
+        155.9,
+        113.65,
+        0,
+        113.4,
+        0,
+        156.45,
+        0,
+        47.3,
+    )
+    expected_rprc = (
+        47.5,
+        155.9,
+        113.65,
+        118,
+        113.4,
+        160,
+        156.45,
+        50,
+        47.3,
+    )
+    for f, e, r in zip(fetched, expected, expected_rprc):
+        assert f["quantity"] == 1
+        assert f["average_price"] == e
+        assert f["rprc"] == r
+        assert type(f["quantity"]) == int
+        assert type(f["filled_quantity"]) == int
+        assert type(f["average_price"]) == float
+        assert type(f["trigger_price"]) == float
+        assert type(f["price"]) == float
+        assert type(f["rprc"]) == float
+
+
+def test_positions_type_conversion(broker):
+    with open(DATA_ROOT / "finvasia" / "positions.json", "r") as f:
+        positions = json.load(f)
+    broker.finvasia.get_positions.return_value = positions
+    fetched = broker.positions
+    for pos in fetched:
+        assert pos["quantity"] == 0
+        assert type(pos["quantity"]) == int
+        assert type(pos["daybuyqty"]) == int
+        assert type(pos["daysellqty"]) == int
+        assert type(pos["daybuyamt"]) == float
+        assert type(pos["daysellamt"]) == float
+
+
+def test_trades_type_conversion(broker):
+    with open(DATA_ROOT / "finvasia" / "trades.json", "r") as f:
+        trades = json.load(f)
+    broker.finvasia.get_trade_book.return_value = trades
+    expected = (47.5, 155.9, 113.65, 113.4, 156.45, 47.3)
+    fetched = broker.trades
+    for f, e in zip(fetched, expected):
+        assert f["price"] == e
+        assert type(f["filled_quantity"]) == int
+        assert type(f["qty"]) == int
+        assert type(f["fillshares"]) == int
+        assert type(f["prc"]) == float
+        assert type(f["price"]) == float

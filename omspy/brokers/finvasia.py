@@ -3,6 +3,7 @@ from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict, Union
 import pendulum
 import pyotp
+import logging
 
 
 class Finvasia(Broker):
@@ -57,19 +58,64 @@ class Finvasia(Broker):
     @post
     def orders(self) -> List[Dict]:
         orderbook = self.finvasia.get_order_book()
-        return orderbook
+        if len(orderbook) == 0:
+            return orderbook
+
+        order_list = []
+        float_cols = ["avgprc", "prc", "rprc", "trgprc"]
+        int_cols = ["fillshares", "qty"]
+        for order in orderbook:
+            try:
+                for int_col in int_cols:
+                    order[int_col] = int(order.get(int_col, 0))
+                for float_col in float_cols:
+                    order[float_col] = float(order.get(float_col, 0))
+            except Exception as e:
+                logging.error(e)
+            order_list.append(order)
+        return order_list
 
     @property
     @post
     def positions(self) -> List[Dict]:
         positionbook = self.finvasia.get_positions()
-        return positionbook
+        if len(positionbook) == 0:
+            return positionbook
+
+        position_list = []
+        int_cols = ["netqty", "daybuyqty", "daysellqty"]
+        float_cols = ["daybuyamt", "daysellamt"]
+        for position in positionbook:
+            try:
+                for int_col in int_cols:
+                    position[int_col] = int(position.get(int_col, 0))
+                for float_col in float_cols:
+                    position[float_col] = float(position.get(float_col, 0))
+            except Exception as e:
+                logging.error(e)
+            position_list.append(position)
+        return position_list
 
     @property
     @post
     def trades(self) -> List[Dict]:
         tradebook = self.finvasia.get_trade_book()
-        return tradebook
+        if len(tradebook) == 0:
+            return tradebook
+
+        trade_list = []
+        int_cols = ["flqty", "qty", "fillshares"]
+        float_cols = ["prc", "flprc"]
+        for trade in tradebook:
+            try:
+                for int_col in int_cols:
+                    trade[int_col] = int(trade.get(int_col, 0))
+                for float_col in float_cols:
+                    trade[float_col] = float(trade.get(float_col, 0))
+            except Exception as e:
+                logging.error(e)
+            trade_list.append(trade)
+        return trade_list
 
     def get_order_type(self, order_type: str) -> str:
         """

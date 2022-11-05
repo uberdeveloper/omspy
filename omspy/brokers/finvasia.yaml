@@ -33,4 +33,4 @@ trades:
   exchordid: exchange_order_id
   exch_tm: exchange_timestamp
   norentm: broker_timestamp
-
+  flprc: price

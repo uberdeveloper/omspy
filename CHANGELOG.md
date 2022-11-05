@@ -1,3 +1,10 @@
+## 0.8.3
+### Improvements
+* `close_all_positions` to handle errors and valid quantity of any type
+* type conversion done for data received from broker `Finvasia`
+
+
+
 ## 0.8.2
 ### Improvements
 * Instrument master for broker `kotak` could be generated for any combination of columns
