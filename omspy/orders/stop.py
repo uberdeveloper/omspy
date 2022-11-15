@@ -69,43 +69,6 @@ class StopLimitOrder(CompoundOrder):
         )
 
 
-class BracketOrder(StopOrder):
-    def __init__(self, target: float, **kwargs):
-        super(BracketOrder, self).__init__(**kwargs)
-        self._target = target
-
-    @property
-    def target(self) -> float:
-        return self._target
-
-    @property
-    def is_target_hit(self) -> bool:
-        """
-        Check whether the given target is hit
-        """
-        ltp: float = 0
-        for k, v in self.ltp.items():
-            # We assume a single symbol only so breaking
-            # TO DO: A better way is appreciated
-            ltp = v
-            break
-        return True if ltp > self.target else False
-
-    def do_target(self) -> None:
-        """
-        Execute target order if target is hit
-        Note
-        -----
-        This checks
-         1. whether the target is hit
-         2. if target is hit, modify the existing stop and exit the order
-        """
-        if self.is_target_hit:
-            order = self.orders[-1]
-            order.order_type = "MARKET"
-            order.modify(broker=self.broker)
-
-
 class TrailingStopOrder(StopLimitOrder):
     """
     Trailing stop order

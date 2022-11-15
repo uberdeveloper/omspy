@@ -24,22 +24,6 @@ def stop_order():
 
 
 @pytest.fixture
-def bracket_order():
-    with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        bracket_order = BracketOrder(
-            symbol="aapl",
-            side="buy",
-            quantity=100,
-            price=930,
-            order_type="LIMIT",
-            trigger_price=850,
-            broker=broker,
-            target=960,
-        )
-        return bracket_order
-
-
-@pytest.fixture
 def trailing_stop_order():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = TrailingStopOrder(
@@ -87,35 +71,6 @@ def test_stop_order_execute_all(stop_order):
     for i in range(10):
         stop_order.execute_all()
     assert broker.order_place.call_count == 2
-
-
-def test_bracket_order_is_target_hit(bracket_order):
-    broker = bracket_order.broker
-    bracket_order.broker.order_place.side_effect = ["aaaaaa", "bbbbbb"]
-    bracket_order.execute_all()
-    assert broker.order_place.call_count == 2
-    bracket_order.update_orders(
-        {"aaaaaa": {"average_price": 930, "filled_quantity": 100, "status": "COMPLETE"}}
-    )
-    bracket_order.update_ltp({"aapl": 944})
-    assert bracket_order.is_target_hit is False
-    bracket_order.update_ltp({"aapl": 961})
-    assert bracket_order.is_target_hit is True
-    assert bracket_order.total_mtm == 3100
-
-
-def test_bracket_order_do_target(bracket_order):
-    broker = bracket_order.broker
-    bracket_order.broker.order_place.side_effect = ["aaaaaa", "bbbbbb"]
-    bracket_order.execute_all()
-    bracket_order.update_orders(
-        {"aaaaaa": {"average_price": 930, "filled_quantity": 100, "status": "COMPLETE"}}
-    )
-    for i in (944, 952, 960, 961):
-        bracket_order.update_ltp({"aapl": i})
-        bracket_order.do_target()
-    broker.order_modify.assert_called_once()
-    # TO DO: Add kwargs to check
 
 
 def test_trailing_stop_order_update_mtm(trailing_stop_order):
