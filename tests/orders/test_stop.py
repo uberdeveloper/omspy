@@ -11,6 +11,7 @@ from omspy.orders.stop import *
 @pytest.fixture
 def stop_order():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10100)
         stop_order = StopOrder(
             symbol="aapl",
             side="buy",
@@ -24,6 +25,23 @@ def stop_order():
 
 
 @pytest.fixture
+def stop_limit_order():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10100)
+        stop_limit_order = StopLimitOrder(
+            symbol="aapl",
+            side="buy",
+            quantity=100,
+            price=930,
+            order_type=("LIMIT", "SL-M"),
+            trigger_price=850,
+            stop_limit_price=830,
+            broker=broker,
+        )
+        return stop_limit_order
+
+
+@pytest.fixture
 def trailing_stop_order():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         order = TrailingStopOrder(
@@ -33,7 +51,7 @@ def trailing_stop_order():
             price=930,
             order_type="LIMIT",
             trigger_price=850,
-            trail_by=(10, 5),
+            trail_by=10,
             broker=broker,
         )
         order.orders[0].filled_quantity = 100
@@ -59,99 +77,38 @@ def test_stop_order(stop_order):
     order.id = stop_order.orders[-1].id
     order.timestamp = stop_order.orders[-1].timestamp
     assert stop_order.orders[-1] == order
+    assert [o.order_type for o in stop_order.orders] == ["LIMIT", "SL-M"]
 
 
 def test_stop_order_execute_all(stop_order):
     broker = stop_order.broker
-    stop_order.broker.order_place.side_effect = ["aaaaaa", "bbbbbb"]
     stop_order.execute_all()
     assert broker.order_place.call_count == 2
-    assert stop_order.orders[0].order_id == "aaaaaa"
-    assert stop_order.orders[1].order_id == "bbbbbb"
+    assert stop_order.orders[0].order_id == 10000
+    assert stop_order.orders[1].order_id == 10001
     for i in range(10):
         stop_order.execute_all()
     assert broker.order_place.call_count == 2
 
 
-def test_trailing_stop_order_update_mtm(trailing_stop_order):
-    order = trailing_stop_order
-    order._update_maxmtm()
-    assert order.maxmtm == 0
-
-    order.update_ltp({"aapl": 940})
-    order._update_maxmtm()
-    assert order.maxmtm == 1000
-
-    order.update_ltp({"aapl": 920})
-    order._update_maxmtm()
-    assert order.maxmtm == 1000
-    assert order.total_mtm == -1000
+def test_stop_limit_order_defaults(stop_limit_order):
+    order = stop_limit_order
+    assert len(order.orders) == 2
+    assert [o.order_type for o in order.orders] == ["LIMIT", "SL"]
+    assert [o.price for o in order.orders] == [930, 830]
+    assert [o.trigger_price for o in order.orders] == [0, 850]
+    assert [o.side for o in order.orders] == ["buy", "sell"]
 
 
-def test_trailing_stop_update_stop(trailing_stop_order):
-    order = trailing_stop_order
-    order.update_ltp({"aapl": 940})
-    order._update_maxmtm()
-    order._update_stop()
-    assert order.maxmtm == 1000
-    assert order.stop == 855
-
-    order.update_ltp({"aapl": 990})
-    order._update_maxmtm()
-    order._update_stop()
-    assert order.stop == 880
-
-    order.update_ltp({"aapl": 900})
-    order._update_maxmtm()
-    order._update_stop()
-    assert order.stop == 880
-    assert order.maxmtm == 6000
-    assert order.total_mtm == -3000
-
-
-def test_trailing_stop_update_stop_two(trailing_stop_order):
-    order = trailing_stop_order
-    order.update_ltp({"aapl": 940})
-    order._update_maxmtm()
-    order._update_stop()
-    assert order.maxmtm == 1000
-    assert order.stop == 855
-
-    # Change trailing order settings
-    order.trail_big = 10
-    order.trail_small = 10
-    order.update_ltp({"aapl": 990})
-    order._update_maxmtm()
-    order._update_stop()
-    assert order.stop == 910
-
-
-def test_trailing_stop_watch(trailing_stop_order):
-    order = trailing_stop_order
-    broker = order.broker
-    order.update_ltp({"aapl": 1000})
-    order.trail_big = 10
-    order.trail_small = 10
-    order.watch()
-    assert order.stop == 920
-    for i in (944, 912, 960, 961):
-        order.update_ltp({"aapl": i})
-        order.watch()
-    broker.order_modify.assert_called_once()
-
-
-def test_stop_limit_order():
-    broker = Broker()
-    order = StopLimitOrder(
-        symbol="aapl", side="buy", quantity=100, trigger_price=850, broker=broker
-    )
-    assert order.orders[-1].price == 850
-    order = StopLimitOrder(
-        symbol="aapl",
-        side="buy",
-        quantity=100,
-        trigger_price=850,
-        stop_limit_price=855,
-        broker=broker,
-    )
-    assert order.orders[-1].price == 855
+def test_stop_limit_order_execute_all(stop_limit_order):
+    broker = stop_limit_order.broker
+    stop_limit_order.execute_all()
+    assert broker.order_place.call_count == 2
+    print(stop_limit_order.orders[0])
+    assert stop_limit_order.orders[0].order_id == 10000
+    assert stop_limit_order.orders[1].order_id == 10001
+    for i in range(10):
+        stop_limit_order.execute_all()
+    assert broker.order_place.call_count == 2
+    # TODO: add test for order_type
+    # TODO: add test for side
