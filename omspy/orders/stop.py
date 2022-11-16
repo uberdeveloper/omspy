@@ -54,15 +54,28 @@ class StopLimitOrder(StopOrder):
         self.orders[-1].price = self.stop_limit_price
 
 
-class TrailingStopOrder(StopLimitOrder):
+class TrailingStopOrder(StopOrder):
     """
     Trailing stop order
     trail_by
-        trail_by in points
+        trail_by in price
     """
 
-    trail_by: float = 0.0
-    _next_trail = PrivateAttr()
+    trail_by: float
+    _next_trail: float = PrivateAttr()
+    _stop_loss: float = PrivateAttr()
 
-    def __init__(self):
+    @property
+    def sign(self) -> int:
+        return 1 if self.side == "buy" else -1
+
+    def __init__(self, **data):
         super().__init__(**data)
+        self._stop_loss = self.trigger_price
+        self._next_trail = self._stop_loss + self.trail_by * self.sign * 1
+
+    def run(self, ltp: float):
+        """
+        Update trailing stop
+        """
+        pass

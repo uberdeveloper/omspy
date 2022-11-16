@@ -42,23 +42,20 @@ def stop_limit_order():
 
 
 @pytest.fixture
-def trailing_stop_order():
+def trailing_stop_dict():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        order = TrailingStopOrder(
+        broker.order_place.side_effect = range(10000, 10100)
+        stop_limit_order = dict(
             symbol="aapl",
             side="buy",
             quantity=100,
             price=930,
-            order_type="LIMIT",
+            order_type=("LIMIT", "SL-M"),
             trigger_price=850,
             trail_by=10,
             broker=broker,
         )
-        order.orders[0].filled_quantity = 100
-        order.orders[0].pending_quantity = 0
-        order.orders[0].status = "COMPLETE"
-        order.orders[0].average_price = 930
-        return order
+        return stop_limit_order
 
 
 def test_stop_order(stop_order):
@@ -112,3 +109,13 @@ def test_stop_limit_order_execute_all(stop_limit_order):
     assert broker.order_place.call_count == 2
     # TODO: add test for order_type
     # TODO: add test for side
+
+
+def test_trailing_stop_defaults(trailing_stop_dict):
+    order = TrailingStopOrder(**trailing_stop_dict)
+    assert order._stop_loss == 850
+    assert order._next_trail == 860
+    trailing_stop_dict.update({"side": "sell", "price": 900, "trigger_price": 950})
+    order = TrailingStopOrder(**trailing_stop_dict)
+    assert order._stop_loss == 950
+    assert order._next_trail == 940
