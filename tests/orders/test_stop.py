@@ -58,6 +58,21 @@ def trailing_stop_dict():
         return stop_limit_order
 
 
+@pytest.fixture
+def order_dict():
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10100)
+        return dict(
+            symbol="aapl",
+            side="buy",
+            quantity=100,
+            price=930,
+            order_type=("LIMIT", "SL-M"),
+            trigger_price=850,
+            broker=broker,
+        )
+
+
 def test_stop_order(stop_order):
     assert stop_order.count == 2
     assert stop_order.orders[0].order_type == "LIMIT"
@@ -165,3 +180,35 @@ def test_trailing_stop_run_no_price(trailing_stop_dict):
     for l in ltps:
         order.run(ltp=l)
         assert order.orders[-1].trigger_price == 850
+
+
+def test_target_order_defaults(order_dict):
+    order_dict["target"] = 950
+    order = TargetOrder(**order_dict)
+    order.execute_all()
+    assert order.orders[0].order_type == "LIMIT"
+    assert order.orders[0].price == 930
+    assert order.orders[-1].order_type == "SL-M"
+    assert order.orders[-1].trigger_price == 850
+
+
+def test_target_order_buy_target_hit(order_dict):
+    order_dict["target"] = 950
+    order = TargetOrder(**order_dict)
+    order.execute_all()
+    for ltp in (930, 944, 910, 864, 930, 940, 950):
+        order.run(ltp=ltp)
+    assert order.broker.order_place.call_count == 2
+    order.broker.order_modify.assert_called_once()
+    # TODO: Check do not hit target after SL hit
+    # TODO: Do not call target after modify hit
+
+
+def test_target_order_sell_target_hit(order_dict):
+    order_dict.update({"side": "sell", "price": 830, "target": 800})
+    order = TargetOrder(**order_dict)
+    order.execute_all()
+    for ltp in (830, 817, 824, 801, 800):
+        order.run(ltp=ltp)
+    assert order.broker.order_place.call_count == 2
+    order.broker.order_modify.assert_called_once()

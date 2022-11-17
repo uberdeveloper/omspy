@@ -13,6 +13,7 @@ class StopOrder(CompoundOrder):
     quantity: int = 1
     disclosed_quantity: int = 0
     order_type: Optional[Tuple[str, str]] = None
+    # TODO: Add order lock on modify
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -110,3 +111,33 @@ class TrailingStopOrder(StopOrder):
                     self.orders[-1].modify(
                         broker=self.broker, trigger_price=self._stop_loss
                     )
+
+
+class TargetOrder(StopOrder):
+    """
+    Exit an order when the target price is hit
+    target
+        target price to exit order
+    Note
+    -----
+    1) The existing stop loss order is converted into a MARKET order when the target price is hit
+    """
+
+    target: float
+    order_type: Tuple[str, str] = ("LIMIT", "SL-M")
+
+    def __init__(self, **data):
+        super().__init__(**data)
+
+    def run(self, ltp: float):
+        """
+        Update and exit if target is hit
+        """
+        price = self.price if self.price > 0 else self.orders[0].average_price
+        if price > 0:
+            if self.side == "buy":
+                if ltp >= self.target:
+                    self.orders[-1].modify(broker=self.broker, order_type="MARKET")
+            elif self.side == "sell":
+                if ltp <= self.target:
+                    self.orders[-1].modify(broker=self.broker, order_type="MARKET")
