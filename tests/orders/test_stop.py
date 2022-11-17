@@ -114,8 +114,54 @@ def test_stop_limit_order_execute_all(stop_limit_order):
 def test_trailing_stop_defaults(trailing_stop_dict):
     order = TrailingStopOrder(**trailing_stop_dict)
     assert order._stop_loss == 850
-    assert order._next_trail == 860
+    assert order._next_trail == 940
     trailing_stop_dict.update({"side": "sell", "price": 900, "trigger_price": 950})
     order = TrailingStopOrder(**trailing_stop_dict)
     assert order._stop_loss == 950
-    assert order._next_trail == 940
+    assert order._next_trail == 890
+
+
+def test_trailing_stop_market_order(trailing_stop_dict):
+    dct = trailing_stop_dict
+    dct["price"] = 0
+    dct["order_type"] = ("MARKET", "SL-M")
+    order = TrailingStopOrder(**trailing_stop_dict)
+    assert order._stop_loss == 850
+    assert order._next_trail == 0
+
+
+def test_trailing_stop_run_buy(trailing_stop_dict):
+    dct = trailing_stop_dict
+    order = TrailingStopOrder(**trailing_stop_dict)
+    ltps = (935, 940, 941, 955, 940, 948, 961, 930)
+    sl = (850, 850, 860, 870, 870, 870, 880, 880)
+    for l, s in zip(ltps, sl):
+        order.run(ltp=l)
+        assert order._stop_loss == s
+        assert order.orders[-1].trigger_price == s
+    assert order.broker.order_modify.call_count == 3
+
+
+def test_trailing_stop_run_sell(trailing_stop_dict):
+    dct = trailing_stop_dict
+    dct.update({"side": "sell", "trigger_price": 1000})
+    order = TrailingStopOrder(**trailing_stop_dict)
+    ltps = (930, 950, 980, 917, 894, 897, 920, 887)
+    sl = (1000, 1000, 1000, 990, 980, 970, 970, 960)
+    for l, s in zip(ltps, sl):
+        order.run(ltp=l)
+        print(l, s)
+        assert order._stop_loss == s
+        assert order.orders[-1].trigger_price == s
+    assert order.broker.order_modify.call_count == 4
+
+
+def test_trailing_stop_run_no_price(trailing_stop_dict):
+    dct = trailing_stop_dict
+    dct["price"] = 0
+    dct["order_type"] = ("MARKET", "SL-M")
+    order = TrailingStopOrder(**trailing_stop_dict)
+    ltps = (935, 940, 941, 955, 940, 948, 961, 930)
+    for l in ltps:
+        order.run(ltp=l)
+        assert order.orders[-1].trigger_price == 850

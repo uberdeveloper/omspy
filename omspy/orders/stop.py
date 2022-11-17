@@ -62,7 +62,7 @@ class TrailingStopOrder(StopOrder):
     """
 
     trail_by: float
-    _next_trail: float = PrivateAttr()
+    _next_trail: Optional[float] = PrivateAttr()
     _stop_loss: float = PrivateAttr()
 
     @property
@@ -72,10 +72,41 @@ class TrailingStopOrder(StopOrder):
     def __init__(self, **data):
         super().__init__(**data)
         self._stop_loss = self.trigger_price
-        self._next_trail = self._stop_loss + self.trail_by * self.sign * 1
+        self._update_next_trail()
+
+    def _update_next_trail(self):
+        """
+        Update trailing stop loss
+        """
+        price = self.orders[0].average_price if self.price == 0 else self.price
+        if self.price > 0:
+            self._next_trail = price + self.trail_by * self.sign * 1
+        else:
+            self._next_trail = 0
+
+    @property
+    def next_trail(self) -> float:
+        return self._next_trail
 
     def run(self, ltp: float):
         """
         Update trailing stop
         """
-        pass
+        if self.next_trail == 0:
+            self._update_next_trail()
+        if self.next_trail > 0:
+            if self.side == "buy":
+                if ltp > self.next_trail:
+                    # TODO: Trail to adjust to the nearest trail in case of jump in ltp
+                    self._stop_loss += self.trail_by
+                    self._next_trail += self.trail_by
+                    self.orders[-1].modify(
+                        broker=self.broker, trigger_price=self._stop_loss
+                    )
+            elif self.side == "sell":
+                if ltp < self.next_trail:
+                    self._stop_loss -= self.trail_by
+                    self._next_trail -= self.next_trail
+                    self.orders[-1].modify(
+                        broker=self.broker, trigger_price=self._stop_loss
+                    )
