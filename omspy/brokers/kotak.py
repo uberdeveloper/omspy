@@ -274,6 +274,14 @@ class Kotak(Broker):
                     order["instrumentToken"], order["instrumentName"]
                 )
                 order["status"] = self.get_status(order["status"])
+                try:
+                    ts = order["orderTimestamp"]
+                    ts2 = ts[:-6] + ts[-2:]
+                    order["exchange_timestamp"] = pendulum.parse(
+                        ts2, tz="Asia/Kolkata", strict=False
+                    )
+                except Exception as e:
+                    logging.error(e)
             return order_report["success"]
         else:
             return order_report

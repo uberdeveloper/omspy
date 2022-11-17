@@ -9,3 +9,4 @@ orders:
   orderId: order_id
   orderTimestamp: exchange_timestamp
   exchangeOrderId: exchange_order_id
+  price: average_price

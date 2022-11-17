@@ -361,3 +361,28 @@ def test_create_instrument_master_different_columns():
         k: int(v) for k, v in zip(df3.instrumenttoken.values, df3.exchangetoken.values)
     }
     assert master == expected
+
+
+def test_orders_exchange_timestamp(mock_kotak):
+    broker = mock_kotak
+    broker.master = {"NSE:BHEL": 878, "NSE:NIFTY28APR2216400PUT": 71377}
+    broker._rev_master = {v: k for k, v in broker.master.items()}
+    with open(DATA_ROOT / "kotak_orders.json") as f:
+        expected = json.load(f)
+        broker.client.order_report.side_effect = [expected]
+        orders = broker.orders
+        broker.client.order_report.assert_called_once()
+        ts_array = [
+            (2022, 4, 25, 12, 43, 28),
+            (2022, 4, 25, 12, 55, 54),
+            (2022, 4, 25, 12, 56, 55),
+            (2022, 4, 25, 13, 5, 54),
+            (2022, 4, 25, 13, 53, 8),
+            (2022, 4, 25, 13, 54, 30),
+            (2022, 4, 25, 15, 20, 40),
+        ]
+        expected_timestamp = [
+            pendulum.datetime(*ts, tz="Asia/Kolkata") for ts in ts_array
+        ]
+        for order, ts in zip(orders, expected_timestamp):
+            assert order["exchange_timestamp"] == ts
