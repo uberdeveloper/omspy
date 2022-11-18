@@ -287,3 +287,27 @@ def test_trades_type_conversion(broker):
         assert type(f["fillshares"]) == int
         assert type(f["prc"]) == float
         assert type(f["price"]) == float
+
+
+def test_orders_timestamp_conversion(broker):
+    with open(DATA_ROOT / "finvasia" / "orders.json", "r") as f:
+        orders = json.load(f)
+        broker.finvasia.get_order_book.return_value = orders
+        fetched = broker.orders
+        ts_array = [
+            (2022, 6, 14, 15, 6, 38),
+            (2022, 6, 14, 15, 6, 25),
+            (2022, 6, 14, 15, 6, 7),
+            (2022, 6, 14, 14, 54, 36),
+            (2022, 6, 14, 14, 37, 55),
+            (2022, 6, 14, 14, 54, 36),
+            (2022, 6, 14, 14, 37, 55),
+            (2022, 6, 14, 14, 54, 36),
+            (2022, 6, 14, 14, 37, 54),
+        ]
+        expected_timestamp = [
+            pendulum.datetime(*ts, tz="Asia/Kolkata") for ts in ts_array
+        ]
+        for order, ts in zip(orders, expected_timestamp):
+            assert order["exchange_timestamp"] == ts
+            assert order["broker_timestamp"] == ts

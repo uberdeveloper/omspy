@@ -70,6 +70,14 @@ class Finvasia(Broker):
                     order[int_col] = int(order.get(int_col, 0))
                 for float_col in float_cols:
                     order[float_col] = float(order.get(float_col, 0))
+                ts = order["exch_tm"]
+                order["exchange_timestamp"] = pendulum.from_format(
+                    ts, fmt="DD-MM-YYYY HH:mm:ss", tz="Asia/Kolkata"
+                )
+                ts2 = order["norentm"]
+                order["broker_timestamp"] = pendulum.from_format(
+                    ts2, fmt="HH:mm:ss DD-MM-YYYY", tz="Asia/Kolkata"
+                )
             except Exception as e:
                 logging.error(e)
             order_list.append(order)
