@@ -1,3 +1,17 @@
+## 0.9.0
+### Features
+* `TrailingStopOrder` added to stop orders
+* `TargetOrder` added to stop orders
+* `BracketOrder` removed from stop orders
+
+### Improvements
+* `StopOrder` and `StopLimitOrder` model changed
+
+### Fixes
+* Kotak broker exchange_timestamp format handled correctly
+* Finvasia broker exchange and broker timestamp format handled correctly
+* Timestamp for kotak, finvasia brokers to be saved in db in expected format
+
 ## 0.8.3
 ### Features
 * `close_all_positions` could take a symbol_transformer function to transform symbols
