@@ -270,8 +270,18 @@ def test_positions_type_conversion(broker):
         assert type(pos["quantity"]) == int
         assert type(pos["daybuyqty"]) == int
         assert type(pos["daysellqty"]) == int
+        assert type(pos["cfbuyqty"]) == int
+        assert type(pos["cfsellqty"]) == int
+        assert type(pos["openbuyqty"]) == int
+        assert type(pos["opensellqty"]) == int
         assert type(pos["daybuyamt"]) == float
         assert type(pos["daysellamt"]) == float
+        assert type(pos["lp"]) == float
+        assert type(pos["rpnl"]) == float
+        assert type(pos["dayavgprc"]) == float
+        assert type(pos["daybuyavgprc"]) == float
+        assert type(pos["daysellavgprc"]) == float
+        assert type(pos["urmtom"]) == float
 
 
 def test_trades_type_conversion(broker):

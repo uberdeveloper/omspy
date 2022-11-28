@@ -91,8 +91,25 @@ class Finvasia(Broker):
             return positionbook
 
         position_list = []
-        int_cols = ["netqty", "daybuyqty", "daysellqty"]
-        float_cols = ["daybuyamt", "daysellamt"]
+        int_cols = [
+            "netqty",
+            "daybuyqty",
+            "daysellqty",
+            "cfbuyqty",
+            "cfsellqty",
+            "openbuyqty",
+            "opensellqty",
+        ]
+        float_cols = [
+            "daybuyamt",
+            "daysellamt",
+            "lp",
+            "rpnl",
+            "dayavgprc",
+            "daybuyavgprc",
+            "daysellavgprc",
+            "urmtom",
+        ]
         for position in positionbook:
             try:
                 for int_col in int_cols:
