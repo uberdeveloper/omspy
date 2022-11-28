@@ -71,12 +71,17 @@ class Finvasia(Broker):
                 for float_col in float_cols:
                     order[float_col] = float(order.get(float_col, 0))
                 ts = order["exch_tm"]
-                order["exchange_timestamp"] = pendulum.from_format(
-                    ts, fmt="DD-MM-YYYY HH:mm:ss", tz="Asia/Kolkata"
+                # Timestamp converted to str to facilitate loading into pandas dataframe
+                order["exchange_timestamp"] = str(
+                    pendulum.from_format(
+                        ts, fmt="DD-MM-YYYY HH:mm:ss", tz="Asia/Kolkata"
+                    )
                 )
                 ts2 = order["norentm"]
-                order["broker_timestamp"] = pendulum.from_format(
-                    ts2, fmt="HH:mm:ss DD-MM-YYYY", tz="Asia/Kolkata"
+                order["broker_timestamp"] = str(
+                    pendulum.from_format(
+                        ts2, fmt="HH:mm:ss DD-MM-YYYY", tz="Asia/Kolkata"
+                    )
                 )
             except Exception as e:
                 logging.error(e)

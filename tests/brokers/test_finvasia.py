@@ -4,6 +4,7 @@ import pytest
 import yaml
 import json
 from unittest.mock import patch
+import pendulum
 
 # @@@ assumption [add test case]: this file location change breaks below paths
 DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
@@ -319,5 +320,5 @@ def test_orders_timestamp_conversion(broker):
             pendulum.datetime(*ts, tz="Asia/Kolkata") for ts in ts_array
         ]
         for order, ts in zip(orders, expected_timestamp):
-            assert order["exchange_timestamp"] == ts
-            assert order["broker_timestamp"] == ts
+            assert order["exchange_timestamp"] == str(ts)
+            assert order["broker_timestamp"] == str(ts)
