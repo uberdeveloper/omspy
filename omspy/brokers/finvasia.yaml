@@ -10,6 +10,10 @@ order_modify:
 positions:
   tsym: symbol
   netqty: quantity
+  lp: last_price
+  exch: exchange
+  daybuyamt: day_buy_value
+  daysellamt: day_sell_value
 orders:
   tsym: symbol
   qty: quantity

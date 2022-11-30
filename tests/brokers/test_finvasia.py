@@ -107,11 +107,12 @@ def test_place_order_mixed_args(broker):
         price_type="LMT",
         price=2100,
         disclosed_quantity=15,
+        product_type="N",
     )
     broker.finvasia.place_order.assert_called_once()
     order_args = dict(
         buy_or_sell="B",
-        product_type="I",
+        product_type="N",
         exchange="NSE",
         tradingsymbol="RELIANCE-EQ",
         quantity=100,
@@ -275,9 +276,9 @@ def test_positions_type_conversion(broker):
         assert type(pos["cfsellqty"]) == int
         assert type(pos["openbuyqty"]) == int
         assert type(pos["opensellqty"]) == int
-        assert type(pos["daybuyamt"]) == float
-        assert type(pos["daysellamt"]) == float
-        assert type(pos["lp"]) == float
+        assert type(pos["day_buy_value"]) == float
+        assert type(pos["day_sell_value"]) == float
+        assert type(pos["last_price"]) == float
         assert type(pos["rpnl"]) == float
         assert type(pos["dayavgprc"]) == float
         assert type(pos["daybuyavgprc"]) == float
@@ -322,3 +323,35 @@ def test_orders_timestamp_conversion(broker):
         for order, ts in zip(orders, expected_timestamp):
             assert order["exchange_timestamp"] == str(ts)
             assert order["broker_timestamp"] == str(ts)
+
+
+def test_place_order_different_exchange(broker):
+    broker.order_place(symbol="RELIANCE", side="BUY", quantity=1, exchange="NFO")
+    broker.finvasia.place_order.assert_called_once()
+    order_args = dict(
+        buy_or_sell="B",
+        product_type="I",
+        exchange="NFO",
+        tradingsymbol="RELIANCE",
+        quantity=1,
+        price_type="MKT",
+        retention="DAY",
+        discloseqty=0,
+    )
+    assert broker.finvasia.place_order.call_args.kwargs == order_args
+
+
+def test_place_order_different_exchange(broker):
+    broker.order_place(symbol="RELIANCE", side="BUY", quantity=1, exchange="NFO")
+    broker.finvasia.place_order.assert_called_once()
+    order_args = dict(
+        buy_or_sell="B",
+        product_type="I",
+        exchange="NFO",
+        tradingsymbol="RELIANCE",
+        quantity=1,
+        price_type="MKT",
+        retention="DAY",
+        discloseqty=0,
+    )
+    assert broker.finvasia.place_order.call_args.kwargs == order_args

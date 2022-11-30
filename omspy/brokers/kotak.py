@@ -150,6 +150,19 @@ def add_name(data, segment: Optional[str] = "cash") -> pd.DataFrame:
         return data
 
 
+def _create_instrument_dataframe() -> pd.DataFrame:
+    """
+    Create the instrument dataframe
+    """
+    # TODO: Handle error in case of no instruments
+    cash = download_file(get_url(segment="cash"))
+    fno = download_file(get_url(segment="fno"))
+    cash = add_name(cash, segment="cash")
+    fno = add_name(fno, segment="fno")
+    df = pd.concat([cash, fno]).drop_duplicates(subset=["instrumenttoken"])
+    return df
+
+
 def create_instrument_master(
     name: str = "inst_name", token: str = "instrumenttoken"
 ) -> Dict[str, int]:
@@ -164,11 +177,7 @@ def create_instrument_master(
     Takes no arguments by default and returns the entire instrument_master as a dictionary with key as name and values as instrument token
     """
     # TODO: Handle error in case of no instruments
-    cash = download_file(get_url(segment="cash"))
-    fno = download_file(get_url(segment="fno"))
-    cash = add_name(cash, segment="cash")
-    fno = add_name(fno, segment="fno")
-    df = pd.concat([cash, fno]).drop_duplicates(subset=["instrumenttoken"])
+    df = _create_instrument_dataframe()
     return {k: int(v) for k, v in zip(df[name].values, df[token].values)}
 
 

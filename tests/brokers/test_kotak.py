@@ -1,5 +1,4 @@
 from pathlib import PurePath
-
 from omspy.brokers.kotak import *
 from unittest.mock import patch, call
 import pytest
@@ -201,6 +200,8 @@ def test_positions(mock_kotak):
     broker = mock_kotak
     broker.master = {"NSE:BHEL": 878, "NSE:NIFTY28APR2216400PUT": 71377}
     broker._rev_master = {v: k for k, v in broker.master.items()}
+    keys_not_available = ["netTrdQtyLot", "buyTradedVal", "sellTradedVal", "lastPrice"]
+    keys_to_check = ["quantity", "buy_value", "sell_value", "last_price"]
     with open(DATA_ROOT / "kotak_positions.json") as f:
         expected = json.load(f)
         broker.client.positions.side_effect = [expected]
@@ -211,9 +212,11 @@ def test_positions(mock_kotak):
             "NSE:BHEL",
             "NSE:NIFTY28APR2216400PUT",
         ]
-        assert "quantity" in positions[0]
-        assert "quantity" in positions[1]
-        assert "netTrdQtyLot" not in positions[0]
+        for pos in positions:
+            for key in keys_not_available:
+                assert key not in pos
+            for key in keys_to_check:
+                assert key in pos
 
 
 def test_orders(mock_kotak):

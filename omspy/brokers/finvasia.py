@@ -49,10 +49,13 @@ class Finvasia(Broker):
         """
         Convert raw symbol to finvasia
         """
-        if symbol.endswith("-EQ") or symbol.endswith("-eq"):
-            return symbol
+        if exchange == "NSE":
+            if symbol.endswith("-EQ") or symbol.endswith("-eq"):
+                return symbol
+            else:
+                return f"{symbol}-EQ"
         else:
-            return f"{symbol}-EQ"
+            return symbol
 
     @property
     @post
@@ -162,10 +165,11 @@ class Finvasia(Broker):
 
     @pre
     def order_place(self, **kwargs) -> Union[str, None]:
-        symbol = kwargs.pop("symbol")
-        symbol = self._convert_symbol(symbol)
         side = kwargs.pop("side")
         order_type = kwargs.pop("order_type", "MKT")
+        exchange = kwargs.pop("exchange", "NSE")
+        symbol = kwargs.pop("symbol")
+        symbol = self._convert_symbol(symbol, exchange=exchange)
         if order_type:
             order_type = self.get_order_type(order_type)
         if side:
@@ -176,7 +180,7 @@ class Finvasia(Broker):
             tradingsymbol=symbol,
             buy_or_sell=side,
             price_type=order_type,
-            exchange="NSE",
+            exchange=exchange,
             retention="DAY",
             product_type="I",
             discloseqty=0,

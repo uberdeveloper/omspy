@@ -2,6 +2,9 @@ order_place:
   ot: order_type
 positions:
   netTrdQtyLot: quantity
+  buyTradedVal: buy_value
+  sellTradedVal: sell_value
+  lastPrice: last_price
 orders:
   transactionType: side
   filledQuantity: filled_quantity
