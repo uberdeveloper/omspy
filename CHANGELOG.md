@@ -1,3 +1,12 @@
+### 0.9.1
+### Fixes
+* Finvasia broker to suffix EQ to orders only when the exchange is NSE
+### Improvement
+* Finvasia broker - more columns converted to proper types
+* Kotak broker - more columns converted
+### Internals
+* Kotak broker `create_instrument_master` to fetch dataframe from a different function, the new function is added for better modularity
+
 ## 0.9.0
 ### Features
 * `TrailingStopOrder` added to stop orders
