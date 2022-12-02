@@ -1192,3 +1192,98 @@ def test_compound_order_add_id_if_not_exist(compound_order):
     assert order.id is None
     compound_order.add(order)
     assert compound_order.orders[-1].id is not None
+
+
+def test_order_modify_args_to_add(simple_order):
+    ## Add some properties
+    order = simple_order
+    order.client_id = "abcd1234"
+    order.exchange = "nyse"
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order.modify(broker=broker, attribs_to_copy=("client_id",), price=600)
+        broker.order_modify.assert_called_once()
+        assert order.price == 600
+        kwargs = broker.order_modify.call_args_list[0].kwargs
+        expected = dict(
+            order_id="abcdef",
+            quantity=10,
+            price=600,
+            trigger_price=0,
+            order_type="LIMIT",
+            disclosed_quantity=0,
+            client_id="abcd1234",
+        )
+        assert kwargs == expected
+
+
+def test_order_modify_args_to_add_no_args(simple_order):
+    ## Add some properties
+    order = simple_order
+    order.client_id = "abcd1234"
+    order.exchange = "nyse"
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order.modify(broker=broker, attribs_to_copy=("transform", "segment"), price=600)
+        broker.order_modify.assert_called_once()
+        assert order.price == 600
+        kwargs = broker.order_modify.call_args_list[0].kwargs
+        expected = dict(
+            order_id="abcdef",
+            quantity=10,
+            price=600,
+            trigger_price=0,
+            order_type="LIMIT",
+            disclosed_quantity=0,
+        )
+        assert kwargs == expected
+
+
+def test_order_modify_args_to_add_override(simple_order):
+    ## Add some properties
+    order = simple_order
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order.modify(
+            broker=broker, attribs_to_copy=("exchange",), price=600, exchange="nasdaq"
+        )
+        broker.order_modify.assert_called_once()
+        assert order.price == 600
+        kwargs = broker.order_modify.call_args_list[0].kwargs
+        expected = dict(
+            order_id="abcdef",
+            quantity=10,
+            price=600,
+            trigger_price=0,
+            order_type="LIMIT",
+            disclosed_quantity=0,
+            exchange="nasdaq",
+        )
+        assert kwargs == expected
+
+
+def test_order_modify_args_dont_modify_frozen(simple_order):
+    ## Add some properties
+    order = simple_order
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        order.modify(broker=broker, attribs_to_copy=("symbol", "side"), price=600)
+        broker.order_modify.assert_called_once()
+        assert order.price == 600
+        kwargs = broker.order_modify.call_args_list[0].kwargs
+        expected = dict(
+            order_id="abcdef",
+            quantity=10,
+            price=600,
+            trigger_price=0,
+            order_type="LIMIT",
+            disclosed_quantity=0,
+            symbol="aapl",
+            side="buy",
+        )
+        assert kwargs == expected
+        order.modify(
+            broker=broker,
+            attribs_to_copy=("symbol", "side"),
+            price=600,
+            symbol="goog",
+            side="sell",
+        )
+        kwargs = broker.order_modify.call_args_list[1].kwargs
+        assert kwargs == expected
