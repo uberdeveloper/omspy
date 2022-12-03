@@ -241,7 +241,9 @@ class Order(BaseModel):
         else:
             return False
 
-    def execute(self, broker: Any, **kwargs) -> Optional[str]:
+    def execute(
+        self, broker: Any, attribs_to_copy: Optional[Set] = None, **kwargs
+    ) -> Optional[str]:
         """
         Execute an order on a broker, place a new order
         kwargs
@@ -252,6 +254,24 @@ class Order(BaseModel):
         """
         # Do not place a new order if this order is complete or has order_id
         from omspy.base import Broker as base_broker
+
+        if attribs_to_copy is None:
+            attribs_to_copy = set()
+        else:
+            # Convert any iterable
+            attribs_to_copy = set([x for x in attribs_to_copy])
+        if hasattr(broker, "attribs_to_copy_execute"):
+            attribs = broker.attribs_to_copy_execute
+            for attrib in attribs:
+                attribs_to_copy.add(attrib)
+
+        other_args = dict()
+        if attribs_to_copy:
+            for key in attribs_to_copy:
+                if hasattr(self, key):
+                    value = getattr(self, key)
+                    if value:
+                        other_args[key] = value
 
         if not (self.is_complete) and not (self.order_id):
             order_args = {
@@ -264,6 +284,7 @@ class Order(BaseModel):
                 "disclosed_quantity": self.disclosed_quantity,
             }
             dct = {k: v for k, v in kwargs.items() if k not in order_args.keys()}
+            order_args.update(other_args)
             order_args.update(dct)
             order_id = broker.order_place(**order_args)
             self.order_id = order_id

@@ -29,6 +29,40 @@ def simple_order():
 
 
 @pytest.fixture
+def order_kwargs():
+    # Order response for the simple order
+    return dict(
+        quantity=10,
+        price=650,
+        trigger_price=0,
+        order_type="LIMIT",
+        disclosed_quantity=0,
+        symbol="AAPL",
+        side="BUY",
+    )
+
+
+@pytest.fixture
+def paper2():
+    """
+    Broker with attributes added
+    """
+
+    class Paper2:
+        @property
+        def attribs_to_copy_execute(self):
+            return ("exchange", "client_id")
+
+        def attribs_to_copy_modify(self):
+            return ("exchange",)
+
+        def attribs_to_copy_cancel(self):
+            return "client_id"
+
+    return Paper2()
+
+
+@pytest.fixture
 def compound_order():
     con = create_db()
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
@@ -1287,3 +1321,60 @@ def test_order_modify_args_dont_modify_frozen(simple_order):
         )
         kwargs = broker.order_modify.call_args_list[1].kwargs
         assert kwargs == expected
+
+
+def test_order_execute_attribs_to_copy(simple_order, order_kwargs):
+    order = simple_order
+    order.order_id = None
+    order = Order(
+        symbol="aapl",
+        side="buy",
+        quantity=10,
+        order_type="LIMIT",
+        price=650,
+        exchange="nyse",
+    )
+
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(100000, 100010)
+        order_kwargs["exchange"] = "nyse"
+        order.execute(broker=broker, attribs_to_copy={"exchange"})
+        broker.order_place.assert_called_once()
+        kwargs = broker.order_place.call_args_list[0].kwargs
+        assert kwargs == order_kwargs
+
+
+def test_order_execute_attribs_to_copy_broker(simple_order, order_kwargs):
+    order = simple_order
+    order.order_id = None
+    order.exchange = "nyse"
+    broker = Paper()
+    broker.attribs_to_copy_execute = ("exchange", "client_id")
+    order_kwargs["exchange"] = "nyse"
+    kwargs = order.execute(broker=broker)
+    assert kwargs == order_kwargs
+
+
+def test_order_execute_attribs_to_copy_broker2(simple_order, order_kwargs):
+    order = simple_order
+    order.order_id = None
+    order.exchange = "nyse"
+    order.client_id = "abcd1234"
+    broker = Paper()
+    broker.attribs_to_copy_execute = ("exchange", "client_id")
+    order_kwargs["exchange"] = "nyse"
+    order_kwargs["client_id"] = "abcd1234"
+    kwargs = order.execute(broker=broker)
+    assert kwargs == order_kwargs
+
+
+def test_order_execute_attribs_to_copy_override(simple_order, order_kwargs):
+    order = simple_order
+    order.order_id = None
+    order.exchange = "nyse"
+    order.client_id = "abcd1234"
+    broker = Paper()
+    order_kwargs["exchange"] = "nasdaq"
+    order_kwargs["client_id"] = "xyz12345"
+    order_args = order.execute(broker=broker, exchange="nasdaq", client_id="xyz12345")
+    assert order_args == order_kwargs
