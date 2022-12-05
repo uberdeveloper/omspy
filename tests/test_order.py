@@ -1408,3 +1408,15 @@ def test_order_modify_attribs_to_copy_broker(simple_order, order_kwargs):
         modify.assert_called_once()
         kwargs = modify.call_args_list[0].kwargs
         assert kwargs == order_kwargs
+
+
+def test_order_cancel_attribs_to_copy_broker(simple_order):
+    order = simple_order
+    order.client_id = "abcd1234"
+    broker = Paper()
+    broker.attribs_to_copy_cancel = ("client_id",)
+    with patch("omspy.brokers.paper.Paper.order_cancel") as cancel:
+        order.cancel(broker=broker)
+        cancel.assert_called_once()
+        kwargs = cancel.call_args_list[0].kwargs
+        assert kwargs == dict(order_id="abcdef", client_id="abcd1234")

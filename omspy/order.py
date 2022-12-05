@@ -369,7 +369,7 @@ class Order(BaseModel):
         else:
             logging.info(f"Maximum number of modifications exceeded")
 
-    def cancel(self, broker: Any) -> None:
+    def cancel(self, broker: Any, attribs_to_copy: Optional[Set] = None) -> None:
         """
         Cancel an existing order
         """
@@ -378,8 +378,11 @@ class Order(BaseModel):
                 f"Order not canceled since lock is modified till {self.lock.cancellation_lock_till}"
             )
             return
+        other_args = self._get_other_args_from_attribs(
+            broker, attribute="attribs_to_copy_cancel", attribs_to_copy=attribs_to_copy
+        )
         if self.order_id is not None:
-            broker.order_cancel(order_id=self.order_id)
+            broker.order_cancel(order_id=self.order_id, **other_args)
 
     def save_to_db(self) -> bool:
         """
