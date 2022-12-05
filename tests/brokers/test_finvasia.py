@@ -380,7 +380,6 @@ def test_order_modify_from_order_attribs_to_copy(simple, broker):
         newprice=230,
         newprice_type="LMT",
         newtrigger_price=0,
-        discloseqty=0,
         exchange="NSE",
     )
     assert broker.finvasia.modify_order.call_args.kwargs == order_args
@@ -396,7 +395,6 @@ def test_order_modify_from_order_attribs_to_copy_from_broker(simple, broker):
         newprice=230,
         newprice_type="LMT",
         newtrigger_price=0,
-        discloseqty=0,
         exchange="NSE",
     )
     assert broker.finvasia.modify_order.call_args.kwargs == order_args

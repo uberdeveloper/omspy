@@ -190,7 +190,8 @@ class Finvasia(Broker):
             discloseqty=0,
         )
         order_args.update(kwargs)
-        return self.finvasia.place_order(**order_args)
+        response = self.finvasia.place_order(**order_args)
+        return response.get("norenordno")
 
     def order_cancel(self, order_id: str) -> Union[Dict, None]:
         """
@@ -206,6 +207,8 @@ class Finvasia(Broker):
         symbol = kwargs.pop("tradingsymbol")
         order_id = kwargs.pop("order_id", None)
         order_type = kwargs.pop("order_type", "MKT")
+        if "discloseqty" in kwargs:
+            kwargs.pop("discloseqty")
         if order_type:
             order_type = self.get_order_type(order_type)
         if symbol:
