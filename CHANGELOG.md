@@ -1,3 +1,12 @@
+### 0.10.0
+### Features
+* order `execute, modify, cancel` functions to take additional attribs_to_copy argument to copy attributes from brokers
+* Broker instance could have now have properties to be added automatically during `execute, modify, cancel` function
+
+### Fixes
+* Finvasia broker to return order_id as a string instead of dictionary
+* Finvasia broker `order_modify` to correctly add arguments when called
+
 ### 0.9.1
 ### Fixes
 * Finvasia broker to suffix EQ to orders only when the exchange is NSE
