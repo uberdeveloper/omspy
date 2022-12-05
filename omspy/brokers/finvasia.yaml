@@ -8,6 +8,7 @@ order_modify:
   trigger_price: newtrigger_price
   symbol: tradingsymbol
   validity: retention
+  disclosed_quantity: discloseqty
 positions:
   tsym: symbol
   netqty: quantity

@@ -37,6 +37,9 @@ class Order:
         self.order_id = None
 
 
+# print(ret)
+
+
 def get_time(time_string):
     data = time.strptime(time_string, "%d-%m-%Y %H:%M:%S")
 
@@ -47,9 +50,9 @@ class ShoonyaApiPy(NorenApi):
     def __init__(self):
         NorenApi.__init__(
             self,
-            host="https://shoonyatrade.finvasia.com/NorenWClientTP/",
-            websocket="wss://shoonyatrade.finvasia.com/NorenWSTP/",
-            eodhost="https://shoonya.finvasia.com/chartApi/getdata/",
+            host="https://api.shoonya.com/NorenWClientTP/",
+            websocket="wss://api.shoonya.com/NorenWSTP/",
+            eodhost="https://api.shoonya.com/chartApi/getdata/",
         )
         global api
         api = self

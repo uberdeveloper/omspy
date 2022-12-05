@@ -397,4 +397,5 @@ def test_order_modify_from_order_attribs_to_copy_from_broker(simple, broker):
         newtrigger_price=0,
         exchange="NSE",
     )
+    print(broker.finvasia.modify_order.call_args)
     assert broker.finvasia.modify_order.call_args.kwargs == order_args
