@@ -215,6 +215,39 @@ class Order(BaseModel):
     def lock(self) -> Union[OrderLock, None]:
         return self._lock
 
+    def _get_other_args_from_attribs(
+        self, broker: Any, attribute: str, attribs_to_copy: Optional[Set] = None
+    ) -> Dict[str, str]:
+        """
+        Get other arguments for the order from attributes
+        broker
+            valid broker instance
+        attribute
+            attribute to search for in broker
+        attribs_to_copy
+            extra attributes to be copied
+        Note
+        ----
+        1) The broker instance is first searched for the valid attribute and it is overriden with attribs_to_copy
+        """
+        if attribs_to_copy is None:
+            attribs_to_copy = set()
+        else:
+            # Convert any iterable
+            attribs_to_copy = set([x for x in attribs_to_copy])
+        if hasattr(broker, attribute):
+            attribs = getattr(broker, attribute)
+            for attrib in attribs:
+                attribs_to_copy.add(attrib)
+        other_args = dict()
+        if attribs_to_copy:
+            for key in attribs_to_copy:
+                if hasattr(self, key):
+                    value = getattr(self, key)
+                    if value:
+                        other_args[key] = value
+        return other_args
+
     def update(self, data: Dict[str, Any], save: bool = True) -> bool:
         """
         Update order based on information received from broker
@@ -253,26 +286,12 @@ class Order(BaseModel):
         Only new arguments added to the order in keyword arguments
         """
         # Do not place a new order if this order is complete or has order_id
+
         from omspy.base import Broker as base_broker
 
-        if attribs_to_copy is None:
-            attribs_to_copy = set()
-        else:
-            # Convert any iterable
-            attribs_to_copy = set([x for x in attribs_to_copy])
-        if hasattr(broker, "attribs_to_copy_execute"):
-            attribs = broker.attribs_to_copy_execute
-            for attrib in attribs:
-                attribs_to_copy.add(attrib)
-
-        other_args = dict()
-        if attribs_to_copy:
-            for key in attribs_to_copy:
-                if hasattr(self, key):
-                    value = getattr(self, key)
-                    if value:
-                        other_args[key] = value
-
+        other_args = self._get_other_args_from_attribs(
+            broker, attribute="attribs_to_copy_execute", attribs_to_copy=attribs_to_copy
+        )
         if not (self.is_complete) and not (self.order_id):
             order_args = {
                 "symbol": self.symbol.upper(),

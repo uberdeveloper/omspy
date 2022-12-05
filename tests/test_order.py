@@ -1378,3 +1378,14 @@ def test_order_execute_attribs_to_copy_override(simple_order, order_kwargs):
     order_kwargs["client_id"] = "xyz12345"
     order_args = order.execute(broker=broker, exchange="nasdaq", client_id="xyz12345")
     assert order_args == order_kwargs
+
+
+def test_get_other_args_from_attribs(simple_order):
+    order = simple_order
+    order.exchange = "nyse"
+    order.client_id = "abcd1234"
+    broker = Paper()
+    broker.attribs_to_copy_execute = ("exchange", "client_id")
+    assert order._get_other_args_from_attribs(
+        broker, "attribs_to_copy_execute"
+    ) == dict(exchange="nyse", client_id="abcd1234")
