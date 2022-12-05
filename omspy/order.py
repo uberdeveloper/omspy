@@ -333,12 +333,10 @@ class Order(BaseModel):
                 f"Order not modified since lock is modified till {self.lock.modification_lock_till}"
             )
             return
-        other_args = dict()
+        other_args = self._get_other_args_from_attribs(
+            broker, attribute="attribs_to_copy_modify", attribs_to_copy=attribs_to_copy
+        )
         args_to_add = dict()
-        if attribs_to_copy:
-            for key in attribs_to_copy:
-                if hasattr(self, key):
-                    args_to_add[key] = getattr(self, key)
         keys = [
             "order_id",
             "quantity",
@@ -363,8 +361,8 @@ class Order(BaseModel):
             "order_type": self.order_type.upper(),
             "disclosed_quantity": self.disclosed_quantity,
         }
-        order_args.update(args_to_add)
         order_args.update(other_args)
+        order_args.update(args_to_add)
         if self._num_modifications < self.max_modifications:
             broker.order_modify(**order_args)
             self._num_modifications += 1

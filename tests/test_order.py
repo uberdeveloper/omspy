@@ -1389,3 +1389,22 @@ def test_get_other_args_from_attribs(simple_order):
     assert order._get_other_args_from_attribs(
         broker, "attribs_to_copy_execute"
     ) == dict(exchange="nyse", client_id="abcd1234")
+
+
+def test_order_modify_attribs_to_copy_broker(simple_order, order_kwargs):
+    order = simple_order
+    order.exchange = "nyse"
+    order.client_id = "abcd1234"
+    broker = Paper()
+    broker.attribs_to_copy_modify = ("exchange", "client_id")
+    order_kwargs["exchange"] = "nyse"
+    order_kwargs["client_id"] = "abcd1234"
+    order_kwargs["price"] = 700
+    order_kwargs["order_id"] = "abcdef"
+    del order_kwargs["symbol"]
+    del order_kwargs["side"]
+    with patch("omspy.brokers.paper.Paper.order_modify") as modify:
+        order.modify(broker=broker, price=700)
+        modify.assert_called_once()
+        kwargs = modify.call_args_list[0].kwargs
+        assert kwargs == order_kwargs
