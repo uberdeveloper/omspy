@@ -1,5 +1,6 @@
 from pathlib import PurePath
 from omspy.brokers.finvasia import *
+from omspy.order import Order
 import pytest
 import yaml
 import json
@@ -9,6 +10,18 @@ import pendulum
 # @@@ assumption [add test case]: this file location change breaks below paths
 DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
 BROKERS_ROOT = PurePath(__file__).parent
+
+
+@pytest.fixture
+def simple():
+    return Order(
+        symbol="aapl",
+        side="buy",
+        quantity=100,
+        order_id="202212010001708",
+        order_type="limit",
+        price=238,
+    )
 
 
 @pytest.fixture
@@ -355,3 +368,35 @@ def test_place_order_different_exchange(broker):
         discloseqty=0,
     )
     assert broker.finvasia.place_order.call_args.kwargs == order_args
+
+
+def test_order_modify_from_order_attribs_to_copy(simple, broker):
+    simple.modify(price=230, quantity=225, broker=broker, attribs_to_copy=("symbol",))
+    broker.finvasia.modify_order.assert_called_once()
+    order_args = dict(
+        orderno="202212010001708",
+        tradingsymbol="AAPL-EQ",
+        newquantity=225,
+        newprice=230,
+        newprice_type="LMT",
+        newtrigger_price=0,
+        discloseqty=0,
+        exchange="NSE",
+    )
+    assert broker.finvasia.modify_order.call_args.kwargs == order_args
+
+
+def test_order_modify_from_order_attribs_to_copy_from_broker(simple, broker):
+    simple.modify(price=230, quantity=225, broker=broker)
+    broker.finvasia.modify_order.assert_called_once()
+    order_args = dict(
+        orderno="202212010001708",
+        tradingsymbol="AAPL-EQ",
+        newquantity=225,
+        newprice=230,
+        newprice_type="LMT",
+        newtrigger_price=0,
+        discloseqty=0,
+        exchange="NSE",
+    )
+    assert broker.finvasia.modify_order.call_args.kwargs == order_args

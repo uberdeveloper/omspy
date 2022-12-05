@@ -1,6 +1,6 @@
 from omspy.brokers.api_helper import ShoonyaApiPy
 from omspy.base import Broker, pre, post
-from typing import Optional, List, Dict, Union
+from typing import Optional, List, Dict, Union, Set
 import pendulum
 import pyotp
 import logging
@@ -28,6 +28,10 @@ class Finvasia(Broker):
         self._imei = imei
         self.finvasia = ShoonyaApiPy()
         super(Finvasia, self).__init__()
+
+    @property
+    def attribs_to_copy_modify(self) -> Set:
+        return {"symbol", "exchange"}
 
     def login(self) -> Union[Dict, None]:
         return self.finvasia.login(
