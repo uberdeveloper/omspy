@@ -1,3 +1,7 @@
+### 0.10.1
+### Fixes
+* zerodha broker `side` forced to be in upper case to enable `close_all_positions`
+
 ### 0.10.0
 ### Features
 * order `execute, modify, cancel` functions to take additional attribs_to_copy argument to copy attributes from brokers
