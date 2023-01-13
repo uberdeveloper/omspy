@@ -211,6 +211,8 @@ class Zerodha(Broker):
         order_args = dict(
             variety="regular", product="MIS", validity="DAY", exchange="NSE"
         )
+        if kwargs.get("transaction_type"):
+            kwargs["transaction_type"] = str(kwargs["transaction_type"]).upper()
         order_args.update(kwargs)
         return self.kite.place_order(**order_args)
 

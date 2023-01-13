@@ -222,7 +222,7 @@ def test_close_all_positions(mock_kite):
             tradingsymbol="GOLDGUINEA17DECFUT",
             order_type="MARKET",
             quantity=3,
-            transaction_type="buy",
+            transaction_type="BUY",
             variety="regular",
             product="NRML",
             validity="DAY",
@@ -232,7 +232,7 @@ def test_close_all_positions(mock_kite):
             tradingsymbol="LEADMINI17DECFUT",
             order_type="MARKET",
             quantity=1,
-            transaction_type="sell",
+            transaction_type="SELL",
             variety="regular",
             product="NRML",
             validity="DAY",
@@ -240,8 +240,6 @@ def test_close_all_positions(mock_kite):
         ),
     ]
     order_args = broker.kite.place_order.call_args_list
-    print(order_args)
-    print(call_args)
     assert order_args[0] == call(**call_args[0])
     assert order_args[1] == call(**call_args[1])
 
