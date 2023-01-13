@@ -137,3 +137,11 @@ def test_orderbook_spread(orderbook):
     assert orderbook.spread == 2
     ob = OrderBook(bid=[], ask=[])
     assert ob.spread == 0
+
+
+def test_orderbook_total_bid_ask_quantity(orderbook):
+    assert orderbook.total_bid_quantity == 105
+    assert orderbook.total_ask_quantity == 83
+    ob = OrderBook(bid=[], ask=[])
+    assert ob.total_bid_quantity == 0
+    assert ob.total_ask_quantity == 0

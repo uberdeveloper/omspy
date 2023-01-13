@@ -79,6 +79,26 @@ class OrderBook(BaseModel):
         else:
             return 0.0
 
+    @property
+    def total_bid_quantity(self) -> int:
+        """
+        returns the total bid quantity
+        """
+        if self.is_bid_ask:
+            return sum((x.quantity for x in self.bid))
+        else:
+            return 0
+
+    @property
+    def total_ask_quantity(self) -> int:
+        """
+        returns the total ask quantity
+        """
+        if self.is_bid_ask:
+            return sum((x.quantity for x in self.ask))
+        else:
+            return 0
+
 
 class Tracker(BaseModel):
     """
