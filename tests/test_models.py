@@ -8,6 +8,26 @@ def order_lock():
     return OrderLock()
 
 
+@pytest.fixture
+def orderbook():
+    bids = [
+        Quote(price=6466, quantity=3, orders_count=3),
+        Quote(price=6465, quantity=29, orders_count=19),
+        Quote(price=6464, quantity=43, orders_count=33),
+        Quote(price=6463, quantity=19, orders_count=12),
+        Quote(price=6462, quantity=11, orders_count=8),
+    ]
+
+    asks = [
+        Quote(price=6468, quantity=4, orders_count=4),
+        Quote(price=6469, quantity=17, orders_count=3),
+        Quote(price=6470, quantity=6, orders_count=3),
+        Quote(price=6471, quantity=13, orders_count=11),
+        Quote(price=6472, quantity=43, orders_count=20),
+    ]
+    return OrderBook(bid=bids, ask=asks)
+
+
 def test_basic_position():
     position = BasicPosition(symbol="AAPL")
     assert position.symbol == "AAPL"
@@ -102,3 +122,18 @@ def test_order_lock_can_methods(method):
         assert getattr(lock, method) is False
     with pendulum.test(known.add(seconds=12)):
         assert getattr(lock, method) is True
+
+
+def test_orderbook_is_bid_ask():
+    ob = OrderBook(bid=[], ask=[])
+    assert ob.is_bid_ask is False
+    ob.bid.append(Quote(price=100, quantity=10, orders_count=175))
+    assert ob.is_bid_ask is False
+    ob.ask.append(Quote(price=100, quantity=10, orders_count=175))
+    assert ob.is_bid_ask is True
+
+
+def test_orderbook_spread(orderbook):
+    assert orderbook.spread == 2
+    ob = OrderBook(bid=[], ask=[])
+    assert ob.spread == 0

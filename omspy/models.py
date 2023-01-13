@@ -59,6 +59,26 @@ class OrderBook(BaseModel):
     bid: List[Quote]
     ask: List[Quote]
 
+    @property
+    def is_bid_ask(self) -> bool:
+        """
+        return True if there is atleast one bid and ask else False
+        """
+        if len(self.bid) > 0 and len(self.ask) > 0:
+            return True
+        else:
+            return False
+
+    @property
+    def spread(self) -> float:
+        """
+        returns the bid-ask spread, 0 if not available
+        """
+        if self.is_bid_ask:
+            return self.ask[0].price - self.bid[0].price
+        else:
+            return 0.0
+
 
 class Tracker(BaseModel):
     """
