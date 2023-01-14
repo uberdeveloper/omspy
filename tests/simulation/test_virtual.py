@@ -79,6 +79,7 @@ def test_ticker_changed(basic_ticker):
     assert ticker.token == 1234
     assert ticker.initial_price == 125
     assert ticker.mode == TickerMode.RANDOM
+    assert ticker._high == ticker._low == ticker._ltp == 125
 
 
 def test_ticker_is_random():
@@ -86,3 +87,12 @@ def test_ticker_is_random():
     assert ticker.is_random is True
     ticker.mode = TickerMode.MANUAL
     assert ticker.is_random is False
+
+
+def test_ticker_ltp(basic_ticker):
+    ticker = basic_ticker
+    for i in range(15):
+        ticker.ltp
+    assert ticker._ltp == 120
+    assert ticker._high == 125
+    assert ticker._low == 116.95

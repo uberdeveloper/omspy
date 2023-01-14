@@ -96,6 +96,15 @@ class Ticker(BaseModel):
     token: Optional[int] = None
     initial_price: float = 100
     mode: TickerMode = TickerMode.RANDOM
+    _high: float = PrivateAttr()
+    _low: float = PrivateAttr()
+    _ltp: float = PrivateAttr()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._high = self.initial_price
+        self._low = self.initial_price
+        self._ltp = self.initial_price
 
     @property
     def is_random(self) -> bool:
@@ -103,3 +112,16 @@ class Ticker(BaseModel):
         returns True if the mode is random else False
         """
         return True if self.mode == TickerMode.RANDOM else False
+
+    @property
+    def ltp(self) -> float:
+        """
+        Get the last price and update it
+        """
+        diff = random.gauss(0, 1) * self._ltp * 0.01
+        last_price = self._ltp + diff
+        last_price = round(last_price * 20) / 20
+        self._ltp = last_price
+        self._high = max(self._high, last_price)
+        self._low = min(self._low, last_price)
+        return self._ltp
