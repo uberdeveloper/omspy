@@ -96,3 +96,11 @@ def test_ticker_ltp(basic_ticker):
     assert ticker._ltp == 120
     assert ticker._high == 125
     assert ticker._low == 116.95
+
+
+def test_ticker_ohlc(basic_ticker):
+    ticker = basic_ticker
+    ticker.ohlc() == dict(open=125, high=125, low=125, close=125)
+    for i in range(15):
+        ticker.ltp
+    ticker.ohlc() == dict(open=125, high=125, low=116.95, close=120)

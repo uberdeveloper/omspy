@@ -1,5 +1,5 @@
 import random
-from typing import Optional
+from typing import Optional, Dict
 from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr
 from enum import Enum
@@ -125,3 +125,11 @@ class Ticker(BaseModel):
         self._high = max(self._high, last_price)
         self._low = min(self._low, last_price)
         return self._ltp
+
+    def ohlc(self) -> Dict[str, int]:
+        """
+        Calculate the ohlc for this ticker
+        """
+        return dict(
+            open=self.initial_price, high=self._high, low=self._low, close=self._ltp
+        )
