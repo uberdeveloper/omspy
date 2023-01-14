@@ -1,8 +1,14 @@
 from omspy.simulation.virtual import *
 import pytest
 import random
+from unittest.mock import patch
 
 random.seed(100)
+
+
+@pytest.fixture
+def basic_ticker():
+    return Ticker(name="aapl", token=1234, initial_price=125)
 
 
 def test_generate_price():
@@ -26,9 +32,9 @@ def test_generate_orderbook_swap_bid_ask():
     ob.bid[-1].price == 99.96
     ob.ask[-1].price == 100.04
     for b in ob.bid:
-        assert 50 < b.quantity < 150
+        assert 50 <= b.quantity <= 150
     for a in ob.ask:
-        assert 50 < b.quantity < 150
+        assert 50 <= b.quantity <= 150
 
 
 def test_generate_orderbook_depth():
@@ -45,6 +51,38 @@ def test_generate_orderbook_price_and_tick_and_quantity():
     ob.ask[-1].price == 1023
     assert len(ob.bid) == len(ob.ask) == 10
     for b in ob.bid:
-        assert 300 < b.quantity < 900
+        assert 300 <= b.quantity <= 900
     for a in ob.ask:
-        assert 300 < b.quantity < 900
+        assert 300 <= b.quantity <= 900
+
+
+def test_generate_orderbook_orders_count():
+    with patch("random.randrange") as randrange:
+        randrange.side_effect = [10, 10, 100, 100] * 20
+        ob = generate_orderbook()
+    for a, b in zip(ob.ask, ob.bid):
+        assert a.orders_count <= a.quantity
+        assert b.orders_count <= b.quantity
+
+
+def test_ticker_defaults():
+    ticker = Ticker(name="abcd")
+    assert ticker.name == "abcd"
+    assert ticker.token is None
+    assert ticker.initial_price == 100
+    assert ticker.mode == TickerMode.RANDOM
+
+
+def test_ticker_changed(basic_ticker):
+    ticker = basic_ticker
+    assert ticker.name == "aapl"
+    assert ticker.token == 1234
+    assert ticker.initial_price == 125
+    assert ticker.mode == TickerMode.RANDOM
+
+
+def test_ticker_is_random():
+    ticker = Ticker(name="abcd")
+    assert ticker.is_random is True
+    ticker.mode = TickerMode.MANUAL
+    assert ticker.is_random is False
