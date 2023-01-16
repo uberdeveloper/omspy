@@ -2,6 +2,7 @@ import pyotp
 from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict
 from copy import deepcopy
+import logging
 
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
@@ -135,10 +136,15 @@ class Zerodha(Broker):
             EC.presence_of_element_located((By.CLASS_NAME, "twofa-form"))
         )
         twofa_form.find_elements_by_tag_name("input")[0].send_keys(twofa_pass)
-        WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
-        )
-        driver.find_element_by_xpath('//button[@type="submit"]').click()
+        try:
+            WebDriverWait(driver, 45).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
+            )
+            driver.find_element_by_xpath('//button[@type="submit"]').click()
+        except Exception as e:
+            # Added to debug since zerodha automatically authenticates OTP
+            logging.debug(e)
+
         time.sleep(2)
         token = get_key(driver.current_url)
         access = self.kite.generate_session(

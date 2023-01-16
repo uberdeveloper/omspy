@@ -1,3 +1,7 @@
+### 0.10.2
+### Fixes
+* zerodha broker TOTP auto login error fixed
+
 ### 0.10.1
 ### Fixes
 * zerodha broker `side` forced to be in upper case to enable `close_all_positions`
