@@ -329,6 +329,14 @@ class Kotak(Broker):
             if not (token):
                 logging.warning("No token for this symbol,check your symbol")
                 return
+
+            # Force price to be 0 for market orders
+            order_type = kwargs.get("order_type")
+            if order_type:
+                kwargs.pop("order_type")
+                if order_type == "MARKET":
+                    kwargs["price"] = 0
+
             order_args.update(
                 dict(
                     transaction_type=side.upper(),

@@ -5,6 +5,7 @@ import pytest
 import pendulum
 import json
 import os
+from copy import deepcopy
 
 # @@@ assumption [add test case]: this file location change breaks below paths
 DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
@@ -389,3 +390,35 @@ def test_orders_exchange_timestamp(mock_kotak):
         ]
         for order, ts in zip(orders, expected_timestamp):
             assert order["exchange_timestamp"] == ts
+
+
+def test_close_all_positions(mock_kotak):
+    broker = mock_kotak
+    broker.master = {"NSE:BHEL": 878, "NSE:NIFTY28APR2216400PUT": 71377}
+    broker._rev_master = {v: k for k, v in broker.master.items()}
+    keys_not_available = ["netTrdQtyLot", "buyTradedVal", "sellTradedVal", "lastPrice"]
+    keys_to_check = ["quantity", "buy_value", "sell_value", "last_price"]
+    with open(DATA_ROOT / "kotak_positions.json") as f:
+        expected = json.load(f)
+        # Manually change quantity for testing
+        expected["Success"][0]["netTrdQtyLot"] = -100
+        expected["Success"][1]["netTrdQtyLot"] = 50
+        broker.client.positions.side_effect = [expected]
+        broker.close_all_positions(
+            symbol_transformer=lambda x: x[4:], keys_to_add=dict(ot="MIS")
+        )
+        broker.client.positions.assert_called_once()
+        call_args = dict(validity="GFD", variety="REGULAR", order_type="MIS", price=0)
+        expected_call_args = []
+        c = deepcopy(call_args)
+        c.update({"instrument_token": 878, "quantity": 100, "transaction_type": "BUY"})
+        expected_call_args.append(c)
+        c = deepcopy(call_args)
+        c.update(
+            {"instrument_token": 71377, "quantity": 50, "transaction_type": "SELL"}
+        )
+        expected_call_args.append(c)
+        assert broker.client.place_order.call_count == 2
+        call_args_list = broker.client.place_order.call_args_list
+        for a, b in zip(call_args_list, expected_call_args):
+            assert a.kwargs == b
