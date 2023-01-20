@@ -317,7 +317,6 @@ class Kotak(Broker):
     def _get_order_type(self) -> Dict:
         pass
 
-    @pre
     def order_place(
         self, symbol: str, side: str, exchange: str = "NSE", quantity: int = 1, **kwargs
     ) -> Union[str, None]:
@@ -326,6 +325,8 @@ class Kotak(Broker):
                 variety="REGULAR", validity="GFD", order_type="MIS", price=0
             )
             token = self.get_instrument_token(f"{exchange}:{symbol}".upper())
+            if kwargs.get("ot"):
+                order_args["order_type"] = kwargs.pop("ot")
             if not (token):
                 logging.warning("No token for this symbol,check your symbol")
                 return
@@ -336,6 +337,7 @@ class Kotak(Broker):
                 kwargs.pop("order_type")
                 if order_type == "MARKET":
                     kwargs["price"] = 0
+                    kwargs["trigger_price"] = 0
 
             order_args.update(
                 dict(
@@ -373,6 +375,7 @@ class Kotak(Broker):
                 kwargs.pop("order_type")
                 if order_type == "MARKET":
                     kwargs["price"] = 0
+                    kwargs["trigger_price"] = 0
             order_id = str(order_id)
             response = self.client.modify_order(order_id=order_id, **kwargs)
             response = self._response(response)

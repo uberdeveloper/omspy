@@ -1,3 +1,8 @@
+### 0.11.1
+### Fixes
+* kotak broker `close_all_positions` correctly implemented
+* kotak broker price and trigger price to be set to zero when MARKET order is placed
+
 ### 0.10.2
 ### Fixes
 * zerodha broker TOTP auto login error fixed

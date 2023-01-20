@@ -1,5 +1,3 @@
-order_place:
-  ot: order_type
 positions:
   netTrdQtyLot: quantity
   buyTradedVal: buy_value

@@ -192,9 +192,77 @@ def test_get_instrument_token(mock_kotak):
 
 def test_order_place(mock_kotak):
     broker = mock_kotak
-    broker.order_place(symbol="SYM", quantity=10, side="buy", exchange="NSE")
+    broker.order_place(
+        symbol="SYM",
+        quantity=10,
+        side="buy",
+        exchange="NSE",
+        price=100,
+        order_type="LIMIT",
+    )
     broker.client.place_order.assert_called_once()
-    # TODO: Check kwargs passed
+    expected_call_args = dict(
+        order_type="MIS",
+        instrument_token=1000,
+        transaction_type="BUY",
+        quantity=10,
+        validity="GFD",
+        variety="REGULAR",
+        price=100,
+    )
+    assert broker.client.place_order.call_args_list[0].kwargs == expected_call_args
+
+
+def test_order_place_sl_order_type(mock_kotak):
+    broker = mock_kotak
+    broker.order_place(
+        symbol="SYM",
+        quantity=10,
+        side="buy",
+        exchange="NSE",
+        price=100,
+        order_type="SL",
+        trigger_price=101,
+        ot="N",
+    )
+    broker.client.place_order.assert_called_once()
+    expected_call_args = dict(
+        order_type="N",
+        instrument_token=1000,
+        transaction_type="BUY",
+        quantity=10,
+        validity="GFD",
+        variety="REGULAR",
+        price=100,
+        trigger_price=101,
+    )
+    assert broker.client.place_order.call_args_list[0].kwargs == expected_call_args
+
+
+def test_order_place_market(mock_kotak):
+    broker = mock_kotak
+    broker.order_place(
+        symbol="SYM",
+        quantity=10,
+        side="buy",
+        exchange="NSE",
+        price=100,
+        order_type="MARKET",
+        trigger_price=101,
+        ot="O",
+    )
+    broker.client.place_order.assert_called_once()
+    expected_call_args = dict(
+        order_type="O",
+        instrument_token=1000,
+        transaction_type="BUY",
+        quantity=10,
+        validity="GFD",
+        variety="REGULAR",
+        price=0,
+        trigger_price=0,
+    )
+    assert broker.client.place_order.call_args_list[0].kwargs == expected_call_args
 
 
 def test_positions(mock_kotak):
@@ -268,14 +336,22 @@ def test_order_modify(mock_kotak):
     broker.client.modify_order.assert_called_with(
         order_id="123456", quantity=10, price=120
     )
+    broker.order_modify(
+        order_id=123456, quantity=10, trigger_price=125, order_type="SLM"
+    )
+    broker.client.modify_order.assert_called_with(
+        order_id="123456", quantity=10, trigger_price=125
+    )
 
 
 def test_order_modify_market(mock_kotak):
     broker = mock_kotak
-    broker.order_modify(order_id=123456, quantity=10, price=120, order_type="MARKET")
+    broker.order_modify(
+        order_id=123456, quantity=10, price=120, trigger_price=121, order_type="MARKET"
+    )
     broker.client.modify_order.assert_called_once()
     broker.client.modify_order.assert_called_with(
-        order_id="123456", quantity=10, price=0
+        order_id="123456", quantity=10, price=0, trigger_price=0
     )
 
 
@@ -293,11 +369,11 @@ def test_order_modify_market_sl(mock_kotak):
 def test_order_modify_extra_attributes(mock_kotak):
     broker = mock_kotak
     broker.order_modify(
-        order_id=123456, quantity=10, price=120, order_type="MARKET", validity="GFD"
+        order_id=123456, quantity=10, price=120, order_type="LIMIT", validity="GFD"
     )
     broker.client.modify_order.assert_called_once()
     broker.client.modify_order.assert_called_with(
-        order_id="123456", quantity=10, price=0, validity="GFD"
+        order_id="123456", quantity=10, price=120, validity="GFD"
     )
 
 
@@ -408,7 +484,13 @@ def test_close_all_positions(mock_kotak):
             symbol_transformer=lambda x: x[4:], keys_to_add=dict(ot="MIS")
         )
         broker.client.positions.assert_called_once()
-        call_args = dict(validity="GFD", variety="REGULAR", order_type="MIS", price=0)
+        call_args = dict(
+            validity="GFD",
+            variety="REGULAR",
+            order_type="MIS",
+            price=0,
+            trigger_price=0,
+        )
         expected_call_args = []
         c = deepcopy(call_args)
         c.update({"instrument_token": 878, "quantity": 100, "transaction_type": "BUY"})
