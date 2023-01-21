@@ -6,6 +6,7 @@ import pendulum
 from unittest.mock import patch, call
 from omspy.brokers.zerodha import Zerodha
 from pydantic import ValidationError
+from copy import deepcopy
 
 
 @pytest.fixture
@@ -837,3 +838,51 @@ def test_peg_sequential_order_modify_args(order_list):
         price=200,
         tag="website",
     )
+
+
+def test_peg_sequential_force_order_type(order_list):
+    for order in order_list:
+        order.convert_to_market_after_expiry = True
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    with patch("omspy.brokers.zerodha.Zerodha") as broker:
+        broker.order_place.side_effect = range(10000, 10099)
+        broker.order_modify.side_effect = range(10000, 10099)
+        with pendulum.test(known):
+            peg = PegSequential(
+                orders=order_list,
+                broker=broker,
+                order_args={"validity": "day", "exchange": "nyse"},
+                force_order_type=False,
+            )
+    known = pendulum.datetime(2022, 1, 1, 10, tz="local")
+    ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
+    for i in range(5, 40):
+        k = known.add(seconds=i)
+        if i == 6:
+            peg.orders[0].filled_quantity = 10
+            peg.orders[0].status = "COMPLETE"
+        elif i == 8:
+            peg.orders[1].filled_quantity = 10
+            peg.orders[1].status = "COMPLETE"
+        with pendulum.test(k):
+            peg.run(ltp=ltp1)
+    assert peg.broker.order_place.call_count == 3
+
+    call_args = dict(
+        side="BUY",
+        quantity=10,
+        price=None,
+        trigger_price=0,
+        disclosed_quantity=0,
+        exchange="nyse",
+        order_type="MARKET",
+        validity="day",
+    )
+    expected_call_args = []
+    for sym in ("AAPL", "GOOG", "AMZN"):
+        call_kwargs = deepcopy(call_args)
+        call_kwargs.update({"symbol": sym})
+        expected_call_args.append(call_kwargs)
+    call_args_list = peg.broker.order_place.call_args_list
+    for a, b in zip(call_args_list, expected_call_args):
+        assert a.kwargs == b

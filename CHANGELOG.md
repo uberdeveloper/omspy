@@ -1,4 +1,7 @@
 ### 0.11.1
+### Features
+* `force_order_type` directive added to `PegSequential` orders; now `PegSequential` orders could either force order type to LIMIT or proceed with the actual order type
+
 ### Fixes
 * kotak broker `close_all_positions` correctly implemented
 * kotak broker price and trigger price to be set to zero when MARKET order is placed

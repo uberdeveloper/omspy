@@ -109,6 +109,7 @@ class PegExisting(BaseModel):
         self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
         self._next_peg = pendulum.now(tz=self.timezone).add(seconds=self.peg_every)
         self.order.order_type = "LIMIT"
+        self.order.trigger_price = 0
         if self.order_args is None:
             self.order_args = {}
         if self.modify_args is None:
@@ -170,6 +171,11 @@ class PegSequential(BaseModel):
     """
     Peg orders in sequence and peg only when the
     previous order is complete
+    skip_subsequent_if_failed
+        if True, subsequent orders in the sequence would be skipped and the program would terminate
+    force_order_type
+        if True, all orders are forced as LIMIT order
+        if False, non LIMIT orders are placed as is without order type and other arguments being changed
     """
 
     orders: List[Order]
@@ -183,7 +189,8 @@ class PegSequential(BaseModel):
     done: bool = False
     modify_args: Optional[Dict[str, str]] = None
     skip_subsequent_if_failed = False
-    _order: Optional[PegExisting] = None
+    force_order_type = True
+    _order: Optional[Union[Order, PegExisting]] = None
     _start_time: Optional[pendulum.DateTime] = None
 
     class Config:
@@ -197,15 +204,16 @@ class PegSequential(BaseModel):
             self.modify_args = {}
         # Validate whether orders could be pegged
         for order in self.orders:
-            peg = PegExisting(
-                order=order,
-                timezone=self.timezone,
-                duration=self.duration,
-                peg_every=self.peg_every,
-                lock_duration=self.lock_duration,
-                order_args=self.order_args,
-                modify_args=self.modify_args,
-            )
+            if (self.force_order_type) or (order.order_type == "LIMIT"):
+                peg = PegExisting(
+                    order=order,
+                    timezone=self.timezone,
+                    duration=self.duration,
+                    peg_every=self.peg_every,
+                    lock_duration=self.lock_duration,
+                    order_args=self.order_args,
+                    modify_args=self.modify_args,
+                )
         self._start_time = pendulum.now(tz=self.timezone)
 
     @property
@@ -226,7 +234,7 @@ class PegSequential(BaseModel):
             return False
 
     @property
-    def order(self) -> Optional[PegExisting]:
+    def order(self) -> Optional[Union[Order, PegExisting]]:
         return self._order
 
     @property
@@ -256,16 +264,19 @@ class PegSequential(BaseModel):
         """
         for order in self.orders:
             if order.is_pending:
-                return PegExisting(
-                    order=order,
-                    broker=self.broker,
-                    timezone=self.timezone,
-                    duration=self.duration,
-                    peg_every=self.peg_every,
-                    lock_duration=self.lock_duration,
-                    order_args=self.order_args,
-                    modify_args=self.modify_args,
-                )
+                if self.force_order_type or (order.order_type == "LIMIT"):
+                    return PegExisting(
+                        order=order,
+                        broker=self.broker,
+                        timezone=self.timezone,
+                        duration=self.duration,
+                        peg_every=self.peg_every,
+                        lock_duration=self.lock_duration,
+                        order_args=self.order_args,
+                        modify_args=self.modify_args,
+                    )
+                else:
+                    return order
         return None
 
     def set_current_order(self) -> Union[PegExisting, None]:
@@ -278,8 +289,12 @@ class PegSequential(BaseModel):
         """
         if self.order is None:
             self._order = self.get_current_order()
-        elif self.order.order.is_done:
-            self._order = self.get_current_order()
+        elif isinstance(self.order, PegExisting):
+            if self.order.order.is_done:
+                self._order = self.get_current_order()
+        elif isinstance(self.order, Order):
+            if self.order.is_done:
+                self._order = self.get_current_order()
         return self.order
 
     def execute_all(self) -> None:
@@ -342,12 +357,15 @@ class PegSequential(BaseModel):
         peg = self.order
         # Run only when there is an order
         if peg:
-            if not (peg.order.order_id):
-                # Place the order if it has not been placed yet
-                peg.execute()
-            symbol = peg.order.symbol
-            last_price = ltp.get(symbol, 0)
-            peg.run(ltp=last_price)
+            if isinstance(peg, PegExisting):
+                if not (peg.order.order_id):
+                    # Place the order if it has not been placed yet
+                    peg.execute()
+                symbol = peg.order.symbol
+                last_price = ltp.get(symbol, 0)
+                peg.run(ltp=last_price)
+            elif isinstance(peg, Order):
+                self.order.execute(broker=self.broker, **self.order_args)
 
         self._mark_done()
 
