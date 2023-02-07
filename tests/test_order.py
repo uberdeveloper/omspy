@@ -1430,3 +1430,34 @@ def test_compound_order_indexes(simple_order):
     for i in range(3):
         assert com._index[i] == com.orders[i]
         assert id(com._index[i]) == id(com.orders[i])
+
+
+def test_compound_order_auto_index_when_add_order(order_kwargs):
+    com = CompoundOrder()
+    for i in range(3):
+        com.add_order(**order_kwargs)
+        assert max(com._index) == i
+    # Assert we have different ids in memory for orders
+    assert id(com.orders[0]) != id(com.orders[1])
+
+
+def test_compound_order_manual_index_when_add_order(order_kwargs):
+    com = CompoundOrder()
+    for i in range(3):
+        com.add_order(**order_kwargs)
+        assert max(com._index) == i
+    # Assert we have different ids in memory for orders
+    com.add_order(**order_kwargs, index=10)
+    assert 10 in com._index.keys()
+    com.add_order(**order_kwargs)
+    assert com._index[11] == com.orders[-1]
+    assert max(com._index) == 11
+
+
+def test_compound_order_index_error_when_add_order(order_kwargs):
+    com = CompoundOrder()
+    for i in range(3):
+        com.add_order(**order_kwargs)
+        assert max(com._index) == i
+    with pytest.raises(IndexError):
+        com.add_order(**order_kwargs, index=2)

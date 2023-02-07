@@ -426,6 +426,14 @@ class Order(BaseModel):
 
 
 class CompoundOrder(BaseModel):
+    """
+    A collection of orders
+    Note
+    ----
+    1) Indexes are added automatically based on the highest key value
+    2) An error is raised if the index value is already used
+    """
+
     broker: Any
     id: Optional[str] = None
     ltp: defaultdict = Field(default_factory=defaultdict)
@@ -472,11 +480,18 @@ class CompoundOrder(BaseModel):
 
     def add_order(self, **kwargs) -> Optional[str]:
         kwargs["parent_id"] = self.id
+        if kwargs.get("index"):
+            index = kwargs.pop("index")
+        else:
+            index = max(self._index.keys()) + 1 if self._index else 0
         if not (kwargs.get("connection")):
             kwargs["connection"] = self.connection
+        if index in self._index:
+            raise IndexError("Order already assigned to this index")
         order = Order(**kwargs)
         order.save_to_db()
         self.orders.append(order)
+        self._index[index] = order
         return order.id
 
     def _average_price(self, side: str = "buy") -> Dict[str, float]:
