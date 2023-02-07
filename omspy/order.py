@@ -478,13 +478,13 @@ class CompoundOrder(BaseModel):
             c.update({symbol: qty})
         return c
 
-    def _get_index_value(self) -> int:
+    def _get_next_index(self) -> int:
         idx = max(self._index.keys()) + 1 if self._index else 0
         return idx
 
     def add_order(self, **kwargs) -> Optional[str]:
         kwargs["parent_id"] = self.id
-        index = kwargs.pop("index", self._get_index_value())
+        index = kwargs.pop("index", self._get_next_index())
         if not (kwargs.get("connection")):
             kwargs["connection"] = self.connection
         if index in self._index:
@@ -657,7 +657,7 @@ class CompoundOrder(BaseModel):
         if not (order.id):
             order.id = uuid.uuid4().hex
         if index is None:
-            index = self._get_index_value()
+            index = self._get_next_index()
         index = int(index)
         if index in self._index:
             raise IndexError("Order already assigned to this index")
@@ -673,7 +673,6 @@ class CompoundOrder(BaseModel):
         if self.count > 0:
             for order in self.orders:
                 order.save_to_db()
-        pass
 
 
 class OrderStrategy(BaseModel):

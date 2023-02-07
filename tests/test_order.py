@@ -1463,13 +1463,13 @@ def test_compound_order_index_error_when_add_order(order_kwargs):
         com.add_order(**order_kwargs, index=2)
 
 
-def test_compound_order_get_index_values(order_kwargs):
+def test_compound_order_get_next_indexs(order_kwargs):
     com = CompoundOrder()
-    assert com._get_index_value() == 0
+    assert com._get_next_index() == 0
     com.add_order(**order_kwargs)
-    assert com._get_index_value() == 1
+    assert com._get_next_index() == 1
     com.add_order(**order_kwargs, index=100)
-    assert com._get_index_value() == 101
+    assert com._get_next_index() == 101
 
 
 def test_compound_order_index_when_add(simple_order):
@@ -1478,16 +1478,16 @@ def test_compound_order_index_when_add(simple_order):
     for i in range(3):
         com.add(deepcopy(order))
     assert max(com._index) == 2
-    assert com._get_index_value() == 3
+    assert com._get_next_index() == 3
     com.add(deepcopy(order), index=13)
-    assert com._get_index_value() == 14
+    assert com._get_next_index() == 14
     com.add(deepcopy(order))
     assert max(com._index) == 14
-    assert com._get_index_value() == 15
+    assert com._get_next_index() == 15
     com.add(deepcopy(order), index=18.3)
     assert 18 in com._index
-    assert com._get_index_value() == 19
+    assert com._get_next_index() == 19
     with pytest.raises(IndexError):
         com.add(deepcopy(order), index=18.7)
         com.add(deepcopy(order), index=2)
-    assert com._get_index_value() == 19
+    assert com._get_next_index() == 19
