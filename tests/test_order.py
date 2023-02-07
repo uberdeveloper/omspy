@@ -1461,3 +1461,12 @@ def test_compound_order_index_error_when_add_order(order_kwargs):
         assert max(com._index) == i
     with pytest.raises(IndexError):
         com.add_order(**order_kwargs, index=2)
+
+
+def test_compound_order_get_index_values(order_kwargs):
+    com = CompoundOrder()
+    assert com._get_index_value() == 0
+    com.add_order(**order_kwargs)
+    assert com._get_index_value() == 1
+    com.add_order(**order_kwargs, index=100)
+    assert com._get_index_value() == 101

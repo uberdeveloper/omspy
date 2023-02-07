@@ -478,12 +478,13 @@ class CompoundOrder(BaseModel):
             c.update({symbol: qty})
         return c
 
+    def _get_index_value(self) -> int:
+        idx = max(self._index.keys()) + 1 if self._index else 0
+        return idx
+
     def add_order(self, **kwargs) -> Optional[str]:
         kwargs["parent_id"] = self.id
-        if kwargs.get("index"):
-            index = kwargs.pop("index")
-        else:
-            index = max(self._index.keys()) + 1 if self._index else 0
+        index = kwargs.pop("index", self._get_index_value())
         if not (kwargs.get("connection")):
             kwargs["connection"] = self.connection
         if index in self._index:
