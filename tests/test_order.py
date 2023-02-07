@@ -1420,3 +1420,13 @@ def test_order_cancel_attribs_to_copy_broker(simple_order):
         cancel.assert_called_once()
         kwargs = cancel.call_args_list[0].kwargs
         assert kwargs == dict(order_id="abcdef", client_id="abcd1234")
+
+
+def test_compound_order_indexes(simple_order):
+    orders = []
+    for i in range(3):
+        orders.append(deepcopy(simple_order))
+    com = CompoundOrder(orders=orders)
+    for i in range(3):
+        assert com._index[i] == com.orders[i]
+        assert id(com._index[i]) == id(com.orders[i])

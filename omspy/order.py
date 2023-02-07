@@ -432,6 +432,7 @@ class CompoundOrder(BaseModel):
     orders: List[Order] = Field(default_factory=list)
     connection: Optional[Database] = None
     order_args: Optional[Dict] = None
+    _index: Dict[int, Order] = PrivateAttr(default_factory=defaultdict)
 
     class Config:
         underscore_attrs_are_private = True
@@ -443,6 +444,9 @@ class CompoundOrder(BaseModel):
             self.id = uuid.uuid4().hex
         if self.order_args is None:
             self.order_args = {}
+        if self.orders:
+            for i, o in enumerate(self.orders):
+                self._index[i] = o
 
     @property
     def count(self) -> int:
