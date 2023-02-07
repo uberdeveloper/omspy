@@ -441,6 +441,7 @@ class CompoundOrder(BaseModel):
     connection: Optional[Database] = None
     order_args: Optional[Dict] = None
     _index: Dict[int, Order] = PrivateAttr(default_factory=defaultdict)
+    _keys: Dict[int, Order] = PrivateAttr(default_factory=defaultdict)
 
     class Config:
         underscore_attrs_are_private = True
@@ -485,6 +486,7 @@ class CompoundOrder(BaseModel):
     def add_order(self, **kwargs) -> Optional[str]:
         kwargs["parent_id"] = self.id
         index = kwargs.pop("index", self._get_next_index())
+        key = kwargs.pop("key", None)
         if not (kwargs.get("connection")):
             kwargs["connection"] = self.connection
         if index in self._index:
@@ -493,6 +495,8 @@ class CompoundOrder(BaseModel):
         order.save_to_db()
         self.orders.append(order)
         self._index[index] = order
+        if key:
+            self._keys[str(key)] = order
         return order.id
 
     def _average_price(self, side: str = "buy") -> Dict[str, float]:
@@ -647,7 +651,9 @@ class CompoundOrder(BaseModel):
     def pending_orders(self) -> List[Order]:
         return [order for order in self.orders if order.is_pending]
 
-    def add(self, order: Order, index: Optional[int] = None) -> Optional[str]:
+    def add(
+        self, order: Order, index: Optional[int] = None, key: Optional[str] = None
+    ) -> Optional[str]:
         """
         Add an order to the existing compound order
         """
@@ -664,6 +670,8 @@ class CompoundOrder(BaseModel):
         order.save_to_db()
         self.orders.append(order)
         self._index[index] = order
+        if key:
+            self._keys[str(key)] = order
         return order.id
 
     def save(self) -> None:

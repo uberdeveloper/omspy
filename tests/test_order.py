@@ -1463,7 +1463,7 @@ def test_compound_order_index_error_when_add_order(order_kwargs):
         com.add_order(**order_kwargs, index=2)
 
 
-def test_compound_order_get_next_indexs(order_kwargs):
+def test_compound_order_get_next_index(order_kwargs):
     com = CompoundOrder()
     assert com._get_next_index() == 0
     com.add_order(**order_kwargs)
@@ -1491,3 +1491,37 @@ def test_compound_order_index_when_add(simple_order):
         com.add(deepcopy(order), index=18.7)
         com.add(deepcopy(order), index=2)
     assert com._get_next_index() == 19
+
+
+def test_compound_order_keys_default():
+    com = CompoundOrder()
+    assert com._keys == defaultdict()
+
+
+def test_compound_order_keys_add_order(order_kwargs):
+    com = CompoundOrder()
+    com.add_order(**order_kwargs)
+    com.add_order(**order_kwargs, key="first")
+    com.add_order(**order_kwargs, key=10)
+    assert len(com._keys) == 2
+    assert 10 not in com._keys
+    assert "10" in com._keys
+    assert id(com._keys["first"]) == id(com.orders[1])
+    assert id(com._keys["10"]) == id(com.orders[-1])
+    # Checking ids to make sure we added distinct orders
+    assert id(com.orders[1]) != id(com.orders[-1])
+
+
+def test_compound_order_keys_add(simple_order):
+    order = simple_order
+    com = CompoundOrder()
+    com.add(deepcopy(order))
+    com.add(deepcopy(order), key="first")
+    com.add(deepcopy(order), key=10)
+    assert len(com._keys) == 2
+    assert 10 not in com._keys
+    assert "10" in com._keys
+    assert id(com._keys["first"]) == id(com.orders[1])
+    assert id(com._keys["10"]) == id(com.orders[-1])
+    # Checking ids to make sure we added distinct orders
+    assert id(com.orders[1]) != id(com.orders[-1])
