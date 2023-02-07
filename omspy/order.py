@@ -647,7 +647,7 @@ class CompoundOrder(BaseModel):
     def pending_orders(self) -> List[Order]:
         return [order for order in self.orders if order.is_pending]
 
-    def add(self, order: Order) -> Optional[str]:
+    def add(self, order: Order, index: Optional[int] = None) -> Optional[str]:
         """
         Add an order to the existing compound order
         """
@@ -656,8 +656,14 @@ class CompoundOrder(BaseModel):
             order.connection = self.connection
         if not (order.id):
             order.id = uuid.uuid4().hex
+        if index is None:
+            index = self._get_index_value()
+        index = int(index)
+        if index in self._index:
+            raise IndexError("Order already assigned to this index")
         order.save_to_db()
         self.orders.append(order)
+        self._index[index] = order
         return order.id
 
     def save(self) -> None:

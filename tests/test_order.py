@@ -1470,3 +1470,24 @@ def test_compound_order_get_index_values(order_kwargs):
     assert com._get_index_value() == 1
     com.add_order(**order_kwargs, index=100)
     assert com._get_index_value() == 101
+
+
+def test_compound_order_index_when_add(simple_order):
+    order = simple_order
+    com = CompoundOrder()
+    for i in range(3):
+        com.add(deepcopy(order))
+    assert max(com._index) == 2
+    assert com._get_index_value() == 3
+    com.add(deepcopy(order), index=13)
+    assert com._get_index_value() == 14
+    com.add(deepcopy(order))
+    assert max(com._index) == 14
+    assert com._get_index_value() == 15
+    com.add(deepcopy(order), index=18.3)
+    assert 18 in com._index
+    assert com._get_index_value() == 19
+    with pytest.raises(IndexError):
+        com.add(deepcopy(order), index=18.7)
+        com.add(deepcopy(order), index=2)
+    assert com._get_index_value() == 19
