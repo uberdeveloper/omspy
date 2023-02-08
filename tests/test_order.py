@@ -1525,3 +1525,17 @@ def test_compound_order_keys_add(simple_order):
     assert id(com._keys["10"]) == id(com.orders[-1])
     # Checking ids to make sure we added distinct orders
     assert id(com.orders[1]) != id(com.orders[-1])
+
+
+def test_compound_order_keys_add_order(order_kwargs):
+    com = CompoundOrder()
+    order_kwargs.pop("quantity")
+    com.add_order(**order_kwargs, quantity=10)
+    com.add_order(**order_kwargs, quantity=20, key="first")
+    com.add_order(**order_kwargs, quantity=30, key=10)
+    com.add_order(**order_kwargs, quantity=30, index=7)
+    assert com.get(2) == com.orders[2]
+    assert com.get("first") == com.orders[1]
+    assert com.get("7") == com.orders[-1]
+    assert com.get("doesnt_exist") is None
+    assert com.get("first") == com.get(1)

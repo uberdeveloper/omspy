@@ -1,6 +1,17 @@
 from pydantic import BaseModel, validator, Field, PrivateAttr, Json
 from datetime import timezone
-from typing import Optional, Dict, List, Type, Any, Union, Tuple, Callable, Set
+from typing import (
+    Optional,
+    Dict,
+    List,
+    Type,
+    Any,
+    Union,
+    Tuple,
+    Callable,
+    Set,
+    Hashable,
+)
 import uuid
 import pendulum
 import sqlite3
@@ -482,6 +493,33 @@ class CompoundOrder(BaseModel):
     def _get_next_index(self) -> int:
         idx = max(self._index.keys()) + 1 if self._index else 0
         return idx
+
+    def _get_by_key(self, key: str) -> Union[Order, None]:
+        return self._keys.get(key)
+
+    def _get_by_index(self, index: int) -> Union[Order, None]:
+        return self._index.get(index)
+
+    def get(self, key: Hashable) -> Union[Order, None]:
+        """
+        Get the order by key or index
+        key
+            index or key
+        returns Order if available or None
+        Note
+        ----
+        1) key is first searched in key and then searched in index
+        2) index starts at zero
+        """
+        order = self._get_by_key(key)
+        if order is None:
+            try:
+                key = int(key)
+                return self._get_by_index(key)
+            except Exception as e:
+                return self._get_by_index(key)
+        else:
+            return order
 
     def add_order(self, **kwargs) -> Optional[str]:
         kwargs["parent_id"] = self.id
