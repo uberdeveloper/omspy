@@ -70,8 +70,14 @@ def test_vorder_quantities(vorder_kwargs):
 
 def test_vposition_defaults():
     pos = VPosition(symbol="aapl")
-    assert pos.buy_quantity == pos.sell_quantity == 0
-    assert pos.buy_value == pos.sell_value == 0
+    assert pos.buy_quantity is None
+    assert pos.sell_quantity is None
+    assert pos.buy_value is None
+    assert pos.sell_value is None
+    assert pos.average_buy_price == 0
+    assert pos.average_sell_price == 0
+    assert pos.net_quantity == 0
+    assert pos.net_value == 0
 
 
 def test_vorder_status(vorder_kwargs):
@@ -130,3 +136,22 @@ def test_vorder_value(vorder_kwargs):
     order.side = -1
     assert order.value == -12000
     assert order.side == Side.SELL
+
+
+def test_vposition_price():
+    pos = VPosition(
+        symbol="aapl",
+        buy_quantity=100,
+        buy_value=10000,
+        sell_quantity=50,
+        sell_value=5100,
+    )
+    assert pos.average_buy_price == 100
+    assert pos.average_sell_price == 5100 / 50
+    assert pos.net_quantity == 50
+    assert pos.net_value == 4900
+
+    pos.sell_quantity = 120
+    pos.sell_value = 12240
+    assert pos.average_sell_price == 102
+    assert pos.net_value == -2240

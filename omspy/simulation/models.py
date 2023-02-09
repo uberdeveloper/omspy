@@ -110,10 +110,52 @@ class VOrder(BaseModel):
 
 class VPosition(BaseModel):
     symbol: str
-    buy_quantity: Union[int, float] = 0
-    sell_quantity: Union[int, float] = 0
-    buy_value: float = 0
-    sell_value: float = 0
+    buy_quantity: Optional[Union[int, float]]
+    sell_quantity: Optional[Union[int, float]]
+    buy_value: Optional[float]
+    sell_value: Optional[float]
 
     class Config:
         validate_assignment = True
+
+    @property
+    def average_buy_price(self) -> float:
+        """
+        Get the average buy price
+        returns 0 if there is no price or quantity
+        """
+        if self.buy_quantity and self.buy_value:
+            return self.buy_value / self.buy_quantity
+        else:
+            return 0.0
+
+    @property
+    def average_sell_price(self) -> float:
+        """
+        Get the average sell price
+        returns 0 if there is no price or quantity
+        """
+        if self.sell_quantity and self.sell_value:
+            return self.sell_value / self.sell_quantity
+        else:
+            return 0.0
+
+    @property
+    def net_quantity(self) -> float:
+        """
+        Get the net quantity for the position
+        negative indicates sell and positive indicates sell
+        """
+        buy_qty = self.buy_quantity if self.buy_quantity else 0
+        sell_qty = self.sell_quantity if self.sell_quantity else 0
+        return buy_qty - sell_qty
+
+    @property
+    def net_value(self) -> float:
+        """
+        Get the net value for the position
+        negative indicates a net sell value and positive indicates a net buy value
+        """
+        buy_value = self.buy_value if self.buy_value else 0
+        sell_value = self.sell_value if self.sell_value else 0
+        return buy_value - sell_value
