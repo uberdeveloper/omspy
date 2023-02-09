@@ -6,6 +6,7 @@ All the models start with **V** to indicate virtual models
 from pydantic import BaseModel
 from typing import Optional, Union
 import pendulum
+import omspy.utils as utils
 
 
 class VTrade(BaseModel):
@@ -30,9 +31,23 @@ class VOrder(BaseModel):
     exchange_order_id: Optional[str]
     exchange_timestamp: Optional[pendulum.DateTime]
     status_message: Optional[str]
-    filled_quantity: Optional[Union[int, float]]
-    pending_quantity: Optional[Union[int, float]]
-    canceled_quantity: Optional[Union[int, float]]
+    filled_quantity: Union[int, float] = 0
+    pending_quantity: Union[int, float] = 0
+    canceled_quantity: Union[int, float] = 0
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.timestamp is None:
+            self.timestamp = pendulum.now(tz="local")
+        q = utils.update_quantity(
+            q=self.quantity,
+            f=self.filled_quantity,
+            p=self.pending_quantity,
+            c=self.canceled_quantity,
+        )
+        self.filled_quantity = q.f
+        self.pending_quantity = q.p
+        self.canceled_quantity = q.c
 
 
 class VPosition(BaseModel):
