@@ -1,9 +1,9 @@
 """
 General utility functions for conversion and else
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 from omspy.models import BasicPosition
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 
 def create_basic_positions_from_orders_dict(
@@ -102,3 +102,45 @@ def stop_loss_step_decimal(
     val = (m + 1) * step if side == "S" else (m * step) - 1
     val = val + 1 - dec if side == "S" else val + dec
     return val
+
+
+def update_quantity(
+    q: Union[int, float],
+    f: Union[int, float],
+    p: Union[int, float],
+    c: Union[int, float],
+) -> namedtuple("qty", "q f p c"):
+    """
+    Update filled,pending and canceled quantity based on the given data
+    q
+        actual quantity orders
+    f
+        filled quantity
+    p
+        pending quantity
+    c
+        canceled/rejected quantity
+    returns a named tuple containing the calculated values
+    Note
+    -----
+    1) q is taken to be the actual quantity
+    2) formula used is **quantity = filled_quantity + pending_quantiy - canceled quantity**
+    3) canceled quantity is given preference over other quantities, filled quantity
+    the next and pending the last priority
+    4) if filled or canceled quantity is greater than given quantity, it is set equal
+    to the quantity and all other quantities are discarded
+    """
+    if c > 0:
+        c = min(c, q)
+        f = q - c
+        p = q - c - f
+    elif f > 0:
+        f = min(f, q)
+        p = q - f
+    elif p > 0:
+        p = min(p, q)
+        f = q - p
+    else:
+        p = q - p
+    tup = namedtuple("qty", ["q", "f", "p", "c"])
+    return tup(q, f, p, c)

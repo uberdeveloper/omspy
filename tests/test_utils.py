@@ -1,5 +1,6 @@
 import os
 from pathlib import PurePath
+from collections import namedtuple
 
 from omspy.utils import *
 from copy import deepcopy
@@ -8,6 +9,7 @@ import pandas as pd
 import itertools
 
 DATA_ROOT = PurePath(__file__).parent.parent / "tests" / "data"
+Q = namedtuple("qty", "q f p c")
 
 
 @pytest.fixture
@@ -220,3 +222,18 @@ def test_tick():
 )
 def test_stop_loss_step_decimal(test_input, expected):
     assert stop_loss_step_decimal(*test_input) == expected
+
+
+@pytest.mark.parametrize(
+    "q,f,p,c,expected",
+    [
+        (100, 0, 0, 0, Q(100, 0, 100, 0)),
+        (100, 50, 0, 0, Q(100, 50, 50, 0)),
+        (100, 100, 50, 0, Q(100, 100, 0, 0)),
+        (100, 50, 50, 100, Q(100, 0, 0, 100)),
+        (100, 50, 50, 50, Q(100, 50, 0, 50)),
+        (100, 0, 0, 50, Q(100, 50, 0, 50)),
+    ],
+)
+def test_update_quantity(q, f, p, c, expected):
+    assert update_quantity(q, f, p, c) == expected

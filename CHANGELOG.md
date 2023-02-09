@@ -3,6 +3,7 @@
 * You can now add keys to `CompoundOrder` when adding an order
 * `CompoundOrder` orders now have an automatic index
 * `get` function added to `CompoundOrder` to search by index or custom key
+* `update_quantity` function added to utils
 
 ### 0.11.0
 ### Features
