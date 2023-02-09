@@ -1502,7 +1502,7 @@ def test_compound_order_keys_add_order(order_kwargs):
     com = CompoundOrder()
     com.add_order(**order_kwargs)
     com.add_order(**order_kwargs, key="first")
-    com.add_order(**order_kwargs, key=10)
+    com.add_order(**order_kwargs, key="10")
     assert len(com._keys) == 2
     assert 10 not in com._keys
     assert "10" in com._keys
@@ -1519,15 +1519,19 @@ def test_compound_order_keys_add(simple_order):
     com.add(deepcopy(order), key="first")
     com.add(deepcopy(order), key=10)
     assert len(com._keys) == 2
-    assert 10 not in com._keys
-    assert "10" in com._keys
+    assert 10 in com._keys
+    assert "10" not in com._keys
     assert id(com._keys["first"]) == id(com.orders[1])
-    assert id(com._keys["10"]) == id(com.orders[-1])
+    assert id(com._keys[10]) == id(com.orders[-1])
     # Checking ids to make sure we added distinct orders
     assert id(com.orders[1]) != id(com.orders[-1])
+    with pytest.raises(KeyError):
+        com.add(deepcopy(order), key="first")
+    com.add(deepcopy(order), key="second")
+    assert len(com.orders) == 4
 
 
-def test_compound_order_keys_add_order(order_kwargs):
+def test_compound_order_get(order_kwargs):
     com = CompoundOrder()
     order_kwargs.pop("quantity")
     com.add_order(**order_kwargs, quantity=10)
@@ -1539,3 +1543,12 @@ def test_compound_order_keys_add_order(order_kwargs):
     assert com.get("7") == com.orders[-1]
     assert com.get("doesnt_exist") is None
     assert com.get("first") == com.get(1)
+
+
+def test_compound_order_keys_hashable(order_kwargs):
+    com = CompoundOrder()
+    com.add_order(**order_kwargs, key=(4, 5))
+    with pytest.raises(TypeError):
+        com.add_order(**order_kwargs, key={"a": 5})
+    assert len(com.orders) == 1
+    assert com.get((4, 5)) == com.orders[0]

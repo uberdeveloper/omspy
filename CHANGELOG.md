@@ -1,3 +1,9 @@
+### 0.12.0
+### Features
+* You can now add keys to `CompoundOrder` when adding an order
+* `CompoundOrder` orders now have an automatic index
+* `get` function added to `CompoundOrder` to search by index or custom key
+
 ### 0.11.0
 ### Features
 * `force_order_type` directive added to `PegSequential` orders; now `PegSequential` orders could either force order type to LIMIT or proceed with the actual order type

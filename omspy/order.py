@@ -452,7 +452,7 @@ class CompoundOrder(BaseModel):
     connection: Optional[Database] = None
     order_args: Optional[Dict] = None
     _index: Dict[int, Order] = PrivateAttr(default_factory=defaultdict)
-    _keys: Dict[int, Order] = PrivateAttr(default_factory=defaultdict)
+    _keys: Dict[Hashable, Order] = PrivateAttr(default_factory=defaultdict)
 
     class Config:
         underscore_attrs_are_private = True
@@ -494,7 +494,7 @@ class CompoundOrder(BaseModel):
         idx = max(self._index.keys()) + 1 if self._index else 0
         return idx
 
-    def _get_by_key(self, key: str) -> Union[Order, None]:
+    def _get_by_key(self, key: Hashable) -> Union[Order, None]:
         return self._keys.get(key)
 
     def _get_by_index(self, index: int) -> Union[Order, None]:
@@ -529,12 +529,15 @@ class CompoundOrder(BaseModel):
             kwargs["connection"] = self.connection
         if index in self._index:
             raise IndexError("Order already assigned to this index")
+        if key:
+            if key in self._keys:
+                raise KeyError("Order already assigned to this key")
         order = Order(**kwargs)
-        order.save_to_db()
         self.orders.append(order)
         self._index[index] = order
         if key:
-            self._keys[str(key)] = order
+            self._keys[key] = order
+        order.save_to_db()
         return order.id
 
     def _average_price(self, side: str = "buy") -> Dict[str, float]:
@@ -690,7 +693,7 @@ class CompoundOrder(BaseModel):
         return [order for order in self.orders if order.is_pending]
 
     def add(
-        self, order: Order, index: Optional[int] = None, key: Optional[str] = None
+        self, order: Order, index: Optional[int] = None, key: Optional[Hashable] = None
     ) -> Optional[str]:
         """
         Add an order to the existing compound order
@@ -705,11 +708,14 @@ class CompoundOrder(BaseModel):
         index = int(index)
         if index in self._index:
             raise IndexError("Order already assigned to this index")
-        order.save_to_db()
+        if key:
+            if key in self._keys:
+                raise KeyError("Order already assigned to this key")
         self.orders.append(order)
         self._index[index] = order
         if key:
-            self._keys[str(key)] = order
+            self._keys[key] = order
+        order.save_to_db()
         return order.id
 
     def save(self) -> None:
