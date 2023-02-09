@@ -11,7 +11,7 @@ def vtrade():
         symbol="aapl",
         quantity=50,
         price=120,
-        side="buy",
+        side=Side.BUY,
         timestamp=pendulum.datetime(2023, 1, 2, 7, 10),
     )
 
@@ -22,25 +22,27 @@ def vorder_kwargs():
         order_id="20234567812",
         symbol="aapl",
         quantity=100,
-        side="buy",
+        side=1,
         exchange_timestamp=pendulum.datetime(2023, 1, 2, 7, 10),
     )
 
 
 def test_vtrade_defaults(vtrade):
     assert vtrade.price == 120
-    assert vtrade.side == "buy"
+    assert vtrade.side == Side.BUY
+    assert vtrade.value == 6000
 
 
 def test_vorder_defaults(vorder_kwargs):
     vorder = VOrder(**vorder_kwargs)
     assert vorder.quantity == 100
-    assert vorder.side == "buy"
+    assert vorder.side == Side.BUY
     assert vorder.status_message is None
     assert vorder.timestamp is not None
     assert vorder.filled_quantity == 0
     assert vorder.pending_quantity == 100
     assert vorder.canceled_quantity == 0
+    assert vorder.average_price == 0
 
 
 def test_vorder_quantities(vorder_kwargs):
@@ -108,3 +110,23 @@ def test_vorder_status_canceled_rejected(vorder_kwargs):
     # test with lower case
     order.status_message = "rejected: no margins"
     assert order.status == Status.REJECTED
+
+
+def test_vtrade_value(vtrade):
+    assert vtrade.value == 6000
+    vtrade.side = Side.SELL
+    vtrade.price = 100
+    assert vtrade.value == -5000
+
+
+def test_vorder_value(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    order.average_price = 120
+    assert order.value == 0
+    order.filled_quantity = 50
+    assert order.value == 6000
+    order.filled_quantity = 100
+    assert order.value == 12000
+    order.side = -1
+    assert order.value == -12000
+    assert order.side == Side.SELL

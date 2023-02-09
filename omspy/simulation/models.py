@@ -19,21 +19,33 @@ class Status(Enum):
     PENDING = 6  # partially filled, waiting to get complete
 
 
+class Side(Enum):
+    BUY = 1
+    SELL = -1
+
+
 class VTrade(BaseModel):
     trade_id: str
     order_id: str
     symbol: str
     quantity: int
     price: float
-    side: str
+    side: Side
     timestamp: Optional[pendulum.DateTime]
+
+    class Config:
+        validate_assignment = True
+
+    @property
+    def value(self) -> float:
+        return self.side.value * self.quantity * self.price
 
 
 class VOrder(BaseModel):
     order_id: str
     symbol: str
     quantity: Union[int, float]
-    side: str
+    side: Side
     price: Optional[float]
     average_price: Optional[float]
     trigger_price: Optional[float]
@@ -44,6 +56,9 @@ class VOrder(BaseModel):
     filled_quantity: Union[int, float] = 0
     pending_quantity: Union[int, float] = 0
     canceled_quantity: Union[int, float] = 0
+
+    class Config:
+        validate_assignment = True
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -58,6 +73,8 @@ class VOrder(BaseModel):
         self.filled_quantity = q.f
         self.pending_quantity = q.p
         self.canceled_quantity = q.c
+        if self.average_price is None:
+            self.average_price = 0
 
     @property
     def status(self) -> Status:
@@ -82,6 +99,14 @@ class VOrder(BaseModel):
         else:
             return Status.OPEN
 
+    @property
+    def value(self) -> float:
+        """
+        returns the value of the order
+        negative means sell and positive means buy
+        """
+        return self.side.value * self.filled_quantity * self.average_price
+
 
 class VPosition(BaseModel):
     symbol: str
@@ -89,3 +114,6 @@ class VPosition(BaseModel):
     sell_quantity: Union[int, float] = 0
     buy_value: float = 0
     sell_value: float = 0
+
+    class Config:
+        validate_assignment = True
