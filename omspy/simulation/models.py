@@ -5,8 +5,18 @@ All the models start with **V** to indicate virtual models
 
 from pydantic import BaseModel
 from typing import Optional, Union
+from enum import Enum
 import pendulum
 import omspy.utils as utils
+
+
+class Status(Enum):
+    COMPLETE = 1
+    REJECTED = 2
+    CANCELED = 3
+    PARTIAL_FILL = 4  # partially filled but completed order
+    OPEN = 5  # all quantity is pending to be filled
+    PENDING = 6  # partially filled, waiting to get complete
 
 
 class VTrade(BaseModel):
@@ -48,6 +58,29 @@ class VOrder(BaseModel):
         self.filled_quantity = q.f
         self.pending_quantity = q.p
         self.canceled_quantity = q.c
+
+    @property
+    def status(self) -> Status:
+        if self.quantity == self.filled_quantity:
+            return Status.COMPLETE
+        elif self.quantity == self.canceled_quantity:
+            if self.status_message:
+                if str(self.status_message).upper().startswith("REJ"):
+                    return Status.REJECTED
+            else:
+                return Status.CANCELED
+        elif self.canceled_quantity > 0:
+            if (self.canceled_quantity + self.filled_quantity) == self.quantity:
+                return Status.PARTIAL_FILL
+            else:
+                return Status.PENDING
+        elif self.pending_quantity > 0:
+            if self.filled_quantity > 0:
+                return Status.PENDING
+            else:
+                return Status.OPEN
+        else:
+            return Status.OPEN
 
 
 class VPosition(BaseModel):
