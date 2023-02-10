@@ -2,6 +2,7 @@ from omspy.simulation.virtual import *
 import pytest
 import random
 from unittest.mock import patch
+from pydantic import ValidationError
 
 random.seed(100)
 
@@ -9,6 +10,16 @@ random.seed(100)
 @pytest.fixture
 def basic_ticker():
     return Ticker(name="aapl", token=1234, initial_price=125)
+
+
+@pytest.fixture
+def basic_broker():
+    tickers = [
+        Ticker(name="aapl", token=1111, initial_price=100),
+        Ticker(name="goog", token=2222, initial_price=125),
+        Ticker(name="amzn", token=3333, initial_price=260),
+    ]
+    return VirtualBroker(tickers=tickers)
 
 
 def test_generate_price():
@@ -104,3 +115,21 @@ def test_ticker_ohlc(basic_ticker):
     for i in range(15):
         ticker.ltp
     ticker.ohlc() == dict(open=125, high=125, low=116.95, close=120)
+
+
+def test_virtual_broker_defaults(basic_broker):
+    b = basic_broker
+    assert b.name == "VBroker"
+    assert len(b.tickers) == 3
+    assert b.failure_rate == 0.001
+
+
+def test_virtual_broker_is_failure(basic_broker):
+    b = basic_broker
+    assert b.is_failure is False
+    b.failure_rate = 1.0  # everything should fail now
+    assert b.is_failure is True
+    with pytest.raises(ValidationError):
+        b.failure_rate = -1
+    with pytest.raises(ValidationError):
+        b.failure_rate = 2

@@ -1,8 +1,9 @@
 import random
-from typing import Optional, Dict
+from typing import Optional, Dict, Set, List, Union, Any
 from omspy.models import OrderBook, Quote
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, PrivateAttr, confloat
 from enum import Enum
+from omspy.simulation.models import OrderResponse
 
 
 class TickerMode(Enum):
@@ -133,3 +134,51 @@ class Ticker(BaseModel):
         return dict(
             open=self.initial_price, high=self._high, low=self._low, close=self._ltp
         )
+
+
+class Client(BaseModel):
+    """
+    A basic client model
+    """
+
+    client_id: str
+
+
+class VirtualBroker(BaseModel):
+    """
+    A virtual broker instance mimicking a real broker
+    """
+
+    name: str = "VBroker"
+    tickers: Optional[List[Ticker]]
+    clients: Optional[Set[str]]
+    failure_rate: confloat(ge=0, le=1) = 0.001
+
+    class Config:
+        validate_assignment = True
+
+    @property
+    def is_failure(self) -> bool:
+        """
+        return whether the response should be a success or failure
+        Note
+        ----
+        1) status is determined based on the failure rate
+        """
+        num = random.random()
+        if num < self.failure_rate:
+            return True
+        else:
+            return False
+
+    def order_place(self, **kwargs) -> Union[OrderResponse, Dict[Any, Any]]:
+        if "response" in kwargs:
+            return kwargs["response"]
+
+    def order_modify(self, **kwargs):
+        if "response" in kwargs:
+            return kwargs["response"]
+
+    def order_cancel(self, **kwargs):
+        if "response" in kwargs:
+            return kwargs["response"]
