@@ -155,3 +155,18 @@ def test_vposition_price():
     pos.sell_value = 12240
     assert pos.average_sell_price == 102
     assert pos.net_value == -2240
+
+
+def test_response():
+    known = pendulum.datetime(2023, 2, 1, 12, 44, tz="local")
+    with pendulum.test(known):
+        resp = Response(status="success")
+        assert resp.status == ResponseStatus.SUCCESS
+        assert resp.timestamp == known
+
+
+def test_order_response():
+    data = DataForOrderResponse(order_id="some_random_string")
+    order_response = OrderResponse(status="success", data=data)
+    assert order_response.status == "success"
+    assert order_response.data.order_id == "some_random_string"

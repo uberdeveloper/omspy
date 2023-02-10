@@ -4,7 +4,7 @@ All the models start with **V** to indicate virtual models
 """
 
 from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from enum import Enum
 import pendulum
 import omspy.utils as utils
@@ -17,6 +17,11 @@ class Status(Enum):
     PARTIAL_FILL = 4  # partially filled but completed order
     OPEN = 5  # all quantity is pending to be filled
     PENDING = 6  # partially filled, waiting to get complete
+
+
+class ResponseStatus(str, Enum):
+    SUCCESS = "success"
+    FAILURE = "failure"
 
 
 class Side(Enum):
@@ -159,3 +164,27 @@ class VPosition(BaseModel):
         buy_value = self.buy_value if self.buy_value else 0
         sell_value = self.sell_value if self.sell_value else 0
         return buy_value - sell_value
+
+
+class Response(BaseModel):
+    status: ResponseStatus
+    timestamp: Optional[pendulum.DateTime]
+
+    class Config:
+        validate_assignment = True
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.timestamp is None:
+            self.timestamp = pendulum.now(tz="local")
+
+
+class DataForOrderResponse(BaseModel):
+    order_id: str
+
+
+class OrderResponse(Response):
+    data: DataForOrderResponse
+
+    class Config:
+        validate_assignment = True
