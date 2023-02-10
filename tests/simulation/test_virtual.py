@@ -1,7 +1,8 @@
 from omspy.simulation.virtual import *
 import pytest
+import pendulum
 import random
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from pydantic import ValidationError
 
 random.seed(100)
@@ -133,3 +134,31 @@ def test_virtual_broker_is_failure(basic_broker):
         b.failure_rate = -1
     with pytest.raises(ValidationError):
         b.failure_rate = 2
+
+
+def test_virtual_broker_order_place_success(basic_broker):
+    b = basic_broker
+    known = pendulum.datetime(2023, 2, 1, 10, 17)
+    with pendulum.test(known):
+        response = b.order_place(symbol="aapl", quantity=10, side=1, price=100)
+        assert response.status == "success"
+        assert response.timestamp == known
+        assert response.data.order_id is not None
+
+
+def test_virtual_broker_order_place_failure(basic_broker):
+    b = basic_broker
+    b.failure_rate = 1.0
+    known = pendulum.datetime(2023, 2, 1, 10, 17)
+    with pendulum.test(known):
+        response = b.order_place(symbol="aapl", quantity=10, side=1, price=100)
+        assert response.status == "failure"
+        assert response.timestamp == known
+        assert response.data is None
+
+
+def test_virtual_broker_order_place_response(basic_broker):
+    b = basic_broker
+    b.failure_rate = 1.0
+    response = b.order_place(response=dict(symbol="aapl", price=100))
+    assert response == {"symbol": "aapl", "price": 100}

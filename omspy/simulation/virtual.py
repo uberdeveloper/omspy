@@ -1,9 +1,10 @@
 import random
+import uuid
 from typing import Optional, Dict, Set, List, Union, Any
 from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr, confloat
 from enum import Enum
-from omspy.simulation.models import OrderResponse
+from omspy.simulation.models import *
 
 
 class TickerMode(Enum):
@@ -174,6 +175,12 @@ class VirtualBroker(BaseModel):
     def order_place(self, **kwargs) -> Union[OrderResponse, Dict[Any, Any]]:
         if "response" in kwargs:
             return kwargs["response"]
+        if self.is_failure:
+            return OrderResponse(status="failure", error_message="system busy")
+        else:
+            order_id = uuid.uuid4().hex
+            resp = DataForOrderResponse(order_id=order_id)
+            return OrderResponse(status="success", data=resp)
 
     def order_modify(self, **kwargs):
         if "response" in kwargs:

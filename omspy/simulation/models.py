@@ -184,7 +184,8 @@ class DataForOrderResponse(BaseModel):
 
 
 class OrderResponse(Response):
-    data: DataForOrderResponse
+    error_msg: Optional[str]
+    data: Optional[DataForOrderResponse]
 
     class Config:
         validate_assignment = True
