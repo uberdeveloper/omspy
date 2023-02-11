@@ -1,5 +1,7 @@
 ### 0.12.0
 ### Features
+* New `simulation` module added
+* `VirtualBroker` added for faking orders
 * You can now add keys to `CompoundOrder` when adding an order
 * `CompoundOrder` orders now have an automatic index
 * `get` function added to `CompoundOrder` to search by index or custom key

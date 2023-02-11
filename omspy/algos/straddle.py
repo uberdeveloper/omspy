@@ -9,6 +9,11 @@ import sqlite_utils
 import logging
 
 
+"""
+This module is not functional
+"""
+
+
 class BaseStrategy(BaseModel):
     start_time: pendulum.DateTime
     end_time: pendulum.DateTime
