@@ -2,8 +2,9 @@ import random
 import uuid
 from typing import Optional, Dict, Set, List, Union, Any
 from omspy.models import OrderBook, Quote
-from pydantic import BaseModel, PrivateAttr, confloat
+from pydantic import BaseModel, PrivateAttr, confloat, ValidationError
 from enum import Enum
+from collections import defaultdict
 from omspy.simulation.models import *
 
 
@@ -154,9 +155,14 @@ class VirtualBroker(BaseModel):
     tickers: Optional[List[Ticker]]
     clients: Optional[Set[str]]
     failure_rate: confloat(ge=0, le=1) = 0.001
+    _orders: defaultdict[str, VOrder] = PrivateAttr()
 
     class Config:
         validate_assignment = True
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._orders = defaultdict(dict)
 
     @property
     def is_failure(self) -> bool:
@@ -172,19 +178,42 @@ class VirtualBroker(BaseModel):
         else:
             return False
 
+    def get(self, order_id: str) -> Union[VOrder, None]:
+        """
+        get the order
+        """
+        return self._orders.get(order_id)
+
     def order_place(self, **kwargs) -> Union[OrderResponse, Dict[Any, Any]]:
         if "response" in kwargs:
             return kwargs["response"]
         if self.is_failure:
-            return OrderResponse(status="failure", error_message="system busy")
+            return OrderResponse(status="failure", error_message="Unexpected error")
         else:
             order_id = uuid.uuid4().hex
-            resp = DataForOrderResponse(order_id=order_id)
-            return OrderResponse(status="success", data=resp)
+            keys = VOrder.__fields__.keys()
+            order_args = dict(order_id=order_id)
+            for k, v in kwargs.items():
+                if k in keys:
+                    order_args[k] = v
+            try:
+                resp = VOrder(**order_args)
+                print(self._orders)
+                self._orders[order_args["order_id"]] = resp
+                return OrderResponse(status="success", data=resp)
+            except ValidationError as e:
+                errors = e.errors()
+                num = len(errors)
+                fld = errors[0].get("loc")[0]
+                msg = errors[0].get("msg")
+                error_msg = f"Found {num} validation errors; in field {fld} {msg}"
+                return OrderResponse(status="failure", error_msg=error_msg)
 
     def order_modify(self, **kwargs):
         if "response" in kwargs:
             return kwargs["response"]
+        if self.is_failure:
+            return OrderResponse(status="failure", error_message="Unexpected error")
 
     def order_cancel(self, **kwargs):
         if "response" in kwargs:

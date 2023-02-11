@@ -140,10 +140,33 @@ def test_virtual_broker_order_place_success(basic_broker):
     b = basic_broker
     known = pendulum.datetime(2023, 2, 1, 10, 17)
     with pendulum.test(known):
-        response = b.order_place(symbol="aapl", quantity=10, side=1, price=100)
+        response = b.order_place(symbol="aapl", quantity=10, side=1)
         assert response.status == "success"
         assert response.timestamp == known
         assert response.data.order_id is not None
+    assert len(b._orders) == 1
+
+
+def test_virtual_broker_order_place_success_fields(basic_broker):
+    b = basic_broker
+    known = pendulum.datetime(2023, 2, 1, 10, 17)
+    with pendulum.test(known):
+        response = b.order_place(
+            symbol="aapl", quantity=10, side=1, price=100, trigger_price=99
+        )
+        d = response.data
+        assert response.status == "success"
+        assert response.timestamp == known
+        assert response.data.order_id is not None
+        assert d.price == 100
+        assert d.trigger_price == 99
+        assert d.symbol == "aapl"
+        assert d.quantity == 10
+        assert d.side == Side.BUY
+        assert d.filled_quantity == 0
+        assert d.canceled_quantity == 0
+        assert d.pending_quantity == 10
+        assert d.status == Status.OPEN
 
 
 def test_virtual_broker_order_place_failure(basic_broker):
@@ -157,8 +180,42 @@ def test_virtual_broker_order_place_failure(basic_broker):
         assert response.data is None
 
 
-def test_virtual_broker_order_place_response(basic_broker):
+def test_virtual_broker_order_place_user_response(basic_broker):
     b = basic_broker
     b.failure_rate = 1.0
     response = b.order_place(response=dict(symbol="aapl", price=100))
     assert response == {"symbol": "aapl", "price": 100}
+
+
+def test_virtual_broker_order_place_validation_error(basic_broker):
+    b = basic_broker
+    known = pendulum.datetime(2023, 2, 1, 10, 17)
+    with pendulum.test(known):
+        response = b.order_place()
+        assert response.status == "failure"
+        assert response.timestamp == known
+        assert response.error_msg.startswith("Found 3 validation")
+        assert response.data is None
+
+        response = b.order_place(symbol="aapl", side=-1)
+        assert response.status == "failure"
+        assert response.timestamp == known
+        assert response.error_msg.startswith("Found 1 validation")
+        assert "quantity" in response.error_msg
+        assert response.data is None
+
+        response = b.order_place(symbol="aapl", quantity=100, side="buy")
+        assert response.status == "failure"
+        assert response.timestamp == known
+        assert response.error_msg.startswith("Found 1 validation")
+        assert "side" in response.error_msg
+        assert response.data is None
+
+
+def test_virtual_broker_get(basic_broker):
+    b = basic_broker
+    for i in (50, 100, 130):
+        b.order_place(symbol="dow", side=1, quantity=i)
+    assert len(b._orders) == 3
+    order_id = list(b._orders.keys())[1]
+    assert b.get(order_id) == list(b._orders.values())[1]
