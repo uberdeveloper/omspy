@@ -209,11 +209,25 @@ class VirtualBroker(BaseModel):
                 error_msg = f"Found {num} validation errors; in field {fld} {msg}"
                 return OrderResponse(status="failure", error_msg=error_msg)
 
-    def order_modify(self, **kwargs):
+    def order_modify(
+        self, order_id: str, **kwargs
+    ) -> Union[OrderResponse, Dict[Any, Any]]:
         if "response" in kwargs:
             return kwargs["response"]
         if self.is_failure:
             return OrderResponse(status="failure", error_message="Unexpected error")
+        if order_id not in self._orders:
+            return OrderResponse(
+                status="failure",
+                error_message=f"Order id {order_id} not found on system",
+            )
+        attribs = ("price", "trigger_price", "quantity")
+        modify_args = dict(order_id=order_id)
+        order = self.get(order_id)
+        for attrib in attribs:
+            if attrib in kwargs:
+                setattr(order, attrib, kwargs[attrib])
+        return OrderResponse(status="success", data=order)
 
     def order_cancel(self, **kwargs):
         if "response" in kwargs:

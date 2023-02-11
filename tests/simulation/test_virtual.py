@@ -219,3 +219,35 @@ def test_virtual_broker_get(basic_broker):
     assert len(b._orders) == 3
     order_id = list(b._orders.keys())[1]
     assert b.get(order_id) == list(b._orders.values())[1]
+
+
+def test_virtual_broker_order_modify(basic_broker):
+    b = basic_broker
+    order = b.order_place(symbol="dow", side=1, quantity=50)
+    order_id = order.data.order_id
+    resp = b.order_modify(order_id, quantity=25)
+    assert resp.status == "success"
+    assert resp.data.quantity == 25
+    resp = b.order_modify(order_id, price=1000)
+    assert resp.status == "success"
+    assert resp.data.price == 1000
+    assert list(b._orders.values())[0].price == 1000
+
+
+def test_virtual_broker_order_modify_failure(basic_broker):
+    b = basic_broker
+    order = b.order_place(symbol="dow", side=1, quantity=50)
+    order_id = order.data.order_id
+    resp = b.order_modify("hexid", quantity=25)
+    assert resp.status == "failure"
+    assert resp.data is None
+    b.failure_rate = 1.0
+    resp = b.order_modify(order_id, price=100)
+    assert resp.status == "failure"
+    assert resp.data is None
+
+
+def test_virtual_broker_order_modify_failure(basic_broker):
+    b = basic_broker
+    resp = b.order_modify("hexid", quantity=25, response=dict(a=10, b=15))
+    assert resp == dict(a=10, b=15)
