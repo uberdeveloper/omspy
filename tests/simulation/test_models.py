@@ -166,7 +166,17 @@ def test_response():
 
 
 def test_order_response():
-    data = DataForOrderResponse(order_id="some_random_string")
+    data = VOrder(order_id="order_id", symbol="aapl", quantity=10, side=1, price=100)
     order_response = OrderResponse(status="success", data=data)
+    d = order_response.data
     assert order_response.status == "success"
-    assert order_response.data.order_id == "some_random_string"
+    assert d.order_id == "order_id"
+    assert d.symbol == "aapl"
+    assert d.quantity == 10
+    assert d.side == Side.BUY
+    assert d.price == 100
+    assert d.trigger_price is None
+    assert d.filled_quantity == 0
+    assert d.canceled_quantity == 0
+    assert d.pending_quantity == 10
+    assert d.status == Status.OPEN

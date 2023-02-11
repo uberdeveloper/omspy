@@ -179,13 +179,9 @@ class Response(BaseModel):
             self.timestamp = pendulum.now(tz="local")
 
 
-class DataForOrderResponse(BaseModel):
-    order_id: str
-
-
 class OrderResponse(Response):
     error_msg: Optional[str]
-    data: Optional[DataForOrderResponse]
+    data: Optional[VOrder]
 
     class Config:
         validate_assignment = True
