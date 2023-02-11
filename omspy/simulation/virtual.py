@@ -229,6 +229,24 @@ class VirtualBroker(BaseModel):
                 setattr(order, attrib, kwargs[attrib])
         return OrderResponse(status="success", data=order)
 
-    def order_cancel(self, **kwargs):
+    def order_cancel(
+        self, order_id: str, **kwargs
+    ) -> Union[OrderResponse, Dict[Any, Any]]:
         if "response" in kwargs:
             return kwargs["response"]
+        if self.is_failure:
+            return OrderResponse(status="failure", error_message="Unexpected error")
+        if order_id not in self._orders:
+            return OrderResponse(
+                status="failure",
+                error_message=f"Order id {order_id} not found on system",
+            )
+        order = self.get(order_id)
+        if order.status == Status.COMPLETE:
+            return OrderResponse(
+                status="failure", error_message=f"Order {order_id} already completed"
+            )
+        else:
+            order.canceled_quantity = order.quantity - order.filled_quantity
+            order.pending_quantity = 0
+            return OrderResponse(status="success", data=order)

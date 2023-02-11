@@ -247,7 +247,37 @@ def test_virtual_broker_order_modify_failure(basic_broker):
     assert resp.data is None
 
 
-def test_virtual_broker_order_modify_failure(basic_broker):
+def test_virtual_broker_order_modify_kwargs_response(basic_broker):
     b = basic_broker
     resp = b.order_modify("hexid", quantity=25, response=dict(a=10, b=15))
+    assert resp == dict(a=10, b=15)
+
+
+def test_virtual_broker_order_cancel(basic_broker):
+    b = basic_broker
+    order = b.order_place(symbol="dow", side=1, quantity=50)
+    order_id = order.data.order_id
+    resp = b.order_cancel(order_id)
+    assert resp.status == "success"
+    assert resp.data.canceled_quantity == 50
+    assert resp.data.filled_quantity == 0
+    assert resp.data.pending_quantity == 0
+    assert resp.data.status == Status.CANCELED
+
+
+def test_virtual_broker_order_cancel_failure(basic_broker):
+    b = basic_broker
+    order = b.order_place(symbol="dow", side=1, quantity=50)
+    order_id = order.data.order_id
+    resp = b.order_modify("hexid", quantity=25)
+    assert resp.status == "failure"
+    assert resp.data is None
+    order = b.get(order_id)
+    order.filled_quantity = 50
+    assert resp.status == "failure"
+
+
+def test_virtual_broker_order_cancel_kwargs_response(basic_broker):
+    b = basic_broker
+    resp = b.order_cancel("hexid", quantity=25, response=dict(a=10, b=15))
     assert resp == dict(a=10, b=15)
