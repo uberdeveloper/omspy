@@ -198,7 +198,6 @@ class VirtualBroker(BaseModel):
                     order_args[k] = v
             try:
                 resp = VOrder(**order_args)
-                print(self._orders)
                 self._orders[order_args["order_id"]] = resp
                 return OrderResponse(status="success", data=resp)
             except ValidationError as e:
