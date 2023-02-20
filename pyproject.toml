@@ -14,6 +14,9 @@ pydantic = "^1.8.2"
 PyYAML = "^5.4.1"
 sqlite-utils = "^3.22.1"
 
+[tool.poetry.group.server.dependencies]
+fastapi = "^0.92.0"
+
 [tool.poetry.group.test.dependencies]
 coverage = "^6.0.2"
 selenium = "^3.141.0"
