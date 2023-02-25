@@ -146,6 +146,23 @@ class Client(BaseModel):
     client_id: str
 
 
+class FakeBroker(BaseModel):
+    """
+    A fake instance to generate random stock data
+    """
+
+    name: str = "faker"
+
+    def ltp(self, symbol: str, **kwargs) -> Dict[str, Union[float, int]]:
+        """
+        get some random last traded price for the instrument
+        kwargs
+            can provide start and end arguments to generate price within the range
+        """
+        price = generate_price(**kwargs)
+        return {symbol: price}
+
+
 class VirtualBroker(BaseModel):
     """
     A virtual broker instance mimicking a real broker

@@ -281,3 +281,13 @@ def test_virtual_broker_order_cancel_kwargs_response(basic_broker):
     b = basic_broker
     resp = b.order_cancel("hexid", quantity=25, response=dict(a=10, b=15))
     assert resp == dict(a=10, b=15)
+
+
+def test_fake_broker_ltp():
+    b = FakeBroker()
+    random.seed(1000)
+    assert b.ltp("aapl") == {"aapl": 106}
+    random.seed(1000)
+    assert b.ltp("aapl", end=150) == {"aapl": 149}
+    random.seed(1000)
+    assert b.ltp("goog", start=1000, end=1200) == {"goog": 1199}
