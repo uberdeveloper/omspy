@@ -206,6 +206,37 @@ class FakeBroker(BaseModel):
         values = generate_ohlc(**kwargs)
         return {symbol: values.dict()}
 
+    def order_place(self, **kwargs) -> VOrder:
+        """
+        Place an order with the broker
+        """
+        _symbols = [
+            "AXP",
+            "AAPL",
+            "CSCO",
+            "PG",
+            "V",
+            "MMM",
+            "JPM",
+            "HD",
+            "CVX",
+            "GS",
+            "DOW",
+        ]
+        symbol = random.choice(_symbols)
+        quantity = random.randrange(10, 10000)
+        price = random.randrange(1, 1000)
+        order_args = dict(
+            symbol=symbol,
+            side=random.choice([1, -1]),
+            price=price,
+            quantity=quantity,
+            filled_quantity=quantity,
+        )
+        order_id = uuid.uuid4().hex
+        order_args.update(kwargs)
+        return VOrder(order_id=order_id, **order_args)
+
 
 class VirtualBroker(BaseModel):
     """

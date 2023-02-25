@@ -344,3 +344,30 @@ def test_fake_broker_ohlc():
     assert ohlc["low"] == 403
     assert ohlc["last_price"] == 438
     assert ohlc["volume"] == 71954
+
+
+def test_fake_broker_order_place():
+    b = FakeBroker()
+    random.seed(1000)
+    order = b.order_place()
+    assert order.symbol == "JPM"
+    assert order.quantity == 1634
+    assert order.side == Side.SELL
+    assert order.price == 404
+    assert order.filled_quantity == 1634
+    assert order.pending_quantity == 0
+    assert order.canceled_quantity == 0
+
+
+def test_fake_broker_order_place_kwargs():
+    b = FakeBroker()
+    random.seed(1000)
+    order = b.order_place(price=360, trigger_price=320, side=1)
+    assert order.symbol == "JPM"
+    assert order.quantity == 1634
+    assert order.side == Side.BUY
+    assert order.price == 360
+    assert order.trigger_price == 320
+    assert order.filled_quantity == 1634
+    assert order.pending_quantity == 0
+    assert order.canceled_quantity == 0
