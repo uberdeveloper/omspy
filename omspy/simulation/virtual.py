@@ -199,6 +199,13 @@ class FakeBroker(BaseModel):
         orderbook = generate_orderbook(**kwargs)
         return {symbol: orderbook.dict()}
 
+    def ohlc(self, symbol: str, **kwargs) -> Dict[str, Dict]:
+        """
+        generate ohlc prices
+        """
+        values = generate_ohlc(**kwargs)
+        return {symbol: values.dict()}
+
 
 class VirtualBroker(BaseModel):
     """

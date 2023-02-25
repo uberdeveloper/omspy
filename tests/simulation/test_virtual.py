@@ -326,3 +326,21 @@ def test_generate_ohlc_custom():
     assert ohlc.close == 369
     assert ohlc.last_price == 368
     assert ohlc.volume == 1546673
+
+
+def test_fake_broker_ohlc():
+    b = FakeBroker()
+    random.seed(1001)
+    quote = b.ohlc("goog")
+    ohlc = quote["goog"]
+    assert ohlc["open"] == 100
+    assert ohlc["last_price"] == 101
+    assert ohlc["volume"] == 17876
+
+    random.seed(1001)
+    quote = b.ohlc("aapl", start=400, end=450, volume=45000)
+    ohlc = quote["aapl"]
+    assert ohlc["high"] == 448
+    assert ohlc["low"] == 403
+    assert ohlc["last_price"] == 438
+    assert ohlc["volume"] == 71954
