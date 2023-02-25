@@ -291,3 +291,16 @@ def test_fake_broker_ltp():
     assert b.ltp("aapl", end=150) == {"aapl": 149}
     random.seed(1000)
     assert b.ltp("goog", start=1000, end=1200) == {"goog": 1199}
+
+
+def test_fake_broker_orderbook():
+    b = FakeBroker()
+    ob = b.orderbook("aapl")
+    assert "aapl" in ob
+    assert list(ob["aapl"].keys()) == ["bid", "ask"]
+    assert len(ob["aapl"]["ask"]) == 5
+
+    ob = b.orderbook("goog", bid=400, ask=405, depth=10, tick=1)
+    assert len(ob["goog"]["bid"]) == 10
+    assert ob["goog"]["bid"][-1]["price"] == 391
+    assert ob["goog"]["ask"][-1]["price"] == 414

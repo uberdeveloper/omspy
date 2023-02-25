@@ -162,6 +162,13 @@ class FakeBroker(BaseModel):
         price = generate_price(**kwargs)
         return {symbol: price}
 
+    def orderbook(self, symbol: str, **kwargs) -> Dict[str, Dict]:
+        """
+        generate a random orderbook
+        """
+        orderbook = generate_orderbook(**kwargs)
+        return {symbol: orderbook.dict()}
+
 
 class VirtualBroker(BaseModel):
     """
