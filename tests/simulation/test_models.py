@@ -27,6 +27,11 @@ def vorder_kwargs():
     )
 
 
+@pytest.fixture
+def ohlc_args():
+    return dict(open=104, high=112, low=101, close=108, last_price=107)
+
+
 def test_vtrade_defaults(vtrade):
     assert vtrade.price == 120
     assert vtrade.side == Side.BUY
@@ -180,3 +185,36 @@ def test_order_response():
     assert d.canceled_quantity == 0
     assert d.pending_quantity == 10
     assert d.status == Status.OPEN
+
+
+def test_ohlc(ohlc_args):
+    ohlc = OHLC(**ohlc_args)
+    assert ohlc.open == 104
+    assert ohlc.high == 112
+    assert ohlc.low == 101
+    assert ohlc.close == 108
+    assert ohlc.last_price == 107
+
+
+def test_ohlcv(ohlc_args):
+    ohlc_args["volume"] = 12600
+    ohlc = OHLCV(**ohlc_args)
+    assert ohlc.open == 104
+    assert ohlc.high == 112
+    assert ohlc.low == 101
+    assert ohlc.close == 108
+    assert ohlc.last_price == 107
+    assert ohlc.volume == 12600
+
+
+def test_ohlcvi(ohlc_args):
+    ohlc_args["volume"] = 12600
+    ohlc_args["open_interest"] = 13486720
+    ohlc = OHLCVI(**ohlc_args)
+    assert ohlc.open == 104
+    assert ohlc.high == 112
+    assert ohlc.low == 101
+    assert ohlc.close == 108
+    assert ohlc.last_price == 107
+    assert ohlc.volume == 12600
+    assert ohlc.open_interest == 13486720

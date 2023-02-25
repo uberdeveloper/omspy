@@ -29,6 +29,22 @@ class Side(Enum):
     SELL = -1
 
 
+class OHLC(BaseModel):
+    open: float
+    high: float
+    low: float
+    close: float
+    last_price: float
+
+
+class OHLCV(OHLC):
+    volume: int
+
+
+class OHLCVI(OHLCV):
+    open_interest: int
+
+
 class VTrade(BaseModel):
     trade_id: str
     order_id: str
