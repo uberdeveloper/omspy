@@ -304,3 +304,25 @@ def test_fake_broker_orderbook():
     assert len(ob["goog"]["bid"]) == 10
     assert ob["goog"]["bid"][-1]["price"] == 391
     assert ob["goog"]["ask"][-1]["price"] == 414
+
+
+def test_generate_ohlc_default():
+    random.seed(1001)
+    ohlc = generate_ohlc()
+    assert ohlc.open == 100
+    assert ohlc.high == 103
+    assert ohlc.low == 100
+    assert ohlc.close == 102
+    assert ohlc.last_price == 101
+    assert ohlc.volume == 17876
+
+
+def test_generate_ohlc_custom():
+    random.seed(1002)
+    ohlc = generate_ohlc(300, 380, 2e6)
+    assert ohlc.open == 372
+    assert ohlc.high == 376
+    assert ohlc.low == 366
+    assert ohlc.close == 369
+    assert ohlc.last_price == 368
+    assert ohlc.volume == 1546673

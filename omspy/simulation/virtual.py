@@ -79,6 +79,36 @@ def generate_orderbook(
     return OrderBook(ask=asks, bid=bids)
 
 
+def generate_ohlc(start: int = 100, end: int = 110, volume: int = 1e4):
+    """
+    Generate random open, high, low, close prices
+    start
+        start value for price generation
+    end
+        end value for price generation
+    volume
+        value for volume
+    returns open, high, low, close, last price and volume by default
+    Note
+    ----
+    1) ohlc is generated between start and end values
+    2) volume is generated based on given value
+    """
+    if start > end:
+        start, end = end, start
+    a = random.randrange(start, end)
+    b = random.randrange(start, end)
+    high, low = max(a, b), min(a, b)
+    o = random.randrange(low, high)
+    c = random.randrange(low, high)
+    ltp = random.randrange(low, high)
+    if volume > 0:
+        v = random.randrange(int(volume * 0.5), int(volume * 2))
+    else:
+        v = random.randrange(1000, 200000)
+    return OHLCV(open=o, high=high, low=low, close=c, volume=v, last_price=ltp)
+
+
 class Ticker(BaseModel):
     """
     A simple ticker class to generate fake data
