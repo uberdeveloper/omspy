@@ -192,19 +192,19 @@ class FakeBroker(BaseModel):
         price = generate_price(**kwargs)
         return {symbol: price}
 
-    def orderbook(self, symbol: str, **kwargs) -> Dict[str, Dict]:
+    def orderbook(self, symbol: str, **kwargs) -> Dict[str, OrderBook]:
         """
         generate a random orderbook
         """
         orderbook = generate_orderbook(**kwargs)
-        return {symbol: orderbook.dict()}
+        return {symbol: orderbook}
 
-    def ohlc(self, symbol: str, **kwargs) -> Dict[str, Dict]:
+    def ohlc(self, symbol: str, **kwargs) -> Dict[str, OHLCV]:
         """
         generate ohlc prices
         """
         values = generate_ohlc(**kwargs)
-        return {symbol: values.dict()}
+        return {symbol: values}
 
     def order_place(self, **kwargs) -> VOrder:
         """

@@ -297,13 +297,19 @@ def test_fake_broker_orderbook():
     b = FakeBroker()
     ob = b.orderbook("aapl")
     assert "aapl" in ob
-    assert list(ob["aapl"].keys()) == ["bid", "ask"]
-    assert len(ob["aapl"]["ask"]) == 5
+    obook = ob["aapl"]
+    assert len(obook.ask) == 5
+    assert len(obook.bid) == 5
 
     ob = b.orderbook("goog", bid=400, ask=405, depth=10, tick=1)
-    assert len(ob["goog"]["bid"]) == 10
-    assert ob["goog"]["bid"][-1]["price"] == 391
-    assert ob["goog"]["ask"][-1]["price"] == 414
+    obook = ob["goog"]
+    print(obook.bid)
+    assert obook.bid[-1].price == 391
+    assert obook.ask[-1].price == 414
+    assert obook.bid[0].price == 400
+    assert obook.ask[0].price == 405
+    assert len(obook.bid) == len(obook.ask) == 10
+    assert len(obook.bid) == len(obook.ask) == 10
 
 
 def test_generate_ohlc_default():
@@ -333,17 +339,17 @@ def test_fake_broker_ohlc():
     random.seed(1001)
     quote = b.ohlc("goog")
     ohlc = quote["goog"]
-    assert ohlc["open"] == 100
-    assert ohlc["last_price"] == 101
-    assert ohlc["volume"] == 17876
+    assert ohlc.open == 100
+    assert ohlc.last_price == 101
+    assert ohlc.volume == 17876
 
     random.seed(1001)
     quote = b.ohlc("aapl", start=400, end=450, volume=45000)
     ohlc = quote["aapl"]
-    assert ohlc["high"] == 448
-    assert ohlc["low"] == 403
-    assert ohlc["last_price"] == 438
-    assert ohlc["volume"] == 71954
+    assert ohlc.high == 448
+    assert ohlc.low == 403
+    assert ohlc.last_price == 438
+    assert ohlc.volume == 71954
 
 
 def test_fake_broker_order_place():
