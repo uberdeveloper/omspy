@@ -5,7 +5,7 @@ from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr, confloat, ValidationError
 from enum import Enum
 from collections import defaultdict
-from omspy.simulation.models import *
+from omspy.simulation.models import OrderResponse, VOrder, OHLCV, Side, Status
 
 
 class TickerMode(Enum):
@@ -52,7 +52,8 @@ def generate_orderbook(
     Note
     ----
     1) orderbook is generated with a uniform tick difference between subsequent quotes
-    2) quantity is averaged between value quantity/2 and quantity * 1.5 using randrange function
+    2) quantity is averaged between value quantity/2 and quantity * 1.5
+    using randrange function
     3) num of orders is randomly picked between 5 to 15
     4) if bid price is greater than ask, the values are swapped
     """
@@ -88,7 +89,8 @@ def generate_ohlc(start: int = 100, end: int = 110, volume: int = 1e4):
         end value for price generation
     volume
         value for volume
-    returns open, high, low, close, last price and volume by default
+    returns open, high, low, close, last price
+    and volume by default
     Note
     ----
     1) ohlc is generated between start and end values
@@ -122,7 +124,8 @@ class Ticker(BaseModel):
         ticker mode; random or otherwise
     Note
     -----
-    1) If ticker mode is random, price is generated based on random walk from normal distribution
+    1) If ticker mode is random, price is generated based on
+    random walk from normal distribution
     """
 
     name: str
