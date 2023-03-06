@@ -5,7 +5,7 @@ from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr, confloat, ValidationError
 from enum import Enum
 from collections import defaultdict
-from omspy.simulation.models import OrderResponse, VOrder, OHLCV, Side, Status
+from omspy.simulation.models import OrderResponse, VOrder, OHLCV, Side, Status, VQuote
 
 
 class TickerMode(Enum):
@@ -208,6 +208,37 @@ class FakeBroker(BaseModel):
         """
         values = generate_ohlc(**kwargs)
         return {symbol: values}
+
+    def quote(self, symbol: str, **kwargs) -> Dict[str, VQuote]:
+        """
+        generate a detailed quote with ohlcv and orderbook
+        start
+            start price of the symbol
+        end
+            end price of the symbol
+        volume
+            volume for ohlc
+        depth
+            depth of the orderbook
+        tick
+            difference in price between orders
+        quantity
+            average quantity of orders per price quote
+        """
+        start = kwargs.get("start", 100)
+        end = kwargs.get("end", 110)
+        volume = kwargs.get("volume", 1e4)
+        depth = kwargs.get("depth", 5)
+        tick = kwargs.get("tick", 0.01)
+        quantity = kwargs.get("quantity", 100)
+        ohlc = generate_ohlc(start=start, end=end, volume=volume)
+        bid = generate_price(start=ohlc.low, end=ohlc.high)
+        ask = bid + tick
+        orderbook = generate_orderbook(
+            ask=ask, bid=bid, depth=depth, tick=tick, quantity=quantity
+        )
+        quote = VQuote(orderbook=orderbook, **ohlc.dict())
+        return {symbol: quote}
 
     def order_place(self, **kwargs) -> VOrder:
         """

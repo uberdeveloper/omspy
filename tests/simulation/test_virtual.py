@@ -368,8 +368,8 @@ def test_fake_broker_order_place():
 def test_fake_broker_order_place_kwargs():
     b = FakeBroker()
     random.seed(1000)
-    order = b.order_place(price=360, trigger_price=320, side=1)
-    assert order.symbol == "JPM"
+    order = b.order_place(symbol="aapl", price=360, trigger_price=320, side=1)
+    assert order.symbol == "aapl"
     assert order.quantity == 1634
     assert order.side == Side.BUY
     assert order.price == 360
@@ -377,3 +377,37 @@ def test_fake_broker_order_place_kwargs():
     assert order.filled_quantity == 1634
     assert order.pending_quantity == 0
     assert order.canceled_quantity == 0
+
+
+def test_fake_broker_quote():
+    b = FakeBroker()
+    random.seed(1200)
+    quote = b.quote(symbol="goog")["goog"]
+    assert quote.last_price == 104
+    assert quote.high == 109
+    assert quote.orderbook.ask[0].price == 106.01
+
+
+def test_fake_broker_quote_kwargs_price():
+    b = FakeBroker()
+    random.seed(1200)
+    quote = b.quote(symbol="goog", start=150, end=200)["goog"]
+    assert quote.last_price == 171
+    assert quote.high == 189
+    assert quote.orderbook.ask[0].price == 177.01
+
+
+def test_fake_broker_quote_kwargs_orderbook():
+    b = FakeBroker()
+    random.seed(1200)
+    quote = b.quote(symbol="goog", start=150, end=200, volume=1e8, depth=15, tick=1)[
+        "goog"
+    ]
+    assert quote.last_price == 171
+    assert quote.high == 189
+    assert quote.volume == 102924217
+    assert len(quote.orderbook.ask) == len(quote.orderbook.bid) == 15
+    assert quote.orderbook.ask[0].price == 178
+    assert quote.orderbook.ask[-1].price == 192
+    assert quote.orderbook.bid[0].price == 177
+    assert quote.orderbook.bid[-1].price == 163
