@@ -1,6 +1,6 @@
 import random
 import uuid
-from typing import Optional, Dict, Set, List, Union, Any
+from typing import Optional, Dict, Set, List, Union, Any, Callable
 from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr, confloat, ValidationError
 from enum import Enum
@@ -187,6 +187,22 @@ class FakeBroker(BaseModel):
 
     name: str = "faker"
 
+    def _iterate_method(
+        self, method: Callable, symbol: Union[str, Iterable], **kwargs
+    ) -> Dict[str, Any]:
+        """
+        iterate the given method if the symbol is an iterable else return the value
+        """
+        if isinstance(symbol, str):
+            return method(symbol, **kwargs)
+        elif isinstance(symbol, Iterable):
+            dct = dict()
+            for s in symbol:
+                dct.update(method(s, **kwargs))
+            return dct
+        else:
+            return dict()
+
     def _ltp(self, symbol: str, **kwargs) -> Dict[str, Union[float, int]]:
         """
         get some random last traded price for the instrument
@@ -198,7 +214,9 @@ class FakeBroker(BaseModel):
         price = generate_price(**kwargs)
         return {symbol: price}
 
-    def ltp(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, Union[float, int]]:
+    def ltp(
+        self, symbol: Union[str, Iterable], **kwargs
+    ) -> Dict[str, Union[float, int]]:
         """
         get some random last traded price for the given symbols
         symbol
@@ -206,14 +224,7 @@ class FakeBroker(BaseModel):
         kwargs
             can provide start and end arguments to generate price within the range
         """
-        if isinstance(symbol, str):
-            return self._ltp(symbol, **kwargs)
-        elif isinstance(symbol, Iterable):
-            dct = dict()
-            for s in symbol:
-                dct.update(self._ltp(s, **kwargs))
-            return dct
-
+        return self._iterate_method(self._ltp, symbol, **kwargs)
 
     def orderbook(self, symbol: str, **kwargs) -> Dict[str, OrderBook]:
         """
