@@ -5,6 +5,7 @@ from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr, confloat, ValidationError
 from enum import Enum
 from collections import defaultdict
+from collections.abc import Iterable
 from omspy.simulation.models import OrderResponse, VOrder, OHLCV, Side, Status, VQuote
 
 
@@ -186,14 +187,33 @@ class FakeBroker(BaseModel):
 
     name: str = "faker"
 
-    def ltp(self, symbol: str, **kwargs) -> Dict[str, Union[float, int]]:
+    def _ltp(self, symbol: str, **kwargs) -> Dict[str, Union[float, int]]:
         """
         get some random last traded price for the instrument
+        symbol
+            symbol name
         kwargs
             can provide start and end arguments to generate price within the range
         """
         price = generate_price(**kwargs)
         return {symbol: price}
+
+    def ltp(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, Union[float, int]]:
+        """
+        get some random last traded price for the given symbols
+        symbol
+            symbol could be a single symbol or a list of tuple of symbols
+        kwargs
+            can provide start and end arguments to generate price within the range
+        """
+        if isinstance(symbol, str):
+            return self._ltp(symbol, **kwargs)
+        elif isinstance(symbol, Iterable):
+            dct = dict()
+            for s in symbol:
+                dct.update(self._ltp(s, **kwargs))
+            return dct
+
 
     def orderbook(self, symbol: str, **kwargs) -> Dict[str, OrderBook]:
         """
@@ -224,6 +244,9 @@ class FakeBroker(BaseModel):
             difference in price between orders
         quantity
             average quantity of orders per price quote
+        Note
+        -----
+        1) ask and bid price are derived from start and end prices
         """
         start = kwargs.get("start", 100)
         end = kwargs.get("end", 110)

@@ -303,7 +303,6 @@ def test_fake_broker_orderbook():
 
     ob = b.orderbook("goog", bid=400, ask=405, depth=10, tick=1)
     obook = ob["goog"]
-    print(obook.bid)
     assert obook.bid[-1].price == 391
     assert obook.ask[-1].price == 414
     assert obook.bid[0].price == 400
@@ -411,3 +410,26 @@ def test_fake_broker_quote_kwargs_orderbook():
     assert quote.orderbook.ask[-1].price == 192
     assert quote.orderbook.bid[0].price == 177
     assert quote.orderbook.bid[-1].price == 163
+
+def test_fake_broker_ltps():
+    b = FakeBroker()
+    random.seed(1000)
+    assert b.ltp(("aapl", "goog")) == dict(aapl=106,goog=101)
+    random.seed(1000)
+    assert b.ltp(list('abcd'),start=1000,end=1200) == dict(a=1199,b=1109,c=1171,d=1194)
+
+def test_fake_broker_ltps_iterables():
+    from collections import Counter
+    lst = list('abcd')
+    tup = tuple('abcd')
+    dct = Counter('abcd')
+    st = set('abcd')
+    b = FakeBroker()
+    random.seed(1000)
+    assert b.ltp(lst,start=1000,end=1200) == dict(a=1199,b=1109,c=1171,d=1194)
+    random.seed(1000)
+    assert b.ltp(tup,start=1000,end=1200) == dict(a=1199,b=1109,c=1171,d=1194)
+    random.seed(1000)
+    assert b.ltp(dct,start=1000,end=1200) == dict(a=1199,b=1109,c=1171,d=1194)
+    random.seed(1000)
+    assert b.ltp(sorted(st),start=1000,end=1200) == dict(a=1199,b=1109,c=1171,d=1194)
