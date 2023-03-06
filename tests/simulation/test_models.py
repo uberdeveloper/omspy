@@ -1,4 +1,5 @@
 from omspy.simulation.models import *
+from omspy.simulation.virtual import generate_orderbook
 import pendulum
 import pytest
 
@@ -218,3 +219,17 @@ def test_ohlcvi(ohlc_args):
     assert ohlc.last_price == 107
     assert ohlc.volume == 12600
     assert ohlc.open_interest == 13486720
+
+
+def test_vquote(ohlc_args):
+    ohlc_args["volume"] = 22000
+    orderbook = generate_orderbook()
+    quote = VQuote(orderbook=orderbook, **ohlc_args)
+    assert quote.open == 104
+    assert quote.high == 112
+    assert quote.low == 101
+    assert quote.close == 108
+    assert quote.last_price == 107
+    assert quote.volume == 22000
+    assert len(quote.orderbook.ask) == 5
+    assert len(quote.orderbook.bid) == 5

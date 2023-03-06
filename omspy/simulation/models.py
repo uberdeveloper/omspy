@@ -8,6 +8,7 @@ from typing import Optional, Union, Any
 from enum import Enum
 import pendulum
 import omspy.utils as utils
+from omspy.models import OrderBook
 
 
 class Status(Enum):
@@ -43,6 +44,10 @@ class OHLCV(OHLC):
 
 class OHLCVI(OHLCV):
     open_interest: int
+
+
+class VQuote(OHLCV):
+    orderbook: OrderBook
 
 
 class VTrade(BaseModel):
