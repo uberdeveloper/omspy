@@ -1,9 +1,9 @@
 import warnings
 
-DEPRECIATION_WARNING = """
-This fyers broker module would be removed from version 0.16.0
+DEPRECATION_WARNING = """
+This Fyers broker module would be removed from version 0.16.0
 """
-warnings.warn(DEPRECIATION_WARNING, DeprecationWarning, stacklevel=2)
+warnings.warn(DEPRECATION_WARNING, DeprecationWarning, stacklevel=2)
 
 from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict

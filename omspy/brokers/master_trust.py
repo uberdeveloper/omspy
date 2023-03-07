@@ -1,4 +1,11 @@
 import os
+import warnings
+
+DEPRECATION_WARNING = """
+This MasterTrust broker module would be removed from version 0.16.0
+"""
+warnings.warn(DEPRECATION_WARNING, DeprecationWarning, stacklevel=2)
+
 import random
 import requests
 from omspy.base import Broker, pre, post

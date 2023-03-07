@@ -1,9 +1,20 @@
 from pathlib import PurePath
-from omspy.brokers.fyers import Fyers
 from unittest.mock import patch, call
 import pytest
 import json
 from copy import deepcopy
+import warnings
+
+warnings.simplefilter("always")
+
+# Deprecated module, so test comes before import
+with warnings.catch_warnings(record=True) as w:
+    from omspy.brokers.fyers import Fyers
+
+    message = str(w[-1].message).strip("\n")
+    assert message == "This Fyers broker module would be removed from version 0.16.0"
+
+from omspy.brokers.fyers import Fyers
 
 # @@@ assumption [add test case]: this file location change breaks below paths
 DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
