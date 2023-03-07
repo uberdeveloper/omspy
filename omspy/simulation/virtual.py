@@ -187,9 +187,7 @@ class FakeBroker(BaseModel):
 
     name: str = "faker"
 
-    def _iterate_method(
-        self, method: Callable, symbol: Union[str, Iterable], **kwargs
-    ) -> Dict[str, Any]:
+    def _iterate_method(self, method:Callable, symbol:Union[str,Iterable], **kwargs)->Dict[str, Any]:
         """
         iterate the given method if the symbol is an iterable else return the value
         """
@@ -214,9 +212,7 @@ class FakeBroker(BaseModel):
         price = generate_price(**kwargs)
         return {symbol: price}
 
-    def ltp(
-        self, symbol: Union[str, Iterable], **kwargs
-    ) -> Dict[str, Union[float, int]]:
+    def ltp(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, Union[float, int]]:
         """
         get some random last traded price for the given symbols
         symbol
@@ -226,21 +222,41 @@ class FakeBroker(BaseModel):
         """
         return self._iterate_method(self._ltp, symbol, **kwargs)
 
-    def orderbook(self, symbol: str, **kwargs) -> Dict[str, OrderBook]:
+    def _orderbook(self, symbol: str, **kwargs) -> Dict[str, OrderBook]:
         """
         generate a random orderbook
         """
         orderbook = generate_orderbook(**kwargs)
         return {symbol: orderbook}
 
-    def ohlc(self, symbol: str, **kwargs) -> Dict[str, OHLCV]:
+    def orderbook(self, symbol: Union[str,Iterable], **kwargs) -> Dict[str, OrderBook]:
+        """
+        generate a random orderbook
+        symbol
+            symbol or list of symbols
+        kwargs
+            keyword arguments for the generate_orderbook funtion
+        """
+        return self._iterate_method(self._orderbook, symbol, **kwargs)
+
+    def _ohlc(self, symbol: str, **kwargs) -> Dict[str, OHLCV]:
         """
         generate ohlc prices
         """
         values = generate_ohlc(**kwargs)
         return {symbol: values}
 
-    def quote(self, symbol: str, **kwargs) -> Dict[str, VQuote]:
+    def ohlc(self, symbol: Union[str,Iterable], **kwargs) -> Dict[str, OHLCV]:
+        """
+        generate ohlc prices
+        symbol
+            symbol or list of symbols
+        kwargs
+            keyword arguments for the generate_ohlc funtion
+        """
+        return self._iterate_method(self._ohlc, symbol, **kwargs)
+
+    def _quote(self, symbol: str, **kwargs) -> Dict[str, VQuote]:
         """
         generate a detailed quote with ohlcv and orderbook
         start
@@ -273,6 +289,31 @@ class FakeBroker(BaseModel):
         )
         quote = VQuote(orderbook=orderbook, **ohlc.dict())
         return {symbol: quote}
+
+    def quote(self, symbol: Union[str,Iterable], **kwargs) -> Dict[str, VQuote]:
+        """
+        generate a detailed quote with ohlcv and orderbook
+        symbol
+            symbol or list of symbols
+        list of kwargs
+        start
+            start price of the symbol
+        end
+            end price of the symbol
+        volume
+            volume for ohlc
+        depth
+            depth of the orderbook
+        tick
+            difference in price between orders
+        quantity
+            average quantity of orders per price quote
+        Note
+        -----
+        1) ask and bid price are derived from start and end prices
+        """
+        return self._iterate_method(self._quote, symbol, **kwargs)
+
 
     def order_place(self, **kwargs) -> VOrder:
         """

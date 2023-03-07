@@ -446,3 +446,44 @@ def test_fake_broker_ltps_non_iterable():
     b = FakeBroker()
     random.seed(1000)
     assert b.ltp(100) == dict()
+
+
+def test_fake_broker_orderbook_multi():
+    b = FakeBroker()
+    symbols = list("abcdef")
+    orderbook = b.orderbook(symbols, depth=10, tick=2, ask=1000, bid=1003)
+    assert len(orderbook) == 6
+    assert list(orderbook.keys()) == list("abcdef")
+    for k, v in orderbook.items():
+        assert type(v) == OrderBook
+        assert len(v.ask) == len(v.bid) == 10
+        assert v.ask[-1].price == 1021
+        assert v.bid[-1].price == 982
+
+
+def test_fake_broker_ohlc_multi():
+    b = FakeBroker()
+    symbols = list("abcdef")
+    ohlc = b.ohlc(symbols, start=50, end=400)
+    for k, v in ohlc.items():
+        assert v.high < 400
+        assert v.low >= 50
+
+
+def test_fake_broker_multi_quote():
+    b = FakeBroker()
+    symbols = list("abcdef")
+    quotes = b.quote(symbols, start=100, end=500, depth=10)
+    for k, v in quotes.items():
+        assert 100 < v.last_price < 500
+        assert len(v.orderbook.ask) == len(v.orderbook.bid) == 10
+
+
+def test_fake_broker_quote_spread_between_high_low():
+    b = FakeBroker()
+    symbols = [str(x) for x in range(1001, 1100)]
+    quotes = b.quote(symbols, start=100, end=4200, depth=20)
+    for k, v in quotes.items():
+        assert 100 < v.last_price < 4200
+        assert v.low < v.orderbook.ask[0].price < v.high
+        assert v.low < v.orderbook.bid[0].price < v.high
