@@ -113,6 +113,14 @@ class Zerodha(Broker):
 
     def _login(self) -> None:
 
+        print("GETTING OTP")
+        otp = pyotp.TOTP(self._totp).now()
+        print("OTP is {OTP}")
+        totp_pass = f"{int(otp):06d}" if len(otp) <= 5 else otp
+        print("totp_pass is {totp_pass}")
+        twofa_pass = self._pin if self.is_pin is True else totp_pass
+        print(f'twofa_pass is {twofa_pass}')
+
         self.kite = KiteConnect(api_key=self._api_key)
         options = Options()
         # options.add_argument("--headless")
@@ -122,7 +130,7 @@ class Zerodha(Broker):
         print("INIT DRIVER")
         driver = webdriver.Chrome(options=options)
         driver.get(self.kite.login_url())
-
+        print(f"success in DRIVER {driver}")
         print("GETTING LOGIN FORM")
         login_form = WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "login-form"))
@@ -131,8 +139,9 @@ class Zerodha(Broker):
             0].send_keys(self._user_id)
         login_form.find_elements(By.TAG_NAME, "input")[
             1].send_keys(self._password)
+        print(f" got LOGIN FORM {login_form}")
         WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
+            EC.presence_of_element_located(By.CLASS_NAME, "button-orange")
         )
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
 
