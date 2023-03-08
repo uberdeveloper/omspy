@@ -105,24 +105,14 @@ class Zerodha(Broker):
                 api_key=self._api_key, access_token=self.kite.access_token
             )
         except Exception as e:
-            print("Unknown Exception")
+            print(f"Unknown Exception {e}")
             self._login()
             self._shortcuts()
             self.ticker = KiteTicker(
                 api_key=self._api_key, access_token=self.kite.access_token
             )
-            print(e)
 
     def _login(self) -> None:
-
-        print(f"GETTING OTP {self._totp}")
-        otp = pyotp.TOTP(self._totp).now()
-        print(f"OTP is {otp}")
-        totp_pass = f"{int(otp):06d}"
-        print("totp_pass is {totp_pass}")
-        twofa_pass = self._pin if self.is_pin is True else totp_pass
-        print(f'twofa_pass is {twofa_pass}')
-        """
         self.kite = KiteConnect(api_key=self._api_key)
         options = Options()
         # options.add_argument("--headless")
@@ -173,7 +163,7 @@ class Zerodha(Broker):
         with open("token.tok", "w") as f:
             f.write(access["access_token"])
         driver.close()
-        """
+
     @property
     @post
     def orders(self) -> List[Dict]:
