@@ -151,7 +151,7 @@ class Zerodha(Broker):
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
         )
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
-        sleep(2)
+        sleep(45)
         token = get_key(driver.current_url)
         print(f" {driver.current_url} is the current url")
         print(f" request token is is {token}")
