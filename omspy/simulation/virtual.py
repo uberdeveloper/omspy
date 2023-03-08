@@ -216,6 +216,21 @@ class FakeBroker(BaseModel):
         else:
             return dict()
 
+    def _create_order_args(self,**kwargs)->Dict[str,Any]:
+        """
+        Create order arguments from the list of
+        keyword arguments
+        """
+        if 'symbol' not in kwargs:
+            kwargs['symbol'] = random.choice(self._symbols)
+        if 'quantity' not in kwargs:
+            kwargs['quantity'] = random.randrange(10,10000)
+        if 'price' not in kwargs:
+            kwargs['price'] = random.randrange(1,1000)
+        if 'side' not in kwargs:
+            kwargs['side'] = random.choice([Side.BUY, Side.SELL])
+        return kwargs
+
     def _ltp(self, symbol: str, **kwargs) -> Dict[str, Union[float, int]]:
         """
         get some random last traded price for the instrument

@@ -536,3 +536,16 @@ def test_fake_broker_order_place_pending():
         == order.quantity
     )
     assert order.status == Status.PENDING
+
+def test_fake_broker_create_order_args():
+    b = FakeBroker()
+    order_args = b._create_order_args(**dict())
+    for k in ('symbol', 'quantity', 'price', 'side'):
+        assert k in order_args
+    kwargs = dict(symbol="tsla", quantity=194, trigger_price=200)
+    order_args = b._create_order_args(**kwargs)
+    for k in ('symbol', 'quantity', 'price', 'side'):
+        assert k in order_args
+    assert order_args['symbol'] == 'tsla'
+    assert order_args['quantity'] == 194
+    assert order_args['trigger_price'] == 200
