@@ -5,8 +5,6 @@ import random
 from unittest.mock import patch, Mock
 from pydantic import ValidationError
 
-random.seed(100)
-
 
 @pytest.fixture
 def basic_ticker():
@@ -24,6 +22,7 @@ def basic_broker():
 
 
 def test_generate_price():
+    random.seed(100)
     assert generate_price() == 102
     assert generate_price(1000, 2000) == 1470
     assert generate_price(110, 100) == 107
@@ -487,3 +486,53 @@ def test_fake_broker_quote_spread_between_high_low():
         assert 100 < v.last_price < 4200
         assert v.low < v.orderbook.ask[0].price < v.high
         assert v.low < v.orderbook.bid[0].price < v.high
+
+
+def test_fake_broker_order_place_complete():
+    b = FakeBroker()
+    order = b.order_place()
+    assert order.quantity == order.filled_quantity
+    assert order.pending_quantity == order.canceled_quantity == 0
+    assert order.status == Status.COMPLETE
+
+
+def test_fake_broker_order_place_canceled():
+    b = FakeBroker()
+    order = b.order_place(s=Status.CANCELED)
+    assert order.quantity == order.canceled_quantity
+    assert order.pending_quantity == order.filled_quantity == 0
+    assert order.status == Status.CANCELED
+
+
+def test_fake_broker_order_place_open():
+    b = FakeBroker()
+    order = b.order_place(s=Status.OPEN)
+    assert order.quantity == order.pending_quantity
+    assert order.canceled_quantity == order.filled_quantity == 0
+    assert order.status == Status.OPEN
+
+
+def test_fake_broker_order_place_partial_fill():
+    b = FakeBroker()
+    order = b.order_place(s=Status.PARTIAL_FILL)
+    assert order.filled_quantity > 0
+    assert order.canceled_quantity > 0
+    assert order.pending_quantity == 0
+    assert (
+        order.filled_quantity + order.canceled_quantity + order.pending_quantity
+        == order.quantity
+    )
+    assert order.status == Status.PARTIAL_FILL
+
+
+def test_fake_broker_order_place_pending():
+    b = FakeBroker()
+    order = b.order_place(s=Status.PENDING)
+    assert order.filled_quantity > 0
+    assert order.pending_quantity > 0
+    assert order.canceled_quantity == 0
+    assert (
+        order.filled_quantity + order.canceled_quantity + order.pending_quantity
+        == order.quantity
+    )
+    assert order.status == Status.PENDING

@@ -187,7 +187,9 @@ class FakeBroker(BaseModel):
 
     name: str = "faker"
 
-    def _iterate_method(self, method:Callable, symbol:Union[str,Iterable], **kwargs)->Dict[str, Any]:
+    def _iterate_method(
+        self, method: Callable, symbol: Union[str, Iterable], **kwargs
+    ) -> Dict[str, Any]:
         """
         iterate the given method if the symbol is an iterable else return the value
         """
@@ -212,7 +214,9 @@ class FakeBroker(BaseModel):
         price = generate_price(**kwargs)
         return {symbol: price}
 
-    def ltp(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, Union[float, int]]:
+    def ltp(
+        self, symbol: Union[str, Iterable], **kwargs
+    ) -> Dict[str, Union[float, int]]:
         """
         get some random last traded price for the given symbols
         symbol
@@ -229,7 +233,7 @@ class FakeBroker(BaseModel):
         orderbook = generate_orderbook(**kwargs)
         return {symbol: orderbook}
 
-    def orderbook(self, symbol: Union[str,Iterable], **kwargs) -> Dict[str, OrderBook]:
+    def orderbook(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, OrderBook]:
         """
         generate a random orderbook
         symbol
@@ -246,7 +250,7 @@ class FakeBroker(BaseModel):
         values = generate_ohlc(**kwargs)
         return {symbol: values}
 
-    def ohlc(self, symbol: Union[str,Iterable], **kwargs) -> Dict[str, OHLCV]:
+    def ohlc(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, OHLCV]:
         """
         generate ohlc prices
         symbol
@@ -290,7 +294,7 @@ class FakeBroker(BaseModel):
         quote = VQuote(orderbook=orderbook, **ohlc.dict())
         return {symbol: quote}
 
-    def quote(self, symbol: Union[str,Iterable], **kwargs) -> Dict[str, VQuote]:
+    def quote(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, VQuote]:
         """
         generate a detailed quote with ohlcv and orderbook
         symbol
@@ -314,7 +318,6 @@ class FakeBroker(BaseModel):
         """
         return self._iterate_method(self._quote, symbol, **kwargs)
 
-
     def order_place(self, **kwargs) -> VOrder:
         """
         Place an order with the broker
@@ -332,6 +335,7 @@ class FakeBroker(BaseModel):
             "GS",
             "DOW",
         ]
+        status: Optional[Status] = kwargs.get("s")
         symbol = random.choice(_symbols)
         quantity = random.randrange(10, 10000)
         price = random.randrange(1, 1000)
@@ -342,6 +346,19 @@ class FakeBroker(BaseModel):
             quantity=quantity,
             filled_quantity=quantity,
         )
+        if status:
+            if status in (Status.CANCELED, Status.REJECTED):
+                order_args.update(dict(filled_quantity=0, canceled_quantity=quantity))
+            elif status == Status.OPEN:
+                order_args.update(dict(filled_quantity=0, pending_quantity=quantity))
+            elif status == Status.PARTIAL_FILL:
+                a = random.randrange(1, quantity)
+                b = quantity - a
+                order_args.update(dict(filled_quantity=a, canceled_quantity=b))
+            elif status == Status.PENDING:
+                a = random.randrange(1, quantity)
+                b = quantity - a
+                order_args.update(dict(filled_quantity=a, pending_quantity=b))
         order_id = uuid.uuid4().hex
         order_args.update(kwargs)
         return VOrder(order_id=order_id, **order_args)
