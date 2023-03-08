@@ -577,9 +577,23 @@ def test_fake_broker_order_cancel():
     assert order.pending_quantity == order.filled_quantity == 0
 
 
-def test_fake_broker_order_modify_kwargs():
+def test_fake_broker_order_cancel_kwargs():
     b = FakeBroker()
     order = b.order_cancel(symbol="amzn", price=188.4)
     assert order.status == Status.CANCELED
     assert order.symbol == "amzn"
     assert order.price == 188.4
+
+
+def test_fake_broker_positions():
+    b = FakeBroker()
+    positions = b.positions()
+    assert len(positions) > 0
+
+
+def test_fake_broker_positions_symbols():
+    b = FakeBroker()
+    symbols = ["tsla", "amzn", "meta"]
+    positions = b.positions(symbols=symbols)
+    assert len(positions) == 3
+    assert set([p.symbol for p in positions]) == set(symbols)

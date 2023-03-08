@@ -6,7 +6,15 @@ from pydantic import BaseModel, PrivateAttr, confloat, ValidationError
 from enum import Enum
 from collections import defaultdict
 from collections.abc import Iterable
-from omspy.simulation.models import OrderResponse, VOrder, OHLCV, Side, Status, VQuote
+from omspy.simulation.models import (
+    OrderResponse,
+    VOrder,
+    OHLCV,
+    Side,
+    Status,
+    VQuote,
+    VPosition,
+)
 
 
 class TickerMode(Enum):
@@ -393,6 +401,32 @@ class FakeBroker(BaseModel):
         order_id = cancel_args.pop("order_id", uuid.uuid4().hex)
         cancel_args["canceled_quantity"] = quantity
         return VOrder(order_id=order_id, **cancel_args)
+
+    def positions(self, symbols: Optional[List[str]] = None) -> List[VPosition]:
+        """
+        Generate some fake positions
+        symbols
+            symbols for which positions are to be generated
+        """
+        if not symbols:
+            n = random.randrange(1, len(self._symbols))
+            symbols = random.choices(self._symbols, k=n)
+        symbols = set(symbols)  # To remove duplicates
+        positions = []
+        for symbol in symbols:
+            bq = random.randrange(0, 1000)
+            sq = random.randrange(0, 1000)
+            bv = random.randrange(10, 3000)
+            sv = random.randrange(int(bv * 0.5), int(bv * 2))
+            position = VPosition(
+                symbol=symbol,
+                buy_quantity=bq,
+                sell_quantity=sq,
+                buy_value=bv,
+                sell_value=sv,
+            )
+            positions.append(position)
+        return positions
 
 
 class VirtualBroker(BaseModel):
