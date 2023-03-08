@@ -186,6 +186,19 @@ class FakeBroker(BaseModel):
     """
 
     name: str = "faker"
+    _symbols:List[str] = [
+            "AXP",
+            "AAPL",
+            "CSCO",
+            "PG",
+            "V",
+            "MMM",
+            "JPM",
+            "HD",
+            "CVX",
+            "GS",
+            "DOW",
+        ]
 
     def _iterate_method(
         self, method: Callable, symbol: Union[str, Iterable], **kwargs
@@ -322,19 +335,7 @@ class FakeBroker(BaseModel):
         """
         Place an order with the broker
         """
-        _symbols = [
-            "AXP",
-            "AAPL",
-            "CSCO",
-            "PG",
-            "V",
-            "MMM",
-            "JPM",
-            "HD",
-            "CVX",
-            "GS",
-            "DOW",
-        ]
+        _symbols = self._symbols
         status: Optional[Status] = kwargs.get("s")
         symbol = random.choice(_symbols)
         quantity = random.randrange(10, 10000)
@@ -362,6 +363,7 @@ class FakeBroker(BaseModel):
         order_id = uuid.uuid4().hex
         order_args.update(kwargs)
         return VOrder(order_id=order_id, **order_args)
+
 
 
 class VirtualBroker(BaseModel):
