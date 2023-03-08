@@ -116,15 +116,15 @@ class Zerodha(Broker):
 
         self.kite = KiteConnect(api_key=self._api_key)
         options = Options()
-        options.add_argument("--headless")
+        # options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         driver = webdriver.Chrome(options=options)
         driver.get(self.kite.login_url())
         login_form = WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "login-form"))
         )
-        login_form.find_elements_by_tag_name("input")[0].send_keys(self._user_id)
-        login_form.find_elements_by_tag_name("input")[1].send_keys(self._password)
+        login_form.find_elements(By.TAG_NAME,"input")[0].send_keys(self._user_id)
+        login_form.find_elements(By.TAG_NAME,"input")[1].send_keys(self._password)
         WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
         )
@@ -134,7 +134,7 @@ class Zerodha(Broker):
         twofa_form = WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "twofa-form"))
         )
-        twofa_form.find_elements_by_tag_name("input")[0].send_keys(twofa_pass)
+        twofa_form.find_elements(By.TAG_NAME,"input")[0].send_keys(twofa_pass)
         WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
         )
