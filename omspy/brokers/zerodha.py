@@ -90,7 +90,7 @@ class Zerodha(Broker):
             self.kite = KiteConnect(api_key=self._api_key)
             with open("token.tok") as f:
                 access_token = f.read()
-                print("access token is {}")
+                print(f"access token is {access_token}")
             self.kite.set_access_token(access_token)
             """
             self.profile
@@ -98,7 +98,7 @@ class Zerodha(Broker):
                 api_key=self._api_key, access_token=self.kite.access_token
             )
             self._shortcuts()
-            ""'
+            """
 
         except TokenException:
             print("Into Exception")
