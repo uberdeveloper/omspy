@@ -133,8 +133,7 @@ class Zerodha(Broker):
             1].send_keys(self._password)
         print(f" got LOGIN FORM {login_form}")
         WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located(By.CLASS_NAME, "button-orange")
-        )
+            EC.presence_of_element_located((By.CLASS_NAME, "button-orange")))
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
 
         print(f"GETTING OTP {self._totp}")
@@ -145,7 +144,7 @@ class Zerodha(Broker):
         twofa_pass = self._pin if self.is_pin is True else totp_pass
         print(f'twofa_pass is {twofa_pass}')
         twofa_form = WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located(By.CLASS_NAME, "twofa-form"))
+            EC.presence_of_element_located((By.CLASS_NAME, "twofa-form")))
         print(f'{twofa_form} form')
         twofa_form.find_elements(By.TAG_NAME, "input")[0].send_keys(twofa_pass)
         WebDriverWait(driver, 45).until(
