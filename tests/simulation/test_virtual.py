@@ -368,11 +368,11 @@ def test_fake_broker_order_place_kwargs():
     random.seed(1000)
     order = b.order_place(symbol="aapl", price=360, trigger_price=320, side=1)
     assert order.symbol == "aapl"
-    assert order.quantity == 1634
+    assert order.quantity == 7038
     assert order.side == Side.BUY
     assert order.price == 360
     assert order.trigger_price == 320
-    assert order.filled_quantity == 1634
+    assert order.filled_quantity == 7038
     assert order.pending_quantity == 0
     assert order.canceled_quantity == 0
 
@@ -537,15 +537,16 @@ def test_fake_broker_order_place_pending():
     )
     assert order.status == Status.PENDING
 
+
 def test_fake_broker_create_order_args():
     b = FakeBroker()
     order_args = b._create_order_args(**dict())
-    for k in ('symbol', 'quantity', 'price', 'side'):
+    for k in ("symbol", "quantity", "price", "side"):
         assert k in order_args
     kwargs = dict(symbol="tsla", quantity=194, trigger_price=200)
     order_args = b._create_order_args(**kwargs)
-    for k in ('symbol', 'quantity', 'price', 'side'):
+    for k in ("symbol", "quantity", "price", "side"):
         assert k in order_args
-    assert order_args['symbol'] == 'tsla'
-    assert order_args['quantity'] == 194
-    assert order_args['trigger_price'] == 200
+    assert order_args["symbol"] == "tsla"
+    assert order_args["quantity"] == 194
+    assert order_args["trigger_price"] == 200

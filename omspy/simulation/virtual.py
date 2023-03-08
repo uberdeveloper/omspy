@@ -186,19 +186,19 @@ class FakeBroker(BaseModel):
     """
 
     name: str = "faker"
-    _symbols:List[str] = [
-            "AXP",
-            "AAPL",
-            "CSCO",
-            "PG",
-            "V",
-            "MMM",
-            "JPM",
-            "HD",
-            "CVX",
-            "GS",
-            "DOW",
-        ]
+    _symbols: List[str] = [
+        "AXP",
+        "AAPL",
+        "CSCO",
+        "PG",
+        "V",
+        "MMM",
+        "JPM",
+        "HD",
+        "CVX",
+        "GS",
+        "DOW",
+    ]
 
     def _iterate_method(
         self, method: Callable, symbol: Union[str, Iterable], **kwargs
@@ -216,19 +216,19 @@ class FakeBroker(BaseModel):
         else:
             return dict()
 
-    def _create_order_args(self,**kwargs)->Dict[str,Any]:
+    def _create_order_args(self, **kwargs) -> Dict[str, Any]:
         """
         Create order arguments from the list of
         keyword arguments
         """
-        if 'symbol' not in kwargs:
-            kwargs['symbol'] = random.choice(self._symbols)
-        if 'quantity' not in kwargs:
-            kwargs['quantity'] = random.randrange(10,10000)
-        if 'price' not in kwargs:
-            kwargs['price'] = random.randrange(1,1000)
-        if 'side' not in kwargs:
-            kwargs['side'] = random.choice([Side.BUY, Side.SELL])
+        if "symbol" not in kwargs:
+            kwargs["symbol"] = random.choice(self._symbols)
+        if "quantity" not in kwargs:
+            kwargs["quantity"] = random.randrange(10, 10000)
+        if "price" not in kwargs:
+            kwargs["price"] = random.randrange(1, 1000)
+        if "side" not in kwargs:
+            kwargs["side"] = random.choice([Side.BUY, Side.SELL])
         return kwargs
 
     def _ltp(self, symbol: str, **kwargs) -> Dict[str, Union[float, int]]:
@@ -352,16 +352,9 @@ class FakeBroker(BaseModel):
         """
         _symbols = self._symbols
         status: Optional[Status] = kwargs.get("s")
-        symbol = random.choice(_symbols)
-        quantity = random.randrange(10, 10000)
-        price = random.randrange(1, 1000)
-        order_args = dict(
-            symbol=symbol,
-            side=random.choice([1, -1]),
-            price=price,
-            quantity=quantity,
-            filled_quantity=quantity,
-        )
+        order_args = self._create_order_args(**kwargs)
+        quantity = order_args["quantity"]
+        order_args["filled_quantity"] = quantity
         if status:
             if status in (Status.CANCELED, Status.REJECTED):
                 order_args.update(dict(filled_quantity=0, canceled_quantity=quantity))
@@ -378,7 +371,6 @@ class FakeBroker(BaseModel):
         order_id = uuid.uuid4().hex
         order_args.update(kwargs)
         return VOrder(order_id=order_id, **order_args)
-
 
 
 class VirtualBroker(BaseModel):
