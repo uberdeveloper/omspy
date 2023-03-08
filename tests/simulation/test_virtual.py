@@ -550,3 +550,36 @@ def test_fake_broker_create_order_args():
     assert order_args["symbol"] == "tsla"
     assert order_args["quantity"] == 194
     assert order_args["trigger_price"] == 200
+
+
+def test_fake_broker_order_modify():
+    b = FakeBroker()
+    order = b.order_modify()
+    assert order.status == Status.OPEN
+    assert order.pending_quantity == order.quantity
+    assert order.filled_quantity == order.canceled_quantity == 0
+
+
+def test_fake_broker_order_modify_kwargs():
+    b = FakeBroker()
+    order = b.order_modify(quantity=100, side=-1, order_id="abcd")
+    assert order.status == Status.OPEN
+    assert order.quantity == 100
+    assert order.order_id == "abcd"
+    assert order.side == Side.SELL
+
+
+def test_fake_broker_order_cancel():
+    b = FakeBroker()
+    order = b.order_cancel()
+    assert order.status == Status.CANCELED
+    assert order.canceled_quantity == order.quantity
+    assert order.pending_quantity == order.filled_quantity == 0
+
+
+def test_fake_broker_order_modify_kwargs():
+    b = FakeBroker()
+    order = b.order_cancel(symbol="amzn", price=188.4)
+    assert order.status == Status.CANCELED
+    assert order.symbol == "amzn"
+    assert order.price == 188.4

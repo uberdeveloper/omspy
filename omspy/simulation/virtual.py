@@ -350,7 +350,6 @@ class FakeBroker(BaseModel):
         """
         Place an order with the broker
         """
-        _symbols = self._symbols
         status: Optional[Status] = kwargs.get("s")
         order_args = self._create_order_args(**kwargs)
         quantity = order_args["quantity"]
@@ -371,6 +370,29 @@ class FakeBroker(BaseModel):
         order_id = uuid.uuid4().hex
         order_args.update(kwargs)
         return VOrder(order_id=order_id, **order_args)
+
+    def order_modify(self, **kwargs) -> VOrder:
+        """
+        Modify an order with the broker
+        All orders are returned with status OPEN
+        """
+        modify_args = self._create_order_args(**kwargs)
+        quantity = modify_args["quantity"]
+        order_id = modify_args.pop("order_id", uuid.uuid4().hex)
+        modify_args["pending_quantity"] = quantity
+        return VOrder(order_id=order_id, **modify_args)
+
+    def order_cancel(self, **kwargs) -> VOrder:
+        """
+        Cancel an order with the broker
+        All orders are returned with status CANCELED with
+        entire quantity of the orders being CANCELED
+        """
+        cancel_args = self._create_order_args(**kwargs)
+        quantity = cancel_args["quantity"]
+        order_id = cancel_args.pop("order_id", uuid.uuid4().hex)
+        cancel_args["canceled_quantity"] = quantity
+        return VOrder(order_id=order_id, **cancel_args)
 
 
 class VirtualBroker(BaseModel):
