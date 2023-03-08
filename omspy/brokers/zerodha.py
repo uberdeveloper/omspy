@@ -2,7 +2,7 @@ import pyotp
 from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict
 from copy import deepcopy
-
+import time
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
 from selenium import webdriver
@@ -113,14 +113,13 @@ class Zerodha(Broker):
 
     def _login(self) -> None:
 
-        print("GETTING OTP")
+        print(f"GETTING OTP {self._totp}")
         otp = pyotp.TOTP(self._totp).now()
-        print("OTP is {OTP}")
-        totp_pass = f"{int(otp):06d}" if len(otp) <= 5 else otp
+        print(f"OTP is {otp}")
+        totp_pass = f"{int(otp):06d}"
         print("totp_pass is {totp_pass}")
         twofa_pass = self._pin if self.is_pin is True else totp_pass
         print(f'twofa_pass is {twofa_pass}')
-
         self.kite = KiteConnect(api_key=self._api_key)
         options = Options()
         # options.add_argument("--headless")
@@ -145,10 +144,10 @@ class Zerodha(Broker):
         )
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
 
-        print("GETTING OTP")
+        print(f"GETTING OTP {self._totp}")
         otp = pyotp.TOTP(self._totp).now()
-        print("OTP is {OTP}")
-        totp_pass = f"{int(otp):06d}" if len(otp) <= 5 else otp
+        print(f"OTP is {otp}")
+        totp_pass = f"{int(otp):06d}"
         print("totp_pass is {totp_pass}")
         twofa_pass = self._pin if self.is_pin is True else totp_pass
         print(f'twofa_pass is {twofa_pass}')
