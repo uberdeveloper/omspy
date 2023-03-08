@@ -131,18 +131,22 @@ class Zerodha(Broker):
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
         )
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
-        time.sleep(45)
-        totp_pass = pyotp.TOTP(self._totp).now()
+        otp = pyotp.TOTP(self._totp).now()
+        totp_pass = f"{int(otp):06d}" if len(otp) <= 5 else otp
         twofa_pass = self._pin if self.is_pin is True else totp_pass
+        print(f'twofa_pass is {twofa_pass}')
         twofa_form = WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "twofa-form"))
         )
+        print(f'{twofa_form} form')
         twofa_form.find_elements(By.TAG_NAME, "input")[0].send_keys(twofa_pass)
         WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
         )
+        time.sleep(5)
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
         token = get_key(driver.current_url)
+        print(f" {driver.current_url} is the current url")
         print(f" request token is is {token}")
         access = self.kite.generate_session(
             request_token=token, api_secret=self._secret
