@@ -2,7 +2,7 @@ import pyotp
 from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict
 from copy import deepcopy
-import time
+from time import sleep
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
 from selenium import webdriver
@@ -140,7 +140,7 @@ class Zerodha(Broker):
         otp = pyotp.TOTP(self._totp).now()
         print(f"OTP is {otp}")
         totp_pass = f"{int(otp):06d}"
-        print("totp_pass is {totp_pass}")
+        print(f"totp_pass is {totp_pass}")
         twofa_pass = self._pin if self.is_pin is True else totp_pass
         print(f'twofa_pass is {twofa_pass}')
         twofa_form = WebDriverWait(driver, 45).until(
@@ -151,6 +151,7 @@ class Zerodha(Broker):
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
         )
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
+        sleep(2)
         token = get_key(driver.current_url)
         print(f" {driver.current_url} is the current url")
         print(f" request token is is {token}")
