@@ -4,11 +4,12 @@ All the models start with **V** to indicate virtual models
 """
 
 from pydantic import BaseModel
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, List, Dict
 from enum import Enum
 import pendulum
 import omspy.utils as utils
 from omspy.models import OrderBook
+from omspy.simulation.models import *
 
 
 class Status(Enum):
@@ -211,3 +212,8 @@ class OrderResponse(Response):
 class AuthResponse(Response):
     user_id: str
     message: str = "Authentication successful"
+
+
+class GenericResponse(Response):
+    error_msg: Optional[str]
+    data: Optional[Any]

@@ -233,3 +233,14 @@ def test_vquote(ohlc_args):
     assert quote.volume == 22000
     assert len(quote.orderbook.ask) == 5
     assert len(quote.orderbook.bid) == 5
+
+
+def test_generic_response(ohlc_args):
+    data = VOrder(order_id="order_id", symbol="aapl", quantity=10, side=1, price=100)
+    response = GenericResponse(status="success", data=data)
+    assert response.data.price == 100
+
+    data = OHLC(**ohlc_args)
+    response = GenericResponse(status="success", data=data)
+    assert response.data.high == 112
+    assert response.data.last_price == 107
