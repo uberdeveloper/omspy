@@ -107,3 +107,12 @@ def test_order_cancel_other_args():
     assert r["side"] == -1
     assert r["pending_quantity"] == r["filled_quantity"] == 0
     assert r["canceled_quantity"] == 1000
+
+
+def test_auth():
+    response = client.post("/auth/user_abcd")
+    assert response.status_code == 200
+    r = response.json()
+    assert r["status"] == "success"
+    assert r["user_id"] == "user_abcd"
+    assert r["message"] == "Authentication successful"

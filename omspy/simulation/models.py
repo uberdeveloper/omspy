@@ -206,3 +206,8 @@ class OrderResponse(Response):
 
     class Config:
         validate_assignment = True
+
+
+class AuthResponse(Response):
+    user_id: str
+    message: str = "Authentication successful"

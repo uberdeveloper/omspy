@@ -2,7 +2,7 @@ from typing import Union, Optional
 from pydantic import BaseModel
 from fastapi import FastAPI
 from omspy.simulation.virtual import VirtualBroker, FakeBroker
-from omspy.simulation.models import VOrder, OrderResponse, Side, Status
+from omspy.simulation.models import VOrder, OrderResponse, Side, Status, AuthResponse
 
 app = FastAPI()
 app.broker: FakeBroker = FakeBroker()
@@ -60,3 +60,8 @@ async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
             order_id=order_id, **order.dict(exclude_none=True)
         )
     return OrderResponse(status="success", data=response)
+
+
+@app.post("/auth/{user_id}")
+async def auth(user_id: str) -> AuthResponse:
+    return AuthResponse(status="success", user_id=user_id)
