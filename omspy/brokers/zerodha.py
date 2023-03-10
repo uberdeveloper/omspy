@@ -110,51 +110,56 @@ class Zerodha(Broker):
             )
 
     def _login(self) -> None:
-        self.kite = KiteConnect(api_key=self._api_key)
-        options = Options()
-        # options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        print("INIT DRIVER")
-        driver = webdriver.Chrome(options=options)
-        driver.get(self.kite.login_url())
-        print(f"success in DRIVER {driver}")
-        print("GETTING LOGIN FORM")
-        login_form = WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "login-form"))
-        )
-        login_form.find_elements(By.TAG_NAME, "input")[
-            0].send_keys(self._user_id)
-        login_form.find_elements(By.TAG_NAME, "input")[
-            1].send_keys(self._password)
-        WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "button-orange")))
-        driver.find_element(By.XPATH, '//button[@type="submit"]').click()
+        try:
+            self.kite = KiteConnect(api_key=self._api_key)
+            options = Options()
+            # options.add_argument("--headless")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            print("INIT DRIVER")
+            driver = webdriver.Chrome(options=options)
+            driver.get(self.kite.login_url())
+            print(f"success in DRIVER {driver}")
+            print("GETTING LOGIN FORM")
+            login_form = WebDriverWait(driver, 45).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "login-form"))
+            )
+            login_form.find_elements(By.TAG_NAME, "input")[
+                0].send_keys(self._user_id)
+            login_form.find_elements(By.TAG_NAME, "input")[
+                1].send_keys(self._password)
+            WebDriverWait(driver, 45).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "button-orange")))
+            driver.find_element(By.XPATH, '//button[@type="submit"]').click()
 
-        print(f"GETTING OTP {self._totp}")
-        otp = pyotp.TOTP(self._totp).now()
-        twofa_pass = f"{int(otp):06d}"
-        print(f'twofa_pass is {twofa_pass}')
-        twofa_form = WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "twofa-form")))
-        twofa_form.find_elements(By.TAG_NAME, "input")[0].send_keys(twofa_pass)
-        WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
-        )
-        driver.find_element(By.XPATH, '//button[@type="submit"]').click()
-        sleep(45)
-        token = get_key(driver.current_url)
-        print(f" {driver.current_url} is the current url")
-        print(f" request token is {token}")
-        access = self.kite.generate_session(
-            request_token=token, api_secret=self._secret
-        )
-        print(f" session is {access}")
-        self.kite.set_access_token(access["access_token"])
-        with open(self._tokpath, "w") as f:
-            f.write(access["access_token"])
-        driver.close()
+            print(f"GETTING OTP {self._totp}")
+            otp = pyotp.TOTP(self._totp).now()
+            twofa_pass = f"{int(otp):06d}"
+            print(f'twofa_pass is {twofa_pass}')
+            twofa_form = WebDriverWait(driver, 45).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "twofa-form")))
+            twofa_form.find_elements(By.TAG_NAME, "input")[0].send_keys(twofa_pass)
+            WebDriverWait(driver, 45).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
+            )
+            driver.find_element(By.XPATH, '//button[@type="submit"]').click()
+            sleep(45)
+            token = get_key(driver.current_url)
+            print(f" {driver.current_url} is the current url")
+            print(f" request token is {token}")
+            access = self.kite.generate_session(
+                request_token=token, api_secret=self._secret
+            )
+            print(f" session is {access}")
+            self.kite.set_access_token(access["access_token"])
+            with open(self._tokpath, "w") as f:
+                f.write(access["access_token"])
+            driver.close()
+        except Exception as e:
+            print(f"error {e} while authenticating omspy")
+        else:
+            return True
 
     @property
     @post
