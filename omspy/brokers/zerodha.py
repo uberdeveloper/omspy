@@ -58,7 +58,7 @@ class Zerodha(Broker):
         self.exchange = exchange
         self.product = product
         self._store_access_token = True
-        self._tokpath
+        self._tokpath = tokpath
         super(Zerodha, self).__init__()
 
     def _shortcuts(self) -> None:
@@ -139,9 +139,11 @@ class Zerodha(Broker):
             print(f'twofa_pass is {twofa_pass}')
             twofa_form = WebDriverWait(driver, 45).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "twofa-form")))
-            twofa_form.find_elements(By.TAG_NAME, "input")[0].send_keys(twofa_pass)
+            twofa_form.find_elements(By.TAG_NAME, "input")[
+                0].send_keys(twofa_pass)
             WebDriverWait(driver, 45).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
+                EC.presence_of_element_located(
+                    (By.CLASS_NAME, "button-orange"))
             )
             driver.find_element(By.XPATH, '//button[@type="submit"]').click()
             sleep(45)
