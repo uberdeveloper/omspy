@@ -7,7 +7,6 @@ from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -46,22 +45,20 @@ class Zerodha(Broker):
         secret,
         user_id,
         password,
-        PIN,
+        tokpath="token.tok",
         exchange="NSE",
         product="MIS",
         totp=None,
-        is_pin=False,
     ):
         self._api_key = api_key
         self._secret = secret
         self._user_id = user_id
         self._password = password
-        self._pin = PIN
         self._totp = totp
-        self.is_pin = is_pin
         self.exchange = exchange
         self.product = product
         self._store_access_token = True
+        self._tokpath
         super(Zerodha, self).__init__()
 
     def _shortcuts(self) -> None:
@@ -88,7 +85,7 @@ class Zerodha(Broker):
         """
         try:
             self.kite = KiteConnect(api_key=self._api_key)
-            with open("token.tok") as f:
+            with open(self._tokpath) as f:
                 access_token = f.read()
                 print(f"access token is {access_token}")
             self.kite.set_access_token(access_token)
@@ -131,21 +128,16 @@ class Zerodha(Broker):
             0].send_keys(self._user_id)
         login_form.find_elements(By.TAG_NAME, "input")[
             1].send_keys(self._password)
-        print(f" got LOGIN FORM {login_form}")
         WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange")))
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
 
         print(f"GETTING OTP {self._totp}")
         otp = pyotp.TOTP(self._totp).now()
-        print(f"OTP is {otp}")
-        totp_pass = f"{int(otp):06d}"
-        print(f"totp_pass is {totp_pass}")
-        twofa_pass = self._pin if self.is_pin is True else totp_pass
+        twofa_pass = f"{int(otp):06d}"
         print(f'twofa_pass is {twofa_pass}')
         twofa_form = WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "twofa-form")))
-        print(f'{twofa_form} form')
         twofa_form.find_elements(By.TAG_NAME, "input")[0].send_keys(twofa_pass)
         WebDriverWait(driver, 45).until(
             EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
@@ -154,13 +146,13 @@ class Zerodha(Broker):
         sleep(45)
         token = get_key(driver.current_url)
         print(f" {driver.current_url} is the current url")
-        print(f" request token is is {token}")
+        print(f" request token is {token}")
         access = self.kite.generate_session(
             request_token=token, api_secret=self._secret
         )
         print(f" session is {access}")
         self.kite.set_access_token(access["access_token"])
-        with open("token.tok", "w") as f:
+        with open(self._tokpath, "w") as f:
             f.write(access["access_token"])
         driver.close()
 
