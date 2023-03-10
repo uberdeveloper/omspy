@@ -6,15 +6,24 @@ from omspy.simulation.models import VOrder, OrderResponse, Side, Status
 
 app = FastAPI()
 app.broker: FakeBroker = FakeBroker()
+app._type = type(app.broker)
 
 
 class OrderArgs(BaseModel):
+    symbol: Optional[str]
+    side: Optional[Side]
+    quantity: Optional[int]
+    price: Optional[float]
+    trigger_price: Optional[float]
+    s: Optional[Status]
+
+
+class CreateArgs(BaseModel):
     symbol: str
     side: Side
     quantity: Optional[int]
     price: Optional[float]
     trigger_price: Optional[float]
-    s: Optional[Status]
 
 
 class ModifyArgs(BaseModel):
@@ -30,19 +39,24 @@ def read_root():
 
 @app.post("/order")
 async def create_order(order: OrderArgs) -> OrderResponse:
-    response = app.broker.order_place(**order.dict(exclude_none=True))
-
+    if app._type == FakeBroker:
+        response = app.broker.order_place(**order.dict(exclude_none=True))
     return OrderResponse(status="success", data=response)
 
 
 @app.put("/order/{order_id}")
-async def modify_order(order_id: str, order: ModifyArgs) -> OrderResponse:
-    response = app.broker.order_modify(order_id, **order.dict())
-    return response
+async def modify_order(order_id: str, order: OrderArgs) -> OrderResponse:
+    if app._type == FakeBroker:
+        response = app.broker.order_modify(
+            order_id=order_id, **order.dict(exclude_none=True)
+        )
+    return OrderResponse(status="success", data=response)
 
 
 @app.delete("/order/{order_id}")
-async def cancel_order(order_id: str) -> OrderResponse:
-    order = app.broker.order_cancel(order_id=order_id)
-    response = OrderResponse(status="success", data=order)
-    return response
+async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
+    if app._type == FakeBroker:
+        response = app.broker.order_cancel(
+            order_id=order_id, **order.dict(exclude_none=True)
+        )
+    return OrderResponse(status="success", data=response)
