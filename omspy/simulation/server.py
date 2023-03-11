@@ -14,7 +14,21 @@ from omspy.simulation.models import (
     PositionResponse,
 )
 
-app = FastAPI()
+description = """
+Generate ready to use fake data to mimic
+stock market data for testing broker interface
+and in general
+
+### User
+Generates data with respect to individual user
+
+### Order
+Generates data for placing, modifying and canceling orders
+
+### Market Data
+Generates data regarding price, OHLC, orderbook for symbols
+"""
+app = FastAPI(title="Fake Data API for Stock Market", description=description)
 app.broker: FakeBroker = FakeBroker()
 app._type = type(app.broker)
 
@@ -42,15 +56,26 @@ class ModifyArgs(BaseModel):
     trigger_price: Optional[float]
 
 
-@app.get("/")
-def read_root():
-    return {"hello": "Welcome"}
+@app.get("/", summary="Fake Stock Data")
+def home():
+    return {"hello": "Welcome to Fake Stock Data"}
+
+
+@app.post(
+    "/auth/{user_id}",
+    summary="Authenticate the user",
+    description="Authenticate the user",
+    tags=["user"],
+)
+async def auth(user_id: str) -> AuthResponse:
+    return AuthResponse(status="success", user_id=user_id)
 
 
 @app.post(
     "/order",
     summary="Create an order",
     description="Create an order with the given arguments",
+    tags=["order"],
 )
 async def create_order(order: OrderArgs) -> OrderResponse:
     if app._type == FakeBroker:
@@ -62,6 +87,7 @@ async def create_order(order: OrderArgs) -> OrderResponse:
     "/order/{order_id}",
     summary="Modify an order",
     description="Modify a existing order with the given order_id",
+    tags=["order"],
 )
 async def modify_order(order_id: str, order: OrderArgs) -> OrderResponse:
     if app._type == FakeBroker:
@@ -75,6 +101,7 @@ async def modify_order(order_id: str, order: OrderArgs) -> OrderResponse:
     "/order/{order_id}",
     summary="Delete order",
     description="Delete a existing order with the given order_id",
+    tags=["order"],
 )
 async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
     if app._type == FakeBroker:
@@ -84,23 +111,20 @@ async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
     return OrderResponse(status="success", data=response)
 
 
-@app.post(
-    "/auth/{user_id}",
-    summary="Authenticate the user",
-    description="Authenticate the user",
+@app.get(
+    "/ltp/{symbol}",
+    summary="Get the last price for the given symbol",
+    tags=["market data"],
 )
-async def auth(user_id: str) -> AuthResponse:
-    return AuthResponse(status="success", user_id=user_id)
-
-
-@app.get("/ltp/{symbol}", summary="Get the last price for the given symbol")
 async def ltp(symbol: str) -> LTPResponse:
     response = app.broker.ltp(symbol)
     return LTPResponse(status="success", data=response)
 
 
 @app.get(
-    "/ohlc/{symbol}", summary="Get the ohlc prices and volume for the given symbol"
+    "/ohlc/{symbol}",
+    summary="Get the ohlc prices and volume for the given symbol",
+    tags=["market data"],
 )
 async def ohlc(symbol: str) -> OHLCVResponse:
     response = app.broker.ohlc(symbol)
@@ -111,19 +135,24 @@ async def ohlc(symbol: str) -> OHLCVResponse:
     "/quote/{symbol}",
     summary="Get the detailed quote for the symbol",
     description="Quote contains OHLC, volume, last_price and the orderbook",
+    tags=["market data"],
 )
 async def quote(symbol: str) -> QuoteResponse:
     response = app.broker.quote(symbol)
     return QuoteResponse(status="success", data=response)
 
 
-@app.get("/orderbook/{symbol}", summary="Get the orderbook for the given symbol")
+@app.get(
+    "/orderbook/{symbol}",
+    summary="Get the orderbook for the given symbol",
+    tags=["market data"],
+)
 async def orderbook(symbol: str) -> OrderBookResponse:
     response = app.broker.orderbook(symbol)
     return OrderBookResponse(status="success", data=response)
 
 
-@app.get("/positions", summary="Get random positions")
+@app.get("/positions", summary="Get random positions", tags=["user"])
 async def positions() -> PositionResponse:
     response = app.broker.positions()
     return PositionResponse(status="success", data=response)
