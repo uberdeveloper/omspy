@@ -504,7 +504,7 @@ class VirtualBroker(BaseModel):
                 error_message=f"Order id {order_id} not found on system",
             )
         attribs = ("price", "trigger_price", "quantity")
-        modify_args = dict(order_id=order_id)
+        dict(order_id=order_id)
         order = self.get(order_id)
         for attrib in attribs:
             if attrib in kwargs:

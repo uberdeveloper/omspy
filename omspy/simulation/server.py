@@ -12,7 +12,6 @@ from omspy.simulation.models import (
     QuoteResponse,
     OrderBookResponse,
     PositionResponse,
-    VPosition,
 )
 
 app = FastAPI()
