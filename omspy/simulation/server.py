@@ -1,8 +1,18 @@
-from typing import Union, Optional
+from typing import Union, Optional, Dict
 from pydantic import BaseModel
 from fastapi import FastAPI
 from omspy.simulation.virtual import VirtualBroker, FakeBroker
-from omspy.simulation.models import VOrder, OrderResponse, Side, Status, AuthResponse
+from omspy.simulation.models import (
+    VOrder,
+    OrderResponse,
+    Side,
+    Status,
+    AuthResponse,
+    GenericResponse,
+    VQuote,
+    VPosition,
+    LTPResponse,
+)
 
 app = FastAPI()
 app.broker: FakeBroker = FakeBroker()
@@ -30,6 +40,10 @@ class ModifyArgs(BaseModel):
     quantity: Optional[float]
     price: Optional[float]
     trigger_price: Optional[float]
+
+
+class QuoteResponse(GenericResponse):
+    data: Dict[str, VQuote]
 
 
 @app.get("/")
@@ -65,3 +79,9 @@ async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
 @app.post("/auth/{user_id}")
 async def auth(user_id: str) -> AuthResponse:
     return AuthResponse(status="success", user_id=user_id)
+
+
+@app.get("/ltp/{symbol}")
+async def ltp(symbol: str) -> LTPResponse:
+    response = app.broker.ltp(symbol)
+    return LTPResponse(status="success", data=response)

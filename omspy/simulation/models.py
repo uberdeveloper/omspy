@@ -9,7 +9,6 @@ from enum import Enum
 import pendulum
 import omspy.utils as utils
 from omspy.models import OrderBook
-from omspy.simulation.models import *
 
 
 class Status(Enum):
@@ -217,3 +216,8 @@ class AuthResponse(Response):
 class GenericResponse(Response):
     error_msg: Optional[str]
     data: Optional[Any]
+
+
+class LTPResponse(Response):
+    error_msg: Optional[str]
+    data: Dict[str, Union[int, float]]

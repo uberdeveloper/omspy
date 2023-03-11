@@ -116,3 +116,10 @@ def test_auth():
     assert r["status"] == "success"
     assert r["user_id"] == "user_abcd"
     assert r["message"] == "Authentication successful"
+
+
+def test_ltp():
+    response = client.get("/ltp/aapl")
+    assert response.status_code == 200
+    r = response.json()["data"]
+    assert r["aapl"] > 0
