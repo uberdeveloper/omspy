@@ -1,3 +1,7 @@
+### 0.13.0
+* New `FakeBroker` class added to simulation
+* API added for generating fake data in `omspy.simulation.server`
+
 ### 0.12.0
 ### Features
 * New `simulation` module added
