@@ -12,6 +12,7 @@ from omspy.simulation.models import (
     VQuote,
     VPosition,
     LTPResponse,
+    OHLCVResponse,
 )
 
 app = FastAPI()
@@ -85,3 +86,9 @@ async def auth(user_id: str) -> AuthResponse:
 async def ltp(symbol: str) -> LTPResponse:
     response = app.broker.ltp(symbol)
     return LTPResponse(status="success", data=response)
+
+
+@app.get("/ohlc/{symbol}")
+async def ohlc(symbol: str) -> OHLCVResponse:
+    response = app.broker.ohlc(symbol)
+    return OHLCVResponse(status="success", data=response)

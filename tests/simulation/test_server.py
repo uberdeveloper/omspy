@@ -123,3 +123,13 @@ def test_ltp():
     assert response.status_code == 200
     r = response.json()["data"]
     assert r["aapl"] > 0
+
+
+def test_ohlc():
+    response = client.get("/ohlc/aapl")
+    assert response.status_code == 200
+    r = response.json()["data"]
+    assert "aapl" in r
+    assert r["aapl"]["open"] <= r["aapl"]["high"]
+    assert "last_price" in r["aapl"]
+    assert "volume" in r["aapl"]

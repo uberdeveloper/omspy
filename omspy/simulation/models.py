@@ -221,3 +221,8 @@ class GenericResponse(Response):
 class LTPResponse(Response):
     error_msg: Optional[str]
     data: Dict[str, Union[int, float]]
+
+
+class OHLCVResponse(Response):
+    error_msg: Optional[str]
+    data: Dict[str, OHLCV]
