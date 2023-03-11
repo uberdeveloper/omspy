@@ -4,7 +4,7 @@ All the models start with **V** to indicate virtual models
 """
 
 from pydantic import BaseModel
-from typing import Optional, Union, Any, List, Dict
+from typing import Optional, Union, Any, Dict, List
 from enum import Enum
 import pendulum
 import omspy.utils as utils
@@ -236,3 +236,8 @@ class QuoteResponse(Response):
 class OrderBookResponse(Response):
     error_msg: Optional[str]
     data: Dict[str, OrderBook]
+
+
+class PositionResponse(Response):
+    error_msg: Optional[str]
+    data: List[VPosition]

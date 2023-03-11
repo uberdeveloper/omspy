@@ -160,3 +160,14 @@ def test_orderbook():
             assert k in dct
         for dct in r["aapl"]["bid"]:
             assert k in dct
+
+
+def test_positions():
+    response = client.get("/positions")
+    assert response.status_code == 200
+    r = response.json()["data"]
+    assert len(r) > 1
+    for pos in r:
+        assert "symbol" in pos
+        assert "buy_quantity" in pos
+        assert "sell_quantity" in pos

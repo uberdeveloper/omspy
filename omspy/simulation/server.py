@@ -1,20 +1,18 @@
-from typing import Union, Optional, Dict
+from typing import Optional
 from pydantic import BaseModel
 from fastapi import FastAPI
-from omspy.simulation.virtual import VirtualBroker, FakeBroker
+from omspy.simulation.virtual import FakeBroker
 from omspy.simulation.models import (
-    VOrder,
     OrderResponse,
     Side,
     Status,
     AuthResponse,
-    GenericResponse,
-    VQuote,
-    VPosition,
     LTPResponse,
     OHLCVResponse,
     QuoteResponse,
     OrderBookResponse,
+    PositionResponse,
+    VPosition,
 )
 
 app = FastAPI()
@@ -45,13 +43,9 @@ class ModifyArgs(BaseModel):
     trigger_price: Optional[float]
 
 
-class QuoteResponse(GenericResponse):
-    data: Dict[str, VQuote]
-
-
 @app.get("/")
 def read_root():
-    return {"hello": f"Welcome"}
+    return {"hello": "Welcome"}
 
 
 @app.post(
@@ -128,3 +122,9 @@ async def quote(symbol: str) -> QuoteResponse:
 async def orderbook(symbol: str) -> OrderBookResponse:
     response = app.broker.orderbook(symbol)
     return OrderBookResponse(status="success", data=response)
+
+
+@app.get("/positions", summary="Get random positions")
+async def positions() -> PositionResponse:
+    response = app.broker.positions()
+    return PositionResponse(status="success", data=response)
