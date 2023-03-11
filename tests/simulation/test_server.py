@@ -133,3 +133,30 @@ def test_ohlc():
     assert r["aapl"]["open"] <= r["aapl"]["high"]
     assert "last_price" in r["aapl"]
     assert "volume" in r["aapl"]
+
+
+def test_quote():
+    response = client.get("/quote/aapl")
+    assert response.status_code == 200
+    r = response.json()["data"]
+    assert "aapl" in r
+    keys = ["open", "high", "low", "close", "last_price", "volume", "orderbook"]
+    for k in keys:
+        assert k in r["aapl"]
+    assert len(r["aapl"]["orderbook"]["ask"]) == 5
+    assert len(r["aapl"]["orderbook"]["bid"]) == 5
+
+
+def test_orderbook():
+    response = client.get("/orderbook/aapl")
+    assert response.status_code == 200
+    r = response.json()["data"]
+    assert "aapl" in r
+    assert len(r["aapl"]["ask"]) == 5
+    assert len(r["aapl"]["bid"]) == 5
+    keys = ["price", "quantity", "orders_count"]
+    for k in keys:
+        for dct in r["aapl"]["ask"]:
+            assert k in dct
+        for dct in r["aapl"]["bid"]:
+            assert k in dct

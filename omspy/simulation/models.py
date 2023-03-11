@@ -226,3 +226,13 @@ class LTPResponse(Response):
 class OHLCVResponse(Response):
     error_msg: Optional[str]
     data: Dict[str, OHLCV]
+
+
+class QuoteResponse(Response):
+    error_msg: Optional[str]
+    data: Dict[str, VQuote]
+
+
+class OrderBookResponse(Response):
+    error_msg: Optional[str]
+    data: Dict[str, OrderBook]

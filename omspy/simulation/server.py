@@ -13,6 +13,8 @@ from omspy.simulation.models import (
     VPosition,
     LTPResponse,
     OHLCVResponse,
+    QuoteResponse,
+    OrderBookResponse,
 )
 
 app = FastAPI()
@@ -92,3 +94,15 @@ async def ltp(symbol: str) -> LTPResponse:
 async def ohlc(symbol: str) -> OHLCVResponse:
     response = app.broker.ohlc(symbol)
     return OHLCVResponse(status="success", data=response)
+
+
+@app.get("/quote/{symbol}")
+async def quote(symbol: str) -> QuoteResponse:
+    response = app.broker.quote(symbol)
+    return QuoteResponse(status="success", data=response)
+
+
+@app.get("/orderbook/{symbol}")
+async def orderbook(symbol: str) -> OrderBookResponse:
+    response = app.broker.orderbook(symbol)
+    return OrderBookResponse(status="success", data=response)
