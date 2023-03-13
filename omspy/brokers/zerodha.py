@@ -223,7 +223,7 @@ class Zerodha(Broker):
         Place an order
         """
         order_args = dict(
-            variety="regular", product="MIS", validity="DAY", exchange="NSE"
+            variety="regular", validity="DAY",
         )
         order_args.update(kwargs)
         return self.kite.place_order(**order_args)
