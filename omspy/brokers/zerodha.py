@@ -121,8 +121,10 @@ class Zerodha(Broker):
             options.add_argument("--disable-dev-shm-usage")
             print("INIT DRIVER")
             driver = webdriver.Chrome(options=options)
+            """
             driver = webdriver.Chrome(service=ChromeService(
                 ChromeDriverManager().install()), options=options)
+            """
             driver.get(self.kite.login_url())
             print(f"success in DRIVER {driver}")
             print("GETTING LOGIN FORM")
