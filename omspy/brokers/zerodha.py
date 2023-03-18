@@ -264,3 +264,10 @@ class Zerodha(Broker):
     @property
     def profile(self):
         return self.kite.profile()
+
+    @property
+    def margins(self):
+        return self.kite.margins()
+
+    def ltp(self, exchsym):
+        return self.kite.ltp(exchsym)
