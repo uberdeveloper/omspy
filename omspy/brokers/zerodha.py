@@ -265,7 +265,6 @@ class Zerodha(Broker):
     def profile(self):
         return self.kite.profile()
 
-    @property
     def margins(self):
         return self.kite.margins()
 
