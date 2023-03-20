@@ -275,8 +275,8 @@ class Candle(BaseModel):
     high: float
     low: float
     close: float
-    volume: Optional[float]
-    info: Optional[str]
+    volume: Optional[float] = None
+    info: Optional[str] = None
 
 
 class CandleStick(BaseModel):
@@ -288,8 +288,8 @@ class CandleStick(BaseModel):
     candles: List[Candle] = []
     initial_price: float = 0
     interval: int = 300  # in seconds
-    timer: Optional[Timer] = None
-    timezone: Optional[str] = "local"
+    timer: Optional[Timer]
+    timezone: str = "local"
     ltp: float = 0
     high: float = -1e100  # Initialize to a impossible value
     low: float = 1e100  # Initialize to a impossible value
@@ -409,15 +409,16 @@ class CandleStick(BaseModel):
         return period
 
     def update(self, ltp: float) -> None:
-        if self.timer.is_running:
-            self._last_ltp = self.ltp
-            self.ltp = ltp
-            now = pendulum.now(tz=self.timezone)
-            if now > self.next_interval:
-                self.update_candle(timestamp=self.next_interval)
-                self.next_interval = self.get_next_interval()
-            else:
-                self._update_prices()
+        if self.timer and self.next_interval:
+            if self.timer.is_running:
+                self._last_ltp = self.ltp
+                self.ltp = ltp
+                now = pendulum.now(tz=self.timezone)
+                if now > self.next_interval:
+                    self.update_candle(timestamp=self.next_interval)
+                    self.next_interval = self.get_next_interval()
+                else:
+                    self._update_prices()
 
     @property
     def last_bullish_bar_index(self) -> int:
@@ -448,29 +449,29 @@ class CandleStick(BaseModel):
         return 0
 
     @property
-    def last_bullish_bar(self) -> Union[Candle, None]:
+    def last_bullish_bar(self) -> Optional[Candle]:
         """
         Return the latest bullish bar
         """
         l = len(self.candles)
         if l == 0:
-            return
+            return None
         i = self.last_bullish_bar_index
         if i == 0:
-            return
+            return None
         else:
             return self.candles[i - 1]
 
     @property
-    def last_bearish_bar(self) -> Union[Candle, None]:
+    def last_bearish_bar(self) -> Optional[Candle]:
         """
         Return the latest bearish bar
         """
         l = len(self.candles)
         if l == 0:
-            return
+            return None
         i = self.last_bearish_bar_index
         if i == 0:
-            return
+            return None
         else:
             return self.candles[i - 1]
