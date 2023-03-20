@@ -144,6 +144,16 @@ def test_vorder_value(vorder_kwargs):
     assert order.side == Side.SELL
 
 
+def test_vorder_value_price(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    assert order.value == 0
+    order.filled_quantity = 50
+    order.price = 118
+    assert order.value == 5900
+    order.average_price = 120
+    assert order.value == 6000
+
+
 def test_vposition_price():
     pos = VPosition(
         symbol="aapl",

@@ -110,6 +110,8 @@ class VOrder(BaseModel):
             if self.status_message:
                 if str(self.status_message).upper().startswith("REJ"):
                     return Status.REJECTED
+                else:
+                    return Status.CANCELED
             else:
                 return Status.CANCELED
         elif self.canceled_quantity > 0:
@@ -131,7 +133,14 @@ class VOrder(BaseModel):
         returns the value of the order
         negative means sell and positive means buy
         """
-        return self.side.value * self.filled_quantity * self.average_price
+        if not self.average_price:
+            if not self.price:
+                average_price = 0
+            else:
+                average_price = self.price
+        else:
+            average_price = self.average_price
+        return self.side.value * self.filled_quantity * average_price
 
 
 class VPosition(BaseModel):
