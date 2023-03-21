@@ -1,9 +1,16 @@
 """
 General utility functions for conversion and else
 """
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, NamedTuple
 from omspy.models import BasicPosition
-from collections import defaultdict, namedtuple
+from collections import defaultdict
+
+
+class UQty(NamedTuple):
+    q: float
+    f: float
+    p: float
+    c: float
 
 
 def create_basic_positions_from_orders_dict(
@@ -15,7 +22,7 @@ def create_basic_positions_from_orders_dict(
         list of orders
     returns a dictionary with key being the symbol and values as a BasicPosition model
     """
-    dct = {}
+    dct: Dict[str, BasicPosition] = {}
     for order in orders:
         symbol = order.get("symbol")
         if symbol:
@@ -25,7 +32,7 @@ def create_basic_positions_from_orders_dict(
                 order.get("trigger_price", 0),
             )
             quantity = abs(order.get("quantity", 0))
-            side = order.get("side").lower()
+            side = order["side"].lower()
             if symbol not in dct.keys():
                 # Create symbol if it doesn't exist
                 dct[symbol] = BasicPosition(symbol=symbol)
@@ -99,17 +106,12 @@ def stop_loss_step_decimal(
     """
     step = abs(step)
     m = int(price / step)
-    val = (m + 1) * step if side == "S" else (m * step) - 1
+    val = (m + 1.0) * step if side == "S" else (m * step) - 1.0
     val = val + 1 - dec if side == "S" else val + dec
     return val
 
 
-def update_quantity(
-    q: Union[int, float],
-    f: Union[int, float],
-    p: Union[int, float],
-    c: Union[int, float],
-) -> namedtuple("qty", "q f p c"):
+def update_quantity(q: float, f: float, p: float, c: float) -> UQty:
     """
     Update filled,pending and canceled quantity based on the given data
     q
@@ -142,5 +144,4 @@ def update_quantity(
         f = q - p
     else:
         p = q - p
-    tup = namedtuple("qty", ["q", "f", "p", "c"])
-    return tup(q, f, p, c)
+    return UQty(q, f, p, c)
