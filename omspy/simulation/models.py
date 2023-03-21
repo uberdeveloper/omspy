@@ -198,7 +198,7 @@ class VPosition(BaseModel):
 
 class Response(BaseModel):
     status: ResponseStatus
-    timestamp: Optional[pendulum.DateTime]
+    timestamp: Optional[pendulum.DateTime] = None
 
     class Config:
         validate_assignment = True
@@ -210,8 +210,8 @@ class Response(BaseModel):
 
 
 class OrderResponse(Response):
-    error_msg: Optional[str]
-    data: Optional[VOrder]
+    error_msg: Optional[str] = None
+    data: Optional[VOrder] = None
 
     class Config:
         validate_assignment = True

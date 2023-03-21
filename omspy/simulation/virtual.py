@@ -475,7 +475,7 @@ class VirtualBroker(BaseModel):
         if "response" in kwargs:
             return kwargs["response"]
         if self.is_failure:
-            return OrderResponse(status="failure", error_message="Unexpected error")
+            return OrderResponse(status=FAILURE, error_msg="Unexpected error")
         else:
             order_id = uuid.uuid4().hex
             keys = VOrder.__fields__.keys()
@@ -486,14 +486,14 @@ class VirtualBroker(BaseModel):
             try:
                 resp = VOrder(**order_args)
                 self._orders[order_args["order_id"]] = resp
-                return OrderResponse(status="success", data=resp)
+                return OrderResponse(status=SUCCESS, data=resp)
             except ValidationError as e:
-                errors = e.errors()
+                errors: List = e.errors()
                 num = len(errors)
                 fld = errors[0].get("loc")[0]
                 msg = errors[0].get("msg")
                 error_msg = f"Found {num} validation errors; in field {fld} {msg}"
-                return OrderResponse(status="failure", error_msg=error_msg)
+                return OrderResponse(status=FAILURE, error_msg=error_msg)
 
     def order_modify(
         self, order_id: str, **kwargs
@@ -501,11 +501,11 @@ class VirtualBroker(BaseModel):
         if "response" in kwargs:
             return kwargs["response"]
         if self.is_failure:
-            return OrderResponse(status="failure", error_message="Unexpected error")
+            return OrderResponse(status=FAILURE, error_msg="Unexpected error")
         if order_id not in self._orders:
             return OrderResponse(
-                status="failure",
-                error_message=f"Order id {order_id} not found on system",
+                status=FAILURE,
+                error_msg=f"Order id {order_id} not found on system",
             )
         attribs = ("price", "trigger_price", "quantity")
         dict(order_id=order_id)
@@ -513,7 +513,7 @@ class VirtualBroker(BaseModel):
         for attrib in attribs:
             if attrib in kwargs:
                 setattr(order, attrib, kwargs[attrib])
-        return OrderResponse(status="success", data=order)
+        return OrderResponse(status=SUCCESS, data=order)
 
     def order_cancel(
         self, order_id: str, **kwargs
@@ -521,18 +521,24 @@ class VirtualBroker(BaseModel):
         if "response" in kwargs:
             return kwargs["response"]
         if self.is_failure:
-            return OrderResponse(status="failure", error_message="Unexpected error")
+            return OrderResponse(status=FAILURE, error_msg="Unexpected error")
         if order_id not in self._orders:
             return OrderResponse(
-                status="failure",
-                error_message=f"Order id {order_id} not found on system",
+                status=FAILURE,
+                error_msg=f"Order id {order_id} not found on system",
             )
         order = self.get(order_id)
-        if order.status == Status.COMPLETE:
-            return OrderResponse(
-                status="failure", error_message=f"Order {order_id} already completed"
-            )
+        if order:
+            if order.status == Status.COMPLETE:
+                return OrderResponse(
+                    status=FAILURE, error_msg=f"Order {order_id} already completed"
+                )
+            else:
+                order.canceled_quantity = order.quantity - order.filled_quantity
+                order.pending_quantity = 0
+                return OrderResponse(status=SUCCESS, data=order)
         else:
-            order.canceled_quantity = order.quantity - order.filled_quantity
-            order.pending_quantity = 0
-            return OrderResponse(status=SUCCESS, data=order)
+            return OrderResponse(
+                status=FAILURE,
+                error_msg=f"Order id {order_id} not found on system",
+            )
