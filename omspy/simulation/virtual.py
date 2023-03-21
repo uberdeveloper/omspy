@@ -2,12 +2,13 @@ import random
 import uuid
 from typing import Optional, Dict, Set, List, Union, Any, Callable
 from omspy.models import OrderBook, Quote
-from pydantic import BaseModel, PrivateAttr, confloat, ValidationError
+from pydantic import BaseModel, PrivateAttr, confloat, ValidationError, Field
 from enum import Enum
 from collections import defaultdict
 from collections.abc import Iterable
 from omspy.simulation.models import (
     OrderResponse,
+    ResponseStatus,
     VOrder,
     OHLCV,
     Side,
@@ -15,6 +16,9 @@ from omspy.simulation.models import (
     VQuote,
     VPosition,
 )
+
+SUCCESS = ResponseStatus.SUCCESS
+FAILURE = ResponseStatus.FAILURE
 
 
 class TickerMode(Enum):
@@ -89,7 +93,7 @@ def generate_orderbook(
     return OrderBook(ask=asks, bid=bids)
 
 
-def generate_ohlc(start: int = 100, end: int = 110, volume: int = 1e4):
+def generate_ohlc(start: int = 100, end: int = 110, volume: int = 10000) -> OHLCV:
     """
     Generate random open, high, low, close prices
     start
@@ -171,7 +175,7 @@ class Ticker(BaseModel):
         self._low = min(self._low, last_price)
         return self._ltp
 
-    def ohlc(self) -> Dict[str, int]:
+    def ohlc(self) -> Dict[str, float]:
         """
         Calculate the ohlc for this ticker
         """
@@ -322,7 +326,7 @@ class FakeBroker(BaseModel):
         tick = kwargs.get("tick", 0.01)
         quantity = kwargs.get("quantity", 100)
         ohlc = generate_ohlc(start=start, end=end, volume=volume)
-        bid = generate_price(start=ohlc.low, end=ohlc.high)
+        bid = generate_price(start=int(ohlc.low), end=int(ohlc.high))
         ask = bid + tick
         orderbook = generate_orderbook(
             ask=ask, bid=bid, depth=depth, tick=tick, quantity=quantity
@@ -411,7 +415,7 @@ class FakeBroker(BaseModel):
         if not symbols:
             n = random.randrange(1, len(self._symbols))
             symbols = random.choices(self._symbols, k=n)
-        symbols = set(symbols)  # To remove duplicates
+        symbols = list(set(symbols))  # To remove duplicates
         positions = []
         for symbol in symbols:
             bq = random.randrange(0, 1000)
@@ -437,8 +441,8 @@ class VirtualBroker(BaseModel):
     name: str = "VBroker"
     tickers: Optional[List[Ticker]]
     clients: Optional[Set[str]]
-    failure_rate: confloat(ge=0, le=1) = 0.001
-    _orders: defaultdict[str, VOrder] = PrivateAttr()
+    failure_rate: float = Field(ge=0, le=1, default=0.001)
+    _orders: Dict[str, VOrder] = PrivateAttr()
 
     class Config:
         validate_assignment = True
@@ -531,4 +535,4 @@ class VirtualBroker(BaseModel):
         else:
             order.canceled_quantity = order.quantity - order.filled_quantity
             order.pending_quantity = 0
-            return OrderResponse(status="success", data=order)
+            return OrderResponse(status=SUCCESS, data=order)
