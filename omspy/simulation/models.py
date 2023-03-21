@@ -70,7 +70,7 @@ class VTrade(BaseModel):
 class VOrder(BaseModel):
     order_id: str
     symbol: str
-    quantity: Union[int, float]
+    quantity: float
     side: Side
     price: Optional[float]
     average_price: Optional[float]
@@ -79,9 +79,9 @@ class VOrder(BaseModel):
     exchange_order_id: Optional[str]
     exchange_timestamp: Optional[pendulum.DateTime]
     status_message: Optional[str]
-    filled_quantity: Union[int, float] = 0
-    pending_quantity: Union[int, float] = 0
-    canceled_quantity: Union[int, float] = 0
+    filled_quantity: float = 0
+    pending_quantity: float = 0
+    canceled_quantity: float = 0
 
     class Config:
         validate_assignment = True
@@ -135,7 +135,7 @@ class VOrder(BaseModel):
         """
         if not self.average_price:
             if not self.price:
-                average_price = 0
+                average_price = 0.0
             else:
                 average_price = self.price
         else:
