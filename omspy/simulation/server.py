@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Type
 from pydantic import BaseModel
 from fastapi import FastAPI
 from omspy.simulation.virtual import FakeBroker
@@ -29,9 +29,21 @@ Generates data for placing, modifying and canceling orders
 ### Market Data
 Generates data regarding price, OHLC, orderbook for symbols
 """
-app = FastAPI(title="Fake Data API for Stock Market", description=description)
-app.broker: FakeBroker = FakeBroker()
-app._type = type(app.broker)
+
+
+class MyAPI(FastAPI):
+    """
+    Sub-classing FastAPI to include our variables
+    """
+
+    broker: FakeBroker = FakeBroker()
+
+    @property
+    def _type(self) -> Type[FakeBroker]:
+        return type(self.broker)
+
+
+app: MyAPI = MyAPI(title="Fake Data API for Stock Market", description=description)
 
 SUCCESS = ResponseStatus.SUCCESS
 FAILURE = ResponseStatus.FAILURE
