@@ -12,6 +12,7 @@ from omspy.simulation.models import (
     QuoteResponse,
     OrderBookResponse,
     PositionResponse,
+    ResponseStatus,
 )
 
 description = """
@@ -31,6 +32,9 @@ Generates data regarding price, OHLC, orderbook for symbols
 app = FastAPI(title="Fake Data API for Stock Market", description=description)
 app.broker: FakeBroker = FakeBroker()
 app._type = type(app.broker)
+
+SUCCESS = ResponseStatus.SUCCESS
+FAILURE = ResponseStatus.FAILURE
 
 
 class OrderArgs(BaseModel):
@@ -68,7 +72,7 @@ def home():
     tags=["user"],
 )
 async def auth(user_id: str) -> AuthResponse:
-    return AuthResponse(status="success", user_id=user_id)
+    return AuthResponse(status=SUCCESS, user_id=user_id)
 
 
 @app.post(
@@ -80,7 +84,7 @@ async def auth(user_id: str) -> AuthResponse:
 async def create_order(order: OrderArgs) -> OrderResponse:
     if app._type == FakeBroker:
         response = app.broker.order_place(**order.dict(exclude_none=True))
-    return OrderResponse(status="success", data=response)
+    return OrderResponse(status=SUCCESS, data=response)
 
 
 @app.put(
@@ -94,7 +98,7 @@ async def modify_order(order_id: str, order: OrderArgs) -> OrderResponse:
         response = app.broker.order_modify(
             order_id=order_id, **order.dict(exclude_none=True)
         )
-    return OrderResponse(status="success", data=response)
+    return OrderResponse(status=SUCCESS, data=response)
 
 
 @app.delete(
@@ -108,7 +112,7 @@ async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
         response = app.broker.order_cancel(
             order_id=order_id, **order.dict(exclude_none=True)
         )
-    return OrderResponse(status="success", data=response)
+    return OrderResponse(status=SUCCESS, data=response)
 
 
 @app.get(
@@ -118,7 +122,7 @@ async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
 )
 async def ltp(symbol: str) -> LTPResponse:
     response = app.broker.ltp(symbol)
-    return LTPResponse(status="success", data=response)
+    return LTPResponse(status=SUCCESS, data=response)
 
 
 @app.get(
@@ -128,7 +132,7 @@ async def ltp(symbol: str) -> LTPResponse:
 )
 async def ohlc(symbol: str) -> OHLCVResponse:
     response = app.broker.ohlc(symbol)
-    return OHLCVResponse(status="success", data=response)
+    return OHLCVResponse(status=SUCCESS, data=response)
 
 
 @app.get(
@@ -139,7 +143,7 @@ async def ohlc(symbol: str) -> OHLCVResponse:
 )
 async def quote(symbol: str) -> QuoteResponse:
     response = app.broker.quote(symbol)
-    return QuoteResponse(status="success", data=response)
+    return QuoteResponse(status=SUCCESS, data=response)
 
 
 @app.get(
@@ -149,10 +153,10 @@ async def quote(symbol: str) -> QuoteResponse:
 )
 async def orderbook(symbol: str) -> OrderBookResponse:
     response = app.broker.orderbook(symbol)
-    return OrderBookResponse(status="success", data=response)
+    return OrderBookResponse(status=SUCCESS, data=response)
 
 
 @app.get("/positions", summary="Get random positions", tags=["user"])
 async def positions() -> PositionResponse:
     response = app.broker.positions()
-    return PositionResponse(status="success", data=response)
+    return PositionResponse(status=SUCCESS, data=response)

@@ -222,31 +222,25 @@ class AuthResponse(Response):
     message: str = "Authentication successful"
 
 
-class GenericResponse(Response):
-    error_msg: Optional[str]
+class GenericResponse(OrderResponse):
     data: Optional[Any]
 
 
-class LTPResponse(Response):
-    error_msg: Optional[str]
+class LTPResponse(GenericResponse):
     data: Dict[str, Union[int, float]]
 
 
-class OHLCVResponse(Response):
-    error_msg: Optional[str]
+class OHLCVResponse(GenericResponse):
     data: Dict[str, OHLCV]
 
 
-class QuoteResponse(Response):
-    error_msg: Optional[str]
+class QuoteResponse(GenericResponse):
     data: Dict[str, VQuote]
 
 
-class OrderBookResponse(Response):
-    error_msg: Optional[str]
+class OrderBookResponse(GenericResponse):
     data: Dict[str, OrderBook]
 
 
-class PositionResponse(Response):
-    error_msg: Optional[str]
+class PositionResponse(GenericResponse):
     data: List[VPosition]
