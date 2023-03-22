@@ -17,6 +17,7 @@ import pendulum
 import sqlite3
 import logging
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from omspy.base import *
 from copy import deepcopy
 from sqlite_utils import Database
@@ -125,7 +126,7 @@ class Order(BaseModel):
     is_multi: bool = False
     last_updated_at: Optional[pendulum.DateTime] = None
     _num_modifications: int = 0
-    _attrs: Tuple[str] = (
+    _attrs: Tuple[str, ...] = (
         "exchange_timestamp",
         "exchange_order_id",
         "status",
@@ -223,11 +224,13 @@ class Order(BaseModel):
         return True if self.parent_id else False
 
     @property
-    def lock(self) -> Union[OrderLock, None]:
+    def lock(self) -> OrderLock:
+        if self._lock is None:
+            self._lock = OrderLock()
         return self._lock
 
     def _get_other_args_from_attribs(
-        self, broker: Any, attribute: str, attribs_to_copy: Optional[Set] = None
+        self, broker: Any, attribute: str, attribs_to_copy: Optional[Iterable] = None
     ) -> Dict[str, str]:
         """
         Get other arguments for the order from attributes
@@ -514,10 +517,13 @@ class CompoundOrder(BaseModel):
         order = self._get_by_key(key)
         if order is None:
             try:
-                key = int(key)
-                return self._get_by_index(key)
+                if isinstance(key, (str, int)):
+                    int_key = int(key)
+                    return self._get_by_index(int_key)
+                else:
+                    return None
             except Exception as e:
-                return self._get_by_index(key)
+                return None
         else:
             return order
 
