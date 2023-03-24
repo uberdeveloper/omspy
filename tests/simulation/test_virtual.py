@@ -655,3 +655,33 @@ def test_virtual_broker_order_place_delay(basic_broker_with_users):
     orders = list(b._orders.values())
     assert orders[0]._delay == 1000000
     assert orders[1]._delay == 5000000
+
+
+def test_virtual_broker_get_order_by_status(basic_broker_with_users):
+    b = basic_broker_with_users
+    known = pendulum.datetime(2023, 2, 1, 10, 17)
+    with pendulum.test(known):
+
+        resp = b.order_place(symbol="aapl", quantity=10, side=1)
+        order_id = resp.data.order_id
+        order = b.get(order_id)
+        assert order.pending_quantity == 10
+    with pendulum.test(known.add(seconds=2)):
+        b.get(order_id)
+        assert order.status == Status.COMPLETE
+        assert order.filled_quantity == 10
+    with pendulum.test(known.add(seconds=3)):
+        b.get(order_id, status=Status.CANCELED)
+        assert order.status == Status.COMPLETE
+
+    # Order with custom status
+
+    with pendulum.test(known):
+        resp = b.order_place(symbol="goog", quantity=10, side=1)
+        order_id = resp.data.order_id
+        order = b.get(order_id)
+    with pendulum.test(known.add(seconds=3)):
+        b.get(order_id, status=Status.CANCELED)
+        assert order.status == Status.CANCELED
+        assert order.filled_quantity == 0
+        assert order.canceled_quantity == 10

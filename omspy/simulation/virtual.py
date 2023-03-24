@@ -475,11 +475,18 @@ class VirtualBroker(BaseModel):
         else:
             return False
 
-    def get(self, order_id: str) -> Union[VOrder, None]:
+    def get(
+        self, order_id: str, status: Status = Status.COMPLETE
+    ) -> Union[VOrder, None]:
         """
         get the order
         """
-        return self._orders.get(order_id)
+        order: VOrder = self._orders.get(order_id)
+        if order:
+            order.modify_by_status(status)
+            return order
+        else:
+            return None
 
     def add_user(self, user: VUser) -> bool:
         """
