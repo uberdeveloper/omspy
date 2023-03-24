@@ -12,19 +12,20 @@ def basic_ticker():
 
 
 @pytest.fixture
-def basic_broker()->VirtualBroker:
+def basic_broker() -> VirtualBroker:
     tickers = dict(
         aapl=Ticker(name="aapl", token=1111, initial_price=100),
         goog=Ticker(name="goog", token=2222, initial_price=125),
         amzn=Ticker(name="amzn", token=3333, initial_price=260),
-        )
+    )
     return VirtualBroker(tickers=tickers)
 
+
 @pytest.fixture
-def basic_broker_with_users(basic_broker)->VirtualBroker:
-    basic_broker.add_user(VUser(userid='abcd1234'))
-    basic_broker.add_user(VUser(userid='xyz456'))
-    basic_broker.add_user(VUser(userid='bond007'))
+def basic_broker_with_users(basic_broker) -> VirtualBroker:
+    basic_broker.add_user(VUser(userid="abcd1234"))
+    basic_broker.add_user(VUser(userid="xyz456"))
+    basic_broker.add_user(VUser(userid="bond007"))
     return basic_broker
 
 
@@ -620,28 +621,37 @@ def test_virtual_broker_add_user():
 
 def test_virtual_broker_order_place_users(basic_broker_with_users):
     b = basic_broker_with_users
-    b.failure_rate = 0.0 # To ensure all orders are passed
-    b.order_place(symbol='aapl', quantity=10, side=1)
-    b.order_place(symbol='goog', quantity=10, side=1)
+    b.failure_rate = 0.0  # To ensure all orders are passed
+    b.order_place(symbol="aapl", quantity=10, side=1)
+    b.order_place(symbol="goog", quantity=10, side=1)
     for c in b.clients:
-        b.order_place(symbol='aapl', quantity=20, side=-1, userid=c)
-    b.order_place(symbol='goog', quantity=10, side=1, userid='unknown')
+        b.order_place(symbol="aapl", quantity=20, side=-1, userid=c)
+    b.order_place(symbol="goog", quantity=10, side=1, userid="unknown")
     assert len(b._orders) == 6
     for u in b.users:
         assert len(u.orders) == 1
     assert len(b.clients) == len(b.users) == 3
 
+
 def test_virtual_broker_order_place_same_memory(basic_broker_with_users):
     # Check orders have the same memory id
     b = basic_broker_with_users
-    b.failure_rate = 0.0 # To ensure all orders are passed
-    b.order_place(symbol='aapl', quantity=10, side=1)
-    b.order_place(symbol='goog', quantity=10, side=1)
+    b.failure_rate = 0.0  # To ensure all orders are passed
+    b.order_place(symbol="aapl", quantity=10, side=1)
+    b.order_place(symbol="goog", quantity=10, side=1)
     for c in b.clients:
-        b.order_place(symbol='aapl', quantity=20, side=-1, userid=c)
+        b.order_place(symbol="aapl", quantity=20, side=-1, userid=c)
     assert len(b._orders) == 5
     for i in range(3):
         order = b.users[i].orders[0]
-        assert(id(order)) == id(b._orders[order.order_id])
+        assert (id(order)) == id(b._orders[order.order_id])
         assert order is b._orders[order.order_id]
 
+
+def test_virtual_broker_order_place_delay(basic_broker_with_users):
+    b = basic_broker_with_users
+    b.order_place(symbol="aapl", quantity=10, side=1)
+    b.order_place(symbol="goog", quantity=10, side=1, delay=5e6)
+    orders = list(b._orders.values())
+    assert orders[0]._delay == 1000000
+    assert orders[1]._delay == 5000000

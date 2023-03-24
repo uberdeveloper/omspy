@@ -446,6 +446,7 @@ class VirtualBroker(BaseModel):
     failure_rate: float = Field(ge=0, le=1, default=0.001)
     _orders: Dict[str, VOrder] = PrivateAttr()
     _clients: Set[str] = PrivateAttr()
+    _delay: int = PrivateAttr()  # delay in microseconds for updating orders
 
     class Config:
         validate_assignment = True
@@ -454,6 +455,7 @@ class VirtualBroker(BaseModel):
         super().__init__(**data)
         self._orders = defaultdict(list)
         self._clients = set()
+        self._delay = 1e6
 
     @property
     def clients(self) -> Set[str]:
@@ -501,17 +503,21 @@ class VirtualBroker(BaseModel):
             order_id = uuid.uuid4().hex
             keys = VOrder.__fields__.keys()
             order_args = dict(order_id=order_id)
-            is_user:bool = False
-            userid:Optional[str]=None
+            is_user: bool = False
+            userid: Optional[str] = None
+            delay: int = self._delay
             for k, v in kwargs.items():
-                if k == 'userid':
+                if k == "userid":
                     userid = str(v).upper()
                     if userid in self.clients:
                         is_user = True
+                if k == "delay":
+                    delay = v
                 elif k in keys:
                     order_args[k] = v
             try:
                 resp = VOrder(**order_args)
+                resp._delay = delay
                 self._orders[order_args["order_id"]] = resp
                 if is_user:
                     for user in self.users:
