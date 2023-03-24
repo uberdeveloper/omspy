@@ -201,6 +201,19 @@ class VOrder(BaseModel):
         else:
             return True
 
+    def modify_by_status(self, status: Status = Status.COMPLETE) -> bool:
+        """
+        Modify order by status
+        returns True if the order is modified else False
+        """
+        if self.is_done:
+            return False
+        if self.is_past_delay:
+            self._modify_order_by_status(status)
+            return True
+        else:
+            return False
+
 
 class VPosition(BaseModel):
     symbol: str

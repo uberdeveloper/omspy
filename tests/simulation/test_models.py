@@ -373,3 +373,44 @@ def test_vorder_modify_by_status_pending(vorder_simple):
     )
     assert order.status == Status.PENDING
     assert order.is_done is False
+
+
+def test_vorder_modify_by_status(vorder_kwargs):
+    known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
+    with pendulum.test(known):
+        order = VOrder(**vorder_kwargs)
+        order.modify_by_status()
+        assert order.is_done is False
+        assert order.filled_quantity == 0
+    with pendulum.test(known.add(seconds=1)):
+        order.modify_by_status()
+        assert order.status == Status.OPEN
+    with pendulum.test(known.add(seconds=2)):
+        order.modify_by_status()
+        assert order.status == Status.COMPLETE
+        assert order.is_done is True
+        assert order.filled_quantity == 100
+
+
+def test_vorder_modify_by_status_do_not_modify_done(vorder_kwargs):
+    known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
+    with pendulum.test(known):
+        order = VOrder(**vorder_kwargs)
+    with pendulum.test(known.add(seconds=2)):
+        order.modify_by_status()
+        assert order.status == Status.COMPLETE
+    with pendulum.test(known.add(seconds=5)):
+        order.modify_by_status(Status.CANCELED)
+        assert order.status == Status.COMPLETE
+
+
+def test_vorder_modify_by_status_partial_fill(vorder_kwargs):
+    known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
+    with pendulum.test(known):
+        order = VOrder(**vorder_kwargs)
+    with pendulum.test(known.add(seconds=2)):
+        order.modify_by_status(Status.PARTIAL_FILL)
+        assert order.filled_quantity < order.quantity
+        assert order.canceled_quantity > 0
+        assert order.pending_quantity == 0
+        assert order.is_done is True
