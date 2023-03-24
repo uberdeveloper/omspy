@@ -3,7 +3,7 @@ This module contains all the models for running the simulation
 All the models start with **V** to indicate virtual models
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 from typing import Optional, Union, Any, Dict, List
 from enum import Enum
 import pendulum
@@ -194,6 +194,22 @@ class VPosition(BaseModel):
         buy_value = self.buy_value if self.buy_value else 0
         sell_value = self.sell_value if self.sell_value else 0
         return buy_value - sell_value
+
+
+class VUser(BaseModel):
+    userid: str
+    name: Optional[str]
+    orders: List[VOrder] = Field(default_factory=list)
+
+    @validator("userid")
+    def userid_should_be_upper(cls, v):
+        return str(v).upper()
+
+    def add(self, order: VOrder):
+        """
+        add an order to the user
+        """
+        self.orders.append(order)
 
 
 class Response(BaseModel):

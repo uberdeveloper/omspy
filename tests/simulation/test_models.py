@@ -254,3 +254,19 @@ def test_generic_response(ohlc_args):
     response = GenericResponse(status="success", data=data)
     assert response.data.high == 112
     assert response.data.last_price == 107
+
+
+def test_vuser_defaults():
+    user = VUser(userid="ABCD1234")
+    assert user.userid == "ABCD1234"
+    assert user.name is None
+    assert user.orders == []
+
+
+def test_vuser_add(vorder_kwargs):
+    user = VUser(userid="abcd1234")
+    assert user.userid == "ABCD1234"
+    order = VOrder(**vorder_kwargs)
+    user.add(order)
+    assert user.orders[0] == order
+    assert len(user.orders) == 1
