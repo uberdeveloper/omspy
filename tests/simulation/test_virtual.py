@@ -597,3 +597,15 @@ def test_fake_broker_positions_symbols():
     positions = b.positions(symbols=symbols)
     assert len(positions) == 3
     assert set([p.symbol for p in positions]) == set(symbols)
+
+
+def test_virtual_broker_add_user():
+    b = VirtualBroker()
+    assert len(b.users) == len(b.clients) == 0
+    user1 = VUser(userid="abcd1234")
+    user2 = VUser(userid="xyz456")
+    assert b.add_user(user1) is True
+    assert b.add_user(user2) is True
+    assert len(b.users) == len(b.clients) == 2
+    assert b.add_user(user1) is False
+    assert len(b.users) == len(b.clients) == 2

@@ -1,5 +1,6 @@
 import random
 import uuid
+import logging
 from typing import Optional, Dict, Set, List, Union, Any, Callable
 from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr, confloat, ValidationError, Field
@@ -15,6 +16,7 @@ from omspy.simulation.models import (
     Status,
     VQuote,
     VPosition,
+    VUser,
 )
 
 SUCCESS = ResponseStatus.SUCCESS
@@ -182,14 +184,6 @@ class Ticker(BaseModel):
         return dict(
             open=self.initial_price, high=self._high, low=self._low, close=self._ltp
         )
-
-
-class Client(BaseModel):
-    """
-    A basic client model
-    """
-
-    client_id: str
 
 
 class FakeBroker(BaseModel):
@@ -436,20 +430,34 @@ class FakeBroker(BaseModel):
 class VirtualBroker(BaseModel):
     """
     A virtual broker instance mimicking a real broker
+    name
+        name to identify this broker
+    tickers
+        list of stock tickers
+    users
+        list of users
+    failure_rate
+        the failure rate for responses
     """
 
     name: str = "VBroker"
-    tickers: Optional[List[Ticker]]
-    clients: Optional[Set[str]]
+    tickers: List[Ticker] = Field(default_factory=list)
+    users: List[VUser] = Field(default_factory=list)
     failure_rate: float = Field(ge=0, le=1, default=0.001)
     _orders: Dict[str, VOrder] = PrivateAttr()
+    _clients: Set[str] = PrivateAttr()
 
     class Config:
         validate_assignment = True
 
     def __init__(self, **data):
         super().__init__(**data)
-        self._orders = defaultdict(dict)
+        self._orders = defaultdict(list)
+        self._clients = set()
+
+    @property
+    def clients(self) -> Set[str]:
+        return self._clients
 
     @property
     def is_failure(self) -> bool:
@@ -470,6 +478,19 @@ class VirtualBroker(BaseModel):
         get the order
         """
         return self._orders.get(order_id)
+
+    def add_user(self, user: VUser) -> bool:
+        """
+        add a new user
+        returns True if an user is added successfully else False
+        """
+        if user.userid in self.clients:
+            logging.warning(f"User {user.userid} already exists")
+            return False
+        else:
+            self._clients.add(user.userid)
+            self.users.append(user)
+            return True
 
     def order_place(self, **kwargs) -> Union[OrderResponse, Dict[Any, Any]]:
         if "response" in kwargs:
