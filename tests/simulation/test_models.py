@@ -29,6 +29,11 @@ def vorder_kwargs():
 
 
 @pytest.fixture
+def vorder_simple(vorder_kwargs):
+    return VOrder(**vorder_kwargs)
+
+
+@pytest.fixture
 def ohlc_args():
     return dict(open=104, high=112, low=101, close=108, last_price=107)
 
@@ -313,3 +318,58 @@ def test_vorder_custom_delay(vorder_kwargs):
         assert order.is_past_delay is False
     with pendulum.test(known.add(seconds=5)):
         assert order.is_past_delay is False
+
+
+def test_vorder_modify_by_status_complete(vorder_simple):
+    order = vorder_simple
+    order._modify_order_by_status(Status.COMPLETE)
+    assert order.quantity == order.filled_quantity
+    assert order.pending_quantity == order.canceled_quantity == 0
+    assert order.status == Status.COMPLETE
+    assert order.is_done is True
+
+
+def test_vorder_modify_by_status_canceled(vorder_simple):
+    order = vorder_simple
+    order._modify_order_by_status(Status.CANCELED)
+    assert order.quantity == order.canceled_quantity
+    assert order.pending_quantity == order.filled_quantity == 0
+    assert order.status == Status.CANCELED
+    assert order.is_done is True
+
+
+def test_vorder_modify_by_status_open(vorder_simple):
+    order = vorder_simple
+    order._modify_order_by_status(Status.OPEN)
+    assert order.quantity == order.pending_quantity
+    assert order.canceled_quantity == order.filled_quantity == 0
+    assert order.status == Status.OPEN
+    assert order.is_done is False
+
+
+def test_vorder_modify_by_status_partial_fill(vorder_simple):
+    order = vorder_simple
+    order._modify_order_by_status(Status.PARTIAL_FILL)
+    assert order.filled_quantity > 0
+    assert order.canceled_quantity > 0
+    assert order.pending_quantity == 0
+    assert (
+        order.filled_quantity + order.canceled_quantity + order.pending_quantity
+        == order.quantity
+    )
+    assert order.status == Status.PARTIAL_FILL
+    assert order.is_done is True
+
+
+def test_vorder_modify_by_status_pending(vorder_simple):
+    order = vorder_simple
+    order._modify_order_by_status(Status.PENDING)
+    assert order.filled_quantity > 0
+    assert order.pending_quantity > 0
+    assert order.canceled_quantity == 0
+    assert (
+        order.filled_quantity + order.canceled_quantity + order.pending_quantity
+        == order.quantity
+    )
+    assert order.status == Status.PENDING
+    assert order.is_done is False

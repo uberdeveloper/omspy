@@ -6,6 +6,7 @@ All the models start with **V** to indicate virtual models
 from pydantic import BaseModel, Field, validator, PrivateAttr
 from typing import Optional, Union, Any, Dict, List
 from enum import Enum
+import random
 import pendulum
 import omspy.utils as utils
 from omspy.models import OrderBook
@@ -104,13 +105,45 @@ class VOrder(BaseModel):
             self.average_price = 0
         self._delay = 1e6  # delay in microseconds
 
+    def _modify_order_by_status(self, status: Status):
+        """
+        Modify an order quantity based on the given status
+        """
+        if status in (Status.CANCELED, Status.REJECTED):
+            self.filled_quantity = 0
+            self.pending_quantity = 0
+            self.canceled_quantity = self.quantity
+        elif status == Status.OPEN:
+            self.filled_quantity = 0
+            self.pending_quantity = self.pending_quantity
+            self.canceled_quantity = 0
+        elif status == Status.PARTIAL_FILL:
+            a = random.randrange(1, int(self.quantity))
+            b = self.quantity - a
+            self.filled_quantity = a
+            self.pending_quantity = 0
+            self.canceled_quantity = b
+        elif status == Status.PENDING:
+            a = random.randrange(1, int(self.quantity))
+            b = self.quantity - a
+            self.filled_quantity = a
+            self.pending_quantity = b
+            self.canceled_quantity = 0
+        else:
+            self.filled_quantity = self.quantity
+            self.pending_quantity = 0
+            self.canceled_quantity = 0
+
     @property
     def is_past_delay(self) -> bool:
         """
         returns True is the order is past delay
         """
-        expiry = self.timestamp.add(microseconds=self._delay)
-        return True if pendulum.now(tz="local") > expiry else False
+        if self.timestamp:
+            expiry = self.timestamp.add(microseconds=self._delay)
+            return True if pendulum.now(tz="local") > expiry else False
+        else:
+            return False
 
     @property
     def status(self) -> Status:
