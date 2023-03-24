@@ -441,7 +441,7 @@ class VirtualBroker(BaseModel):
     """
 
     name: str = "VBroker"
-    tickers: List[Ticker] = Field(default_factory=list)
+    tickers: Dict[str, Ticker] = Field(default_factory=dict)
     users: List[VUser] = Field(default_factory=list)
     failure_rate: float = Field(ge=0, le=1, default=0.001)
     _orders: Dict[str, VOrder] = PrivateAttr()

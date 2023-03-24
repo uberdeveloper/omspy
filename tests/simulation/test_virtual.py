@@ -13,11 +13,11 @@ def basic_ticker():
 
 @pytest.fixture
 def basic_broker()->VirtualBroker:
-    tickers = [
-        Ticker(name="aapl", token=1111, initial_price=100),
-        Ticker(name="goog", token=2222, initial_price=125),
-        Ticker(name="amzn", token=3333, initial_price=260),
-    ]
+    tickers = dict(
+        aapl=Ticker(name="aapl", token=1111, initial_price=100),
+        goog=Ticker(name="goog", token=2222, initial_price=125),
+        amzn=Ticker(name="amzn", token=3333, initial_price=260),
+        )
     return VirtualBroker(tickers=tickers)
 
 @pytest.fixture
