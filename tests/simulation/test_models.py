@@ -270,3 +270,25 @@ def test_vuser_add(vorder_kwargs):
     user.add(order)
     assert user.orders[0] == order
     assert len(user.orders) == 1
+
+
+@pytest.mark.parametrize(
+    "filled,pending,canceled,expected",
+    [
+        (0, 100, 0, False),
+        (50, 100, 0, False),
+        (100, 0, 0, True),
+        (50, 50, 0, False),
+        (50, 0, 50, True),
+        (50, 0, 100, True),
+    ],
+)
+def test_vorder_is_done(vorder_kwargs, filled, pending, canceled, expected):
+    order = VOrder(
+        filled_quantity=filled,
+        pending_quantity=pending,
+        canceled_quantity=canceled,
+        **vorder_kwargs
+    )
+    assert order.is_done is expected
+    pass

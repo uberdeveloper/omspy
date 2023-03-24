@@ -142,6 +142,22 @@ class VOrder(BaseModel):
             average_price = self.average_price
         return self.side.value * self.filled_quantity * average_price
 
+    @property
+    def is_done(self) -> bool:
+        """
+        whether the order is finished either by fully filled
+        or canceled
+        returns True if it is completed, False if pending
+        """
+        if self.quantity == self.filled_quantity:
+            return True
+        elif self.quantity == self.canceled_quantity:
+            return True
+        elif self.pending_quantity > 0:
+            return False
+        else:
+            return True
+
 
 class VPosition(BaseModel):
     symbol: str
