@@ -3,7 +3,7 @@ This module contains all the models for running the simulation
 All the models start with **V** to indicate virtual models
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, PrivateAttr
 from typing import Optional, Union, Any, Dict, List
 from enum import Enum
 import pendulum
@@ -75,13 +75,14 @@ class VOrder(BaseModel):
     price: Optional[float]
     average_price: Optional[float]
     trigger_price: Optional[float]
-    timestamp: Optional[pendulum.DateTime]
+    timestamp: Optional[pendulum.DateTime] = None
     exchange_order_id: Optional[str]
     exchange_timestamp: Optional[pendulum.DateTime]
     status_message: Optional[str]
     filled_quantity: float = 0
     pending_quantity: float = 0
     canceled_quantity: float = 0
+    _delay: int = PrivateAttr()
 
     class Config:
         validate_assignment = True
@@ -101,6 +102,15 @@ class VOrder(BaseModel):
         self.canceled_quantity = q.c
         if self.average_price is None:
             self.average_price = 0
+        self._delay = 1e6  # delay in microseconds
+
+    @property
+    def is_past_delay(self) -> bool:
+        """
+        returns True is the order is past delay
+        """
+        expiry = self.timestamp.add(microseconds=self._delay)
+        return True if pendulum.now(tz="local") > expiry else False
 
     @property
     def status(self) -> Status:

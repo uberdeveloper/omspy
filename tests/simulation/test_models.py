@@ -292,3 +292,24 @@ def test_vorder_is_done(vorder_kwargs, filled, pending, canceled, expected):
     )
     assert order.is_done is expected
     pass
+
+
+def test_vorder_is_past_delay(vorder_kwargs):
+    known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
+    with pendulum.test(known):
+        order = VOrder(**vorder_kwargs)
+        assert order.is_past_delay is False
+    with pendulum.test(known.add(seconds=3)):
+        assert order.is_past_delay is True
+
+
+def test_vorder_custom_delay(vorder_kwargs):
+    known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
+    with pendulum.test(known):
+        order = VOrder(**vorder_kwargs)
+        order._delay = 5e6
+        assert order.is_past_delay is False
+    with pendulum.test(known.add(seconds=3)):
+        assert order.is_past_delay is False
+    with pendulum.test(known.add(seconds=5)):
+        assert order.is_past_delay is False
