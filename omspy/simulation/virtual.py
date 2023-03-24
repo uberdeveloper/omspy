@@ -501,12 +501,23 @@ class VirtualBroker(BaseModel):
             order_id = uuid.uuid4().hex
             keys = VOrder.__fields__.keys()
             order_args = dict(order_id=order_id)
+            is_user:bool = False
+            userid:Optional[str]=None
             for k, v in kwargs.items():
-                if k in keys:
+                if k == 'userid':
+                    userid = str(v).upper()
+                    if userid in self.clients:
+                        is_user = True
+                elif k in keys:
                     order_args[k] = v
             try:
                 resp = VOrder(**order_args)
                 self._orders[order_args["order_id"]] = resp
+                if is_user:
+                    for user in self.users:
+                        if user.userid == userid:
+                            user.orders.append(resp)
+                            break
                 return OrderResponse(status=SUCCESS, data=resp)
             except ValidationError as e:
                 errors: List = e.errors()

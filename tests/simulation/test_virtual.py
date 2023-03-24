@@ -12,13 +12,20 @@ def basic_ticker():
 
 
 @pytest.fixture
-def basic_broker():
+def basic_broker()->VirtualBroker:
     tickers = [
         Ticker(name="aapl", token=1111, initial_price=100),
         Ticker(name="goog", token=2222, initial_price=125),
         Ticker(name="amzn", token=3333, initial_price=260),
     ]
     return VirtualBroker(tickers=tickers)
+
+@pytest.fixture
+def basic_broker_with_users(basic_broker)->VirtualBroker:
+    basic_broker.add_user(VUser(userid='abcd1234'))
+    basic_broker.add_user(VUser(userid='xyz456'))
+    basic_broker.add_user(VUser(userid='bond007'))
+    return basic_broker
 
 
 def test_generate_price():
@@ -609,3 +616,32 @@ def test_virtual_broker_add_user():
     assert len(b.users) == len(b.clients) == 2
     assert b.add_user(user1) is False
     assert len(b.users) == len(b.clients) == 2
+
+
+def test_virtual_broker_order_place_users(basic_broker_with_users):
+    b = basic_broker_with_users
+    b.failure_rate = 0.0 # To ensure all orders are passed
+    b.order_place(symbol='aapl', quantity=10, side=1)
+    b.order_place(symbol='goog', quantity=10, side=1)
+    for c in b.clients:
+        b.order_place(symbol='aapl', quantity=20, side=-1, userid=c)
+    b.order_place(symbol='goog', quantity=10, side=1, userid='unknown')
+    assert len(b._orders) == 6
+    for u in b.users:
+        assert len(u.orders) == 1
+    assert len(b.clients) == len(b.users) == 3
+
+def test_virtual_broker_order_place_same_memory(basic_broker_with_users):
+    # Check orders have the same memory id
+    b = basic_broker_with_users
+    b.failure_rate = 0.0 # To ensure all orders are passed
+    b.order_place(symbol='aapl', quantity=10, side=1)
+    b.order_place(symbol='goog', quantity=10, side=1)
+    for c in b.clients:
+        b.order_place(symbol='aapl', quantity=20, side=-1, userid=c)
+    assert len(b._orders) == 5
+    for i in range(3):
+        order = b.users[i].orders[0]
+        assert(id(order)) == id(b._orders[order.order_id])
+        assert order is b._orders[order.order_id]
+
