@@ -2,6 +2,12 @@ from omspy.simulation.models import *
 from omspy.simulation.virtual import generate_orderbook
 import pendulum
 import pytest
+import random
+
+
+@pytest.fixture
+def basic_ticker():
+    return Ticker(name="aapl", token=1234, initial_price=125)
 
 
 @pytest.fixture
@@ -414,3 +420,54 @@ def test_vorder_modify_by_status_partial_fill(vorder_kwargs):
         assert order.canceled_quantity > 0
         assert order.pending_quantity == 0
         assert order.is_done is True
+
+
+def test_ticker_defaults():
+    ticker = Ticker(name="abcd")
+    assert ticker.name == "abcd"
+    assert ticker.token is None
+    assert ticker.initial_price == 100
+    assert ticker.mode == TickerMode.RANDOM
+    assert ticker._high == ticker._low == ticker._ltp == 100
+
+
+def test_ticker_is_random():
+    ticker = Ticker(name="abcd")
+    assert ticker.is_random is True
+    ticker.mode = TickerMode.MANUAL
+    assert ticker.is_random is False
+
+
+def test_ticker_ltp(basic_ticker):
+    random.seed(1000)
+    ticker = basic_ticker
+    for i in range(15):
+        ticker.ltp
+    assert ticker._ltp == 120.5
+    assert ticker._high == 125.3
+    assert ticker._low == 120.5
+
+
+def test_ticker_ohlc(basic_ticker):
+    ticker = basic_ticker
+    ticker.ohlc() == dict(open=125, high=125, low=125, close=125)
+    for i in range(15):
+        ticker.ltp
+    ticker.ohlc() == dict(open=125, high=125, low=116.95, close=120)
+
+
+def test_ticker_ticker_mode(basic_ticker):
+    ticker = basic_ticker
+    ticker.mode = TickerMode.MANUAL
+    for i in range(3):
+        print(ticker.ltp)
+    assert ticker.ltp == 125
+    ticker.mode = TickerMode.RANDOM
+    assert ticker.ltp != 125
+
+
+def test_ticker_update(basic_ticker):
+    ticker = basic_ticker
+    for ltp in (128, 123, 124, 126):
+        ticker.update(ltp)
+    assert ticker.ohlc() == dict(open=125, high=128, low=123, close=126)

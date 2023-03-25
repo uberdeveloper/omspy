@@ -31,6 +31,82 @@ class Side(Enum):
     SELL = -1
 
 
+class TickerMode(Enum):
+    RANDOM = 1
+    MANUAL = 2
+
+
+class Ticker(BaseModel):
+    """
+    A simple ticker class to generate fake data
+    name
+        name for this ticker
+    token
+        a unique instrument token
+    initial_price
+        initial_price for the ticker
+    ticker_mode
+        ticker mode; random or otherwise
+    Note
+    -----
+    1) If ticker mode is random, price is generated based on
+    random walk from normal distribution
+    """
+
+    name: str
+    token: Optional[int] = None
+    initial_price: float = 100
+    mode: TickerMode = TickerMode.RANDOM
+    _high: float = PrivateAttr()
+    _low: float = PrivateAttr()
+    _ltp: float = PrivateAttr()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self._high = self.initial_price
+        self._low = self.initial_price
+        self._ltp = self.initial_price
+
+    def _update_values(self, last_price: float):
+        self._ltp = last_price
+        self._high = max(self._high, last_price)
+        self._low = min(self._low, last_price)
+
+    @property
+    def is_random(self) -> bool:
+        """
+        returns True if the mode is random else False
+        """
+        return True if self.mode == TickerMode.RANDOM else False
+
+    @property
+    def ltp(self) -> float:
+        """
+        Get the last price and update it
+        """
+        if self.is_random:
+            diff = random.gauss(0, 1) * self._ltp * 0.01
+            last_price = self._ltp + diff
+            last_price = round(last_price * 20) / 20
+            self._update_values(last_price)
+        return self._ltp
+
+    def update(self, last_price: float) -> float:
+        """
+        Update last price,high and low
+        """
+        self._update_values(last_price)
+        return self._ltp
+
+    def ohlc(self) -> Dict[str, float]:
+        """
+        Calculate the ohlc for this ticker
+        """
+        return dict(
+            open=self.initial_price, high=self._high, low=self._low, close=self._ltp
+        )
+
+
 class OHLC(BaseModel):
     open: float
     high: float
