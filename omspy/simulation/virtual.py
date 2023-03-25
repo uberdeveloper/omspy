@@ -25,6 +25,23 @@ SUCCESS = ResponseStatus.SUCCESS
 FAILURE = ResponseStatus.FAILURE
 
 
+def _iterate_method(
+    method: Callable, symbol: Union[str, Iterable], **kwargs
+) -> Dict[str, Any]:
+    """
+    iterate the given method if the symbol is an iterable else return the value
+    """
+    if isinstance(symbol, str):
+        return method(symbol, **kwargs)
+    elif isinstance(symbol, Iterable):
+        dct = dict()
+        for s in symbol:
+            dct.update(method(s, **kwargs))
+        return dct
+    else:
+        return dict()
+
+
 def generate_price(start: int = 100, end: int = 110) -> int:
     """
     Generate a random price in the given range between start and end
@@ -143,22 +160,6 @@ class FakeBroker(BaseModel):
         "DOW",
     ]
 
-    def _iterate_method(
-        self, method: Callable, symbol: Union[str, Iterable], **kwargs
-    ) -> Dict[str, Any]:
-        """
-        iterate the given method if the symbol is an iterable else return the value
-        """
-        if isinstance(symbol, str):
-            return method(symbol, **kwargs)
-        elif isinstance(symbol, Iterable):
-            dct = dict()
-            for s in symbol:
-                dct.update(method(s, **kwargs))
-            return dct
-        else:
-            return dict()
-
     def _create_order_args(self, **kwargs) -> Dict[str, Any]:
         """
         Create order arguments from the list of
@@ -195,7 +196,7 @@ class FakeBroker(BaseModel):
         kwargs
             can provide start and end arguments to generate price within the range
         """
-        return self._iterate_method(self._ltp, symbol, **kwargs)
+        return _iterate_method(self._ltp, symbol, **kwargs)
 
     def _orderbook(self, symbol: str, **kwargs) -> Dict[str, OrderBook]:
         """
@@ -212,7 +213,7 @@ class FakeBroker(BaseModel):
         kwargs
             keyword arguments for the generate_orderbook funtion
         """
-        return self._iterate_method(self._orderbook, symbol, **kwargs)
+        return _iterate_method(self._orderbook, symbol, **kwargs)
 
     def _ohlc(self, symbol: str, **kwargs) -> Dict[str, OHLCV]:
         """
@@ -229,7 +230,7 @@ class FakeBroker(BaseModel):
         kwargs
             keyword arguments for the generate_ohlc funtion
         """
-        return self._iterate_method(self._ohlc, symbol, **kwargs)
+        return _iterate_method(self._ohlc, symbol, **kwargs)
 
     def _quote(self, symbol: str, **kwargs) -> Dict[str, VQuote]:
         """
@@ -287,7 +288,7 @@ class FakeBroker(BaseModel):
         -----
         1) ask and bid price are derived from start and end prices
         """
-        return self._iterate_method(self._quote, symbol, **kwargs)
+        return _iterate_method(self._quote, symbol, **kwargs)
 
     def order_place(self, **kwargs) -> VOrder:
         """
