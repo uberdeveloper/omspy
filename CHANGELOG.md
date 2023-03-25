@@ -1,3 +1,17 @@
+### 0.14.0
+Improvements to the VirtualBroker module
+### Features
+Following features added to `VirtualBroker`
+* `VirtualBroker` methods to match `FakeBroker` methods
+* Users added, orders can be placed and managed based on user
+* Order status could be fetched based on Status
+* delay attribute added to broker
+* Ticker model improved with ohlc and orderbook methods
+
+### Improvements
+* `iterate_method` made generic
+* `Ticker` model now moved to models
+
 ### 0.13.0
 * New `FakeBroker` class added to simulation
 * API added for generating fake data in `omspy.simulation.server`
