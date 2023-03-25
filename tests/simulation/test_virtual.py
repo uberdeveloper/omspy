@@ -685,3 +685,20 @@ def test_virtual_broker_get_order_by_status(basic_broker_with_users):
         assert order.status == Status.CANCELED
         assert order.filled_quantity == 0
         assert order.canceled_quantity == 10
+
+
+def test_ticker_ticker_mode(basic_ticker):
+    ticker = basic_ticker
+    ticker.mode = TickerMode.MANUAL
+    for i in range(3):
+        print(ticker.ltp)
+    assert ticker.ltp == 125
+    ticker.mode = TickerMode.RANDOM
+    assert ticker.ltp != 125
+
+
+def test_ticker_update(basic_ticker):
+    ticker = basic_ticker
+    for ltp in (128, 123, 124, 126):
+        ticker.update(ltp)
+    assert ticker.ohlc() == dict(open=125, high=128, low=123, close=126)
