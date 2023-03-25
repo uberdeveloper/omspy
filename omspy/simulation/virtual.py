@@ -569,25 +569,6 @@ class VirtualBroker(BaseModel):
         """
         return _iterate_method(self._ohlc, symbol)
 
-    def _orderbook(self, symbol: str) -> Optional[Dict[str, OrderBook]]:
-        """
-        return the orderbook for the ticker
-        """
-        ticker = self.tickers.get(symbol)
-        if ticker:
-            if ticker.orderbook:
-                return {symbol: ticker.orderbook}
-            else:
-                return None
-        else:
-            return None
-
-    def orderbook(self, symbol: Union[str, Iterable]) -> Optional[Dict[str, OrderBook]]:
-        """
-        return the orderbook for the given symbol or list of symbols
-        """
-        return _iterate_method(self._orderbook, symbol)
-
     def _quote(self, symbol: str) -> Optional[Dict[str, VQuote]]:
         """
         return the quote for the symbol
