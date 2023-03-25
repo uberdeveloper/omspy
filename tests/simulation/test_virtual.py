@@ -652,7 +652,9 @@ def test_virtual_broker_update_ticker(basic_broker):
     ]
     for last_price in prices:
         b.update_tickers(last_price)
-    assert b.tickers["aapl"].ohlc()["high"] == 106
-    assert b.tickers["goog"].ohlc()["low"] == 120
-    assert b.tickers["amzn"].ohlc()["close"] == 261
-    assert b.tickers["aapl"].ohlc() == dict(open=100, high=106, low=99, close=103)
+    assert b.tickers["aapl"].ohlc().high == 106
+    assert b.tickers["goog"].ohlc().low == 120
+    assert b.tickers["amzn"].ohlc().close == 261
+    assert b.tickers["aapl"].ohlc().dict() == dict(
+        open=100, high=106, low=99, close=103, last_price=103
+    )

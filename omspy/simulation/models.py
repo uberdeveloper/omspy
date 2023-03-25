@@ -36,6 +36,22 @@ class TickerMode(Enum):
     MANUAL = 2
 
 
+class OHLC(BaseModel):
+    open: float
+    high: float
+    low: float
+    close: float
+    last_price: float
+
+
+class OHLCV(OHLC):
+    volume: int
+
+
+class OHLCVI(OHLCV):
+    open_interest: int
+
+
 class Ticker(BaseModel):
     """
     A simple ticker class to generate fake data
@@ -98,29 +114,17 @@ class Ticker(BaseModel):
         self._update_values(last_price)
         return self._ltp
 
-    def ohlc(self) -> Dict[str, float]:
+    def ohlc(self) -> OHLC:
         """
         Calculate the ohlc for this ticker
         """
-        return dict(
-            open=self.initial_price, high=self._high, low=self._low, close=self._ltp
+        return OHLC(
+            open=self.initial_price,
+            high=self._high,
+            low=self._low,
+            close=self._ltp,
+            last_price=self._ltp,
         )
-
-
-class OHLC(BaseModel):
-    open: float
-    high: float
-    low: float
-    close: float
-    last_price: float
-
-
-class OHLCV(OHLC):
-    volume: int
-
-
-class OHLCVI(OHLCV):
-    open_interest: int
 
 
 class VQuote(OHLCV):
