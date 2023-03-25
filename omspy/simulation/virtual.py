@@ -36,7 +36,9 @@ def _iterate_method(
     elif isinstance(symbol, Iterable):
         dct = dict()
         for s in symbol:
-            dct.update(method(s, **kwargs))
+            val = method(s, **kwargs)
+            if val:
+                dct.update(val)
         return dct
     else:
         return dict()
@@ -537,3 +539,19 @@ class VirtualBroker(BaseModel):
             ticker = self.tickers.get(k)
             if ticker:
                 ticker.update(v)
+
+    def _ltp(self, symbol: str) -> Optional[Dict[str, float]]:
+        """
+        get last traded price for a symbol
+        """
+        ticker = self.tickers.get(symbol)
+        if ticker:
+            return {symbol: ticker.ltp}
+        else:
+            return None
+
+    def ltp(self, symbol: Union[str, Iterable]) -> Optional[Dict[str, float]]:
+        """
+        Get last traded prices for the given list of symbols
+        """
+        return _iterate_method(self._ltp, symbol)

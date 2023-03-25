@@ -24,6 +24,20 @@ def basic_broker_with_users(basic_broker) -> VirtualBroker:
     return basic_broker
 
 
+@pytest.fixture
+def basic_broker_with_prices(basic_broker) -> VirtualBroker:
+    prices = [
+        dict(aapl=105, goog=121, amzn=264),
+        dict(aapl=102, goog=124, amzn=258),
+        dict(aapl=99, goog=120, amzn=260),
+        dict(aapl=106, goog=122, amzn=259),
+        dict(aapl=103, goog=123, amzn=261),
+    ]
+    for last_price in prices:
+        basic_broker.update_tickers(last_price)
+    return basic_broker
+
+
 def test_generate_price():
     random.seed(100)
     assert generate_price() == 102
@@ -641,20 +655,23 @@ def test_virtual_broker_get_order_by_status(basic_broker_with_users):
         assert order.canceled_quantity == 10
 
 
-def test_virtual_broker_update_ticker(basic_broker):
-    b = basic_broker
-    prices = [
-        dict(aapl=105, goog=121, amzn=264),
-        dict(aapl=102, goog=124, amzn=258),
-        dict(aapl=99, goog=120, amzn=260),
-        dict(aapl=106, goog=122, amzn=259),
-        dict(aapl=103, goog=123, amzn=261),
-    ]
-    for last_price in prices:
-        b.update_tickers(last_price)
+def test_virtual_broker_update_ticker(basic_broker_with_prices):
+    b = basic_broker_with_prices
     assert b.tickers["aapl"].ohlc().high == 106
     assert b.tickers["goog"].ohlc().low == 120
     assert b.tickers["amzn"].ohlc().close == 261
     assert b.tickers["aapl"].ohlc().dict() == dict(
         open=100, high=106, low=99, close=103, last_price=103
     )
+
+
+def test_virtual_broker_ltp(basic_broker_with_prices):
+    b = basic_broker_with_prices
+    b.ltp("aapl") == dict(aapl=103)
+    b.ltp(["goog", "amzn"]) == dict(goog=123, amzn=261)
+
+
+def test_virtual_broker_ltp(basic_broker_with_prices):
+    b = basic_broker_with_prices
+    b.ltp("dow") is None
+    b.ltp(["goog", "amzn", "dow", "aa"]) == dict(goog=123, amzn=261)
