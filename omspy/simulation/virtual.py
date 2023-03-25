@@ -24,7 +24,6 @@ from omspy.simulation.models import (
 SUCCESS = ResponseStatus.SUCCESS
 FAILURE = ResponseStatus.FAILURE
 
-
 def _iterate_method(
     method: Callable, symbol: Union[str, Iterable], **kwargs
 ) -> Dict[str, Any]:
@@ -42,7 +41,6 @@ def _iterate_method(
         return dct
     else:
         return dict()
-
 
 def generate_price(start: int = 100, end: int = 110) -> int:
     """
@@ -540,7 +538,8 @@ class VirtualBroker(BaseModel):
             if ticker:
                 ticker.update(v)
 
-    def _ltp(self, symbol: str) -> Optional[Dict[str, float]]:
+
+    def _ltp(self, symbol:str)->Optional[Dict[str,float]]:
         """
         get last traded price for a symbol
         """
@@ -550,8 +549,24 @@ class VirtualBroker(BaseModel):
         else:
             return None
 
-    def ltp(self, symbol: Union[str, Iterable]) -> Optional[Dict[str, float]]:
+    def ltp(self, symbol: Union[str,Iterable])->Optional[Dict[str,float]]:
         """
         Get last traded prices for the given list of symbols
         """
         return _iterate_method(self._ltp, symbol)
+
+    def _ohlc(self, symbol:str)->Optional[Dict[str, OHLCV]]:
+        ticker = self.tickers.get(symbol)
+        if ticker:
+            return {symbol: ticker.ohlc()}
+        else:
+            return None
+
+    def ohlc(self, symbol: Union[str,Iterable])->Optional[Dict[str,OHLCV]]:
+        """
+        Get OHLC prices
+        """
+        return _iterate_method(self._ohlc, symbol)
+        
+
+

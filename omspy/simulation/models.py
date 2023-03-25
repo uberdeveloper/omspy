@@ -73,6 +73,8 @@ class Ticker(BaseModel):
     token: Optional[int] = None
     initial_price: float = 100
     mode: TickerMode = TickerMode.RANDOM
+    orderbook: Optional[OrderBook]
+    volume: Optional[int]
     _high: float = PrivateAttr()
     _low: float = PrivateAttr()
     _ltp: float = PrivateAttr()
@@ -125,6 +127,7 @@ class Ticker(BaseModel):
             close=self._ltp,
             last_price=self._ltp,
         )
+
 
 
 class VQuote(OHLCV):

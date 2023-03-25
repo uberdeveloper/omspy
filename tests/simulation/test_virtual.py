@@ -675,3 +675,8 @@ def test_virtual_broker_ltp(basic_broker_with_prices):
     b = basic_broker_with_prices
     b.ltp("dow") is None
     b.ltp(["goog", "amzn", "dow", "aa"]) == dict(goog=123, amzn=261)
+    assert len(b.ltp(["goog", "amzn", "dow", "aa"])) == 2
+
+def test_virtual_broker_ohlc(basic_broker_with_prices):
+    b = basic_broker_with_prices
+    assert b.ohlc("aapl") == dict(aapl=b.tickers['aapl'].ohlc())
