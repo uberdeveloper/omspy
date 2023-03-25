@@ -157,6 +157,11 @@ class Ticker(BaseModel):
         self._low = self.initial_price
         self._ltp = self.initial_price
 
+    def _update_values(self, last_price: float):
+        self._ltp = last_price
+        self._high = max(self._high, last_price)
+        self._low = min(self._low, last_price)
+
     @property
     def is_random(self) -> bool:
         """
@@ -173,18 +178,14 @@ class Ticker(BaseModel):
             diff = random.gauss(0, 1) * self._ltp * 0.01
             last_price = self._ltp + diff
             last_price = round(last_price * 20) / 20
-            self._ltp = last_price
-            self._high = max(self._high, last_price)
-            self._low = min(self._low, last_price)
+            self._update_values(last_price)
         return self._ltp
 
     def update(self, last_price: float) -> float:
         """
         Update last price,high and low
         """
-        self._ltp = last_price
-        self._high = max(self._high, last_price)
-        self._low = min(self._low, last_price)
+        self._update_values(last_price)
         return self._ltp
 
     def ohlc(self) -> Dict[str, float]:
