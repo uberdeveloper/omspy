@@ -524,3 +524,15 @@ class VirtualBroker(BaseModel):
                 status=FAILURE,
                 error_msg=f"Order id {order_id} not found on system",
             )
+
+    def update_tickers(self, last_price: Dict[str, float]):
+        """
+        update tickers
+        last_price
+            dictionary of last traded price with key being
+            the symbol name and value the last price
+        """
+        for k, v in last_price.items():
+            ticker = self.tickers.get(k)
+            if ticker:
+                ticker.update(v)
