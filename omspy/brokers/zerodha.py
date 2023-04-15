@@ -6,13 +6,10 @@ from time import sleep
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
-
+from toolkit.webdriver import MyWebDriver
 from kiteconnect.exceptions import (
     TokenException,
     NetworkException,
@@ -114,17 +111,15 @@ class Zerodha(Broker):
     def _login(self) -> None:
         try:
             self.kite = KiteConnect(api_key=self._api_key)
+            """
             options = Options()
-            # options.add_argument("--headless")
+            options.add_argument("--headless")
             options.add_argument("--disable-gpu")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
+            """
             print("INIT DRIVER")
-            driver = webdriver.Chrome(options=options)
-            """
-            driver = webdriver.Chrome(service=ChromeService(
-                ChromeDriverManager().install()), options=options)
-            """
+            driver = MyWebDriver().get_driver()
             driver.get(self.kite.login_url())
             print(f"success in DRIVER {driver}")
             print("GETTING LOGIN FORM")
