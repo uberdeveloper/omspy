@@ -149,16 +149,13 @@ class Zerodha(Broker):
             )
             driver.find_element(By.XPATH, '//button[@type="submit"]').click()
             sleep(5)
-            token, retry = None, 0
-            while token is None and retry > 5:
-                print(f" {driver.current_url} is the current url")
-                print(f" request token is {token}")
-                token = get_key(driver.current_url)
-                retry += 1
+            token = get_key(driver.current_url)
+            print(f" {driver.current_url} is the current url")
+            print(f" request token is {token}")
             access = self.kite.generate_session(
                 request_token=token, api_secret=self._secret
             )
-            print("session is {}", format(access))
+            print(f" session is {access}")
             self.kite.set_access_token(access["access_token"])
             with open(self._tokpath, "w") as f:
                 f.write(access["access_token"])
