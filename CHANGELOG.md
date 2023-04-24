@@ -1,3 +1,7 @@
+### 0.14.1
+### Fixes
+* kotak broker `instrument_master` extra columns bug fixed - broker added extra columns for a few instruments to track market surveillance
+
 ### 0.14.0
 Improvements to the VirtualBroker module
 ### Features
