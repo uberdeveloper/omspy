@@ -1,10 +1,9 @@
-from omspy.base import Broker, pre, post
+from omspy.base import Broker, post
 from typing import Optional, List, Dict, Union
 from ks_api_client import ks_api
 import pendulum
 import pandas as pd
 import logging
-from copy import deepcopy
 
 
 def get_url(segment: Optional[str] = "cash") -> str:
@@ -98,14 +97,20 @@ def convert_strike(strike: Union[int, float]) -> Union[int, float]:
         return round(strike, 3)
 
 
-def download_file(url: str) -> pd.DataFrame:
+def download_file(url: str, num_cols: int) -> pd.DataFrame:
     """
     Given a url, download the file, parse contents
     and return a dataframe.
+    url
+        url to download
+    num_cols
+        number of columns to extract data
     returns an empty Dataframe in case of an error
     """
     try:
-        df = pd.read_csv(url, delimiter="|", parse_dates=["expiry"])
+        df = pd.read_table(
+            url, delimiter="|", parse_dates=["expiry"], usecols=range(num_cols)
+        )
         df = df.rename(columns=lambda x: x.lower())
         return df.drop_duplicates(subset=["instrumenttoken"])
     except Exception as e:
@@ -155,8 +160,8 @@ def _create_instrument_dataframe() -> pd.DataFrame:
     Create the instrument dataframe
     """
     # TODO: Handle error in case of no instruments
-    cash = download_file(get_url(segment="cash"))
-    fno = download_file(get_url(segment="fno"))
+    cash = download_file(get_url(segment="cash"), num_cols=16)
+    fno = download_file(get_url(segment="fno"), num_cols=15)
     cash = add_name(cash, segment="cash")
     fno = add_name(fno, segment="fno")
     df = pd.concat([cash, fno]).drop_duplicates(subset=["instrumenttoken"])

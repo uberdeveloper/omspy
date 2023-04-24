@@ -117,9 +117,9 @@ def test_get_name_for_fno_symbol(test_input, expected):
 def test_download_file():
     url = get_url()
     test_df = pd.read_csv(DATA_ROOT / "kotak_cash.csv")
-    with patch("pandas.read_csv") as get:
+    with patch("pandas.read_table") as get:
         get.return_value = test_df
-        df = download_file(url)
+        df = download_file(url, num_cols=16)
         assert len(df) == 7314
 
 
@@ -159,7 +159,7 @@ def test_create_instrument_master():
     df2 = pd.read_csv(DATA_ROOT / "kotak_fno.csv")
     with open(DATA_ROOT / "kotak_master.json") as f:
         expected = json.load(f)
-    with patch("pandas.read_csv") as get:
+    with patch("pandas.read_table") as get:
         get.side_effect = [df, df2, df, df2]
         master = create_instrument_master()
         assert master == expected
@@ -408,7 +408,7 @@ def test_get_status(mock_kotak):
 def test_create_instrument_master_default():
     df = pd.read_csv(DATA_ROOT / "kotak_cash.csv").iloc[:100]
     df2 = pd.read_csv(DATA_ROOT / "kotak_fno.csv").iloc[:100]
-    with patch("pandas.read_csv") as get:
+    with patch("pandas.read_table") as get:
         get.side_effect = [df, df2, df, df2]
         master = create_instrument_master()
     cash = add_name(df)
@@ -423,7 +423,7 @@ def test_create_instrument_master_default():
 def test_create_instrument_master_different_columns():
     df = pd.read_csv(DATA_ROOT / "kotak_cash.csv").iloc[:100]
     df2 = pd.read_csv(DATA_ROOT / "kotak_fno.csv").iloc[:100]
-    with patch("pandas.read_csv") as get:
+    with patch("pandas.read_table") as get:
         get.side_effect = [df, df2, df, df2]
         master = create_instrument_master(token="exchangetoken")
     cash = add_name(df)
@@ -434,7 +434,7 @@ def test_create_instrument_master_different_columns():
     }
     assert master == expected
 
-    with patch("pandas.read_csv") as get:
+    with patch("pandas.read_table") as get:
         get.side_effect = [df, df2, df, df2]
         master = create_instrument_master(name="instrumenttoken", token="exchangetoken")
     expected = {
