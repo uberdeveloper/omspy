@@ -196,7 +196,6 @@ class Zerodha(Broker):
         Return only the positions for the day
         """
         position_book = self.kite.positions().get("day")
-        position_book = deepcopy(position_book)
         if position_book:
             for position in position_book:
                 if position["quantity"] > 0:
