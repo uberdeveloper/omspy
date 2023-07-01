@@ -3,6 +3,7 @@ from omspy.simulation.virtual import generate_orderbook
 import pendulum
 import pytest
 import random
+from pydantic import ValidationError
 
 
 @pytest.fixture
@@ -473,3 +474,22 @@ def test_ticker_update(basic_ticker):
     assert ticker.ohlc().dict() == dict(
         open=125, high=128, low=123, close=126, last_price=126
     )
+
+
+def test_vorder_side():
+    order = VOrder(symbol="aapl", quantity=100, side="buy",
+            order_id='123456789')
+    assert order.side == Side.BUY
+    order = VOrder(symbol="aapl", quantity=100, side="BUY",
+            order_id='123456789')
+    assert order.side == Side.BUY
+    order = VOrder(symbol="aapl", quantity=100, side="s",
+            order_id='123456789')
+    assert order.side == Side.SELL
+    order = VOrder(symbol="aapl", quantity=100, side="sell",
+            order_id='123456789')
+    assert order.side == Side.SELL
+
+def test_vorder_side_error():
+    with pytest.raises(ValidationError):
+        order = VOrder(symbol="aapl", quantity=100, side="unknown",order_id='123456789')

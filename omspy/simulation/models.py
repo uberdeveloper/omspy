@@ -171,6 +171,18 @@ class VOrder(BaseModel):
     class Config:
         validate_assignment = True
 
+    @validator('side', pre=True, always=True)
+    def accept_buy_sell_as_side(cls, v):
+        if isinstance(v, str):
+            if v.lower()[0] == 'b':
+                return Side.BUY
+            elif v.lower()[0] == 's':
+                return Side.SELL
+            else:
+                raise TypeError(f"{v} is not a valid side, should be buy or sell")
+        else:
+            return v
+
     def __init__(self, **data):
         super().__init__(**data)
         if self.timestamp is None:
