@@ -12,6 +12,7 @@ from omspy.simulation.models import (
     OrderResponse,
     ResponseStatus,
     VOrder,
+    VTrade,
     OHLCV,
     Side,
     Status,
@@ -392,6 +393,7 @@ class FakeBroker(BaseModel):
             positions.append(position)
         return positions
 
+    @user_response
     def orders(self, symbols: Optional[List[str]] = None) -> List[VOrder]:
         """
         Generate some fake orders
@@ -404,14 +406,47 @@ class FakeBroker(BaseModel):
         orders = []
         for symbol in symbols:
             order_id = uuid.uuid4().hex
-            quantity = random.randrange(10,100)
-            price = round(random.random() * random.randrange(10,100),2)
-            order = VOrder(order_id=order_id, symbol=symbol,
-                    quantity=quantity,filled_quantity=quantity,
-                    side=random.choice(list(Side)),
-                    price=price, average_price=price)
+            quantity = random.randrange(10, 100)
+            price = round(random.random() * random.randrange(10, 100), 2)
+            order = VOrder(
+                order_id=order_id,
+                symbol=symbol,
+                quantity=quantity,
+                filled_quantity=quantity,
+                side=random.choice(list(Side)),
+                price=price,
+                average_price=price,
+            )
             orders.append(order)
         return orders
+
+    @user_response
+    def trades(self, symbols: Optional[List[str]] = None) -> List[VTrade]:
+        """
+        Generate some fake trades
+        symbols
+            symbol for which fake trades are to be generated
+        """
+        if not symbols:
+            n = random.randrange(1, len(self._symbols)) * 2
+            symbols = random.choices(self._symbols, k=n)
+        trades = []
+        for symbol in symbols:
+            order_id = uuid.uuid4().hex
+            trade_id = uuid.uuid4().hex
+            quantity = random.randrange(10, 100)
+            price = round(random.random() * random.randrange(10, 100), 2)
+            trade = VTrade(
+                trade_id=trade_id,
+                order_id=order_id,
+                symbol=symbol,
+                quantity=quantity,
+                side=random.choice(list(Side)),
+                price=price,
+            )
+            trades.append(trade)
+        return trades
+
 
 class VirtualBroker(BaseModel):
     """

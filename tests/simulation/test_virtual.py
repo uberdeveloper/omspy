@@ -689,6 +689,8 @@ def test_fake_broker_user_response_other_methods():
     assert b.quote(response=100) == 100
     assert b.orderbook(response=100) == 100
     assert b.positions(response=100) == 100
+    assert b.orders(response=100) == 100
+    assert b.trades(response=100) == 100
 
 
 def test_fake_broker_user_response_order_methods():
@@ -697,6 +699,7 @@ def test_fake_broker_user_response_order_methods():
     assert b.order_modify(response="hello") == "hello"
     assert b.order_cancel(response="hello") == "hello"
 
+
 def test_fake_broker_orders():
     random.seed(10001)
     b = FakeBroker()
@@ -704,3 +707,12 @@ def test_fake_broker_orders():
     assert len(orders) == 6
     assert all([o.price > 0 for o in orders]) is True
     assert all([o.quantity > 0 for o in orders]) is True
+
+
+def test_fake_broker_trades():
+    random.seed(10001)
+    b = FakeBroker()
+    trades = b.trades()
+    assert len(trades) == 12
+    assert all([o.price > 0 for o in trades]) is True
+    assert all([o.quantity > 0 for o in trades]) is True
