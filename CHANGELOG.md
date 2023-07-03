@@ -1,3 +1,10 @@
+### 0.14.2
+Improvements to `FakeBroker` module
+### Features
+* user can provide a custom response to all methods in `FakeBroker` if you pass a response keyword argument
+* `side` to be converted to enum even if passed as a BUY or SELL string
+* fake methods added for `orders` and `trades`
+
 ### 0.14.1
 ### Fixes
 * kotak broker `instrument_master` extra columns bug fixed - broker added extra columns for a few instruments to track market surveillance

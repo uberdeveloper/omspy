@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "omspy"
-version = "0.14.1"
+version = "0.14.2"
 description = ""
 license = "MIT"
 authors = ["Ubermensch <uberdeveloper001@gmail.com>"]
