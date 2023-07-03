@@ -1,6 +1,7 @@
 import random
 import uuid
 import logging
+from functools import wraps
 from typing import Optional, Dict, Set, List, Union, Any, Callable
 from omspy.models import OrderBook, Quote
 from pydantic import BaseModel, PrivateAttr, confloat, ValidationError, Field
@@ -23,6 +24,23 @@ from omspy.simulation.models import (
 
 SUCCESS = ResponseStatus.SUCCESS
 FAILURE = ResponseStatus.FAILURE
+
+
+def user_response(f: Callable):
+    """
+    override a function with the response provided by the user
+    if the user includes the `response` keyword,
+    user response would be returns instead of the function response
+    """
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "response" in kwargs:
+            return kwargs.pop("response")
+        else:
+            return f(*args, **kwargs)
+
+    return wrapper
 
 
 def _iterate_method(
@@ -188,6 +206,7 @@ class FakeBroker(BaseModel):
         price = generate_price(**kwargs)
         return {symbol: price}
 
+    @user_response
     def ltp(
         self, symbol: Union[str, Iterable], **kwargs
     ) -> Dict[str, Union[float, int]]:
@@ -207,6 +226,7 @@ class FakeBroker(BaseModel):
         orderbook = generate_orderbook(**kwargs)
         return {symbol: orderbook}
 
+    @user_response
     def orderbook(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, OrderBook]:
         """
         generate a random orderbook
@@ -224,6 +244,7 @@ class FakeBroker(BaseModel):
         values = generate_ohlc(**kwargs)
         return {symbol: values}
 
+    @user_response
     def ohlc(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, OHLCV]:
         """
         generate ohlc prices
@@ -268,6 +289,7 @@ class FakeBroker(BaseModel):
         quote = VQuote(orderbook=orderbook, **ohlc.dict())
         return {symbol: quote}
 
+    @user_response
     def quote(self, symbol: Union[str, Iterable], **kwargs) -> Dict[str, VQuote]:
         """
         generate a detailed quote with ohlcv and orderbook
@@ -292,6 +314,7 @@ class FakeBroker(BaseModel):
         """
         return _iterate_method(self._quote, symbol, **kwargs)
 
+    @user_response
     def order_place(self, **kwargs) -> VOrder:
         """
         Place an order with the broker
@@ -317,6 +340,7 @@ class FakeBroker(BaseModel):
         order_args.update(kwargs)
         return VOrder(order_id=order_id, **order_args)
 
+    @user_response
     def order_modify(self, **kwargs) -> VOrder:
         """
         Modify an order with the broker
@@ -328,6 +352,7 @@ class FakeBroker(BaseModel):
         modify_args["pending_quantity"] = quantity
         return VOrder(order_id=order_id, **modify_args)
 
+    @user_response
     def order_cancel(self, **kwargs) -> VOrder:
         """
         Cancel an order with the broker
@@ -340,6 +365,7 @@ class FakeBroker(BaseModel):
         cancel_args["canceled_quantity"] = quantity
         return VOrder(order_id=order_id, **cancel_args)
 
+    @user_response
     def positions(self, symbols: Optional[List[str]] = None) -> List[VPosition]:
         """
         Generate some fake positions

@@ -674,3 +674,25 @@ def test_virtual_broker_ltp(basic_broker_with_prices):
 def test_virtual_broker_ohlc(basic_broker_with_prices):
     b = basic_broker_with_prices
     assert b.ohlc("aapl") == dict(aapl=b.tickers["aapl"].ohlc())
+
+
+def test_fake_broker_ltp_user_response():
+    b = FakeBroker()
+    assert b.ltp("aapl", response=4) == 4
+    assert b.ltp("aapl", response={1, 2, 3}) == set([1, 2, 3])
+    assert b.ltp("aapl", response=dict(price=110)) == {"price": 110}
+
+
+def test_fake_broker_user_response_other_methods():
+    b = FakeBroker()
+    assert b.ohlc(response=100) == 100
+    assert b.quote(response=100) == 100
+    assert b.orderbook(response=100) == 100
+    assert b.positions(response=100) == 100
+
+
+def test_fake_broker_user_response_order_methods():
+    b = FakeBroker()
+    assert b.order_place(response="hello") == "hello"
+    assert b.order_modify(response="hello") == "hello"
+    assert b.order_cancel(response="hello") == "hello"
