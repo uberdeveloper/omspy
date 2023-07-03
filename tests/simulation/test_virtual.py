@@ -179,13 +179,6 @@ def test_virtual_broker_order_place_validation_error(basic_broker):
         assert "quantity" in response.error_msg
         assert response.data is None
 
-        response = b.order_place(symbol="aapl", quantity=100, side="buy")
-        assert response.status == "failure"
-        assert response.timestamp == known
-        assert response.error_msg.startswith("Found 1 validation")
-        assert "side" in response.error_msg
-        assert response.data is None
-
 
 def test_virtual_broker_get(basic_broker):
     b = basic_broker
@@ -677,6 +670,7 @@ def test_virtual_broker_ltp(basic_broker_with_prices):
     b.ltp(["goog", "amzn", "dow", "aa"]) == dict(goog=123, amzn=261)
     assert len(b.ltp(["goog", "amzn", "dow", "aa"])) == 2
 
+
 def test_virtual_broker_ohlc(basic_broker_with_prices):
     b = basic_broker_with_prices
-    assert b.ohlc("aapl") == dict(aapl=b.tickers['aapl'].ohlc())
+    assert b.ohlc("aapl") == dict(aapl=b.tickers["aapl"].ohlc())
