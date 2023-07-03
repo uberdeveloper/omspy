@@ -196,6 +196,15 @@ class FakeBroker(BaseModel):
             kwargs["side"] = random.choice([Side.BUY, Side.SELL])
         return kwargs
 
+    def _get_random_symbols(self, n:Optional[int]=None)->List[str]:
+        """
+        get random symbols
+        """
+        if n is None:
+            n = random.randrange(1, len(self._symbols))
+        symbols = random.choices(self._symbols, k=n)
+        return symbols
+
     def _ltp(self, symbol: str, **kwargs) -> Dict[str, Union[float, int]]:
         """
         get some random last traded price for the instrument
@@ -401,8 +410,7 @@ class FakeBroker(BaseModel):
             symbol for which fake orders are to be generated
         """
         if not symbols:
-            n = random.randrange(1, len(self._symbols))
-            symbols = random.choices(self._symbols, k=n)
+            symbols = self._get_random_symbols()
         orders = []
         for symbol in symbols:
             order_id = uuid.uuid4().hex
@@ -429,7 +437,7 @@ class FakeBroker(BaseModel):
         """
         if not symbols:
             n = random.randrange(1, len(self._symbols)) * 2
-            symbols = random.choices(self._symbols, k=n)
+            symbols = self._get_random_symbols(n)
         trades = []
         for symbol in symbols:
             order_id = uuid.uuid4().hex
