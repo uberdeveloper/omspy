@@ -696,3 +696,11 @@ def test_fake_broker_user_response_order_methods():
     assert b.order_place(response="hello") == "hello"
     assert b.order_modify(response="hello") == "hello"
     assert b.order_cancel(response="hello") == "hello"
+
+def test_fake_broker_orders():
+    random.seed(10001)
+    b = FakeBroker()
+    orders = b.orders()
+    assert len(orders) == 6
+    assert all([o.price > 0 for o in orders]) is True
+    assert all([o.quantity > 0 for o in orders]) is True

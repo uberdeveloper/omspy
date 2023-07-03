@@ -392,6 +392,26 @@ class FakeBroker(BaseModel):
             positions.append(position)
         return positions
 
+    def orders(self, symbols: Optional[List[str]] = None) -> List[VOrder]:
+        """
+        Generate some fake orders
+        symbols
+            symbol for which fake orders are to be generated
+        """
+        if not symbols:
+            n = random.randrange(1, len(self._symbols))
+            symbols = random.choices(self._symbols, k=n)
+        orders = []
+        for symbol in symbols:
+            order_id = uuid.uuid4().hex
+            quantity = random.randrange(10,100)
+            price = round(random.random() * random.randrange(10,100),2)
+            order = VOrder(order_id=order_id, symbol=symbol,
+                    quantity=quantity,filled_quantity=quantity,
+                    side=random.choice(list(Side)),
+                    price=price, average_price=price)
+            orders.append(order)
+        return orders
 
 class VirtualBroker(BaseModel):
     """
