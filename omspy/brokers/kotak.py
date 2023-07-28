@@ -1,6 +1,7 @@
 from omspy.base import Broker, post
 from typing import Optional, List, Dict, Union
 from ks_api_client import ks_api
+from neo_api_client import NeoAPI
 import pendulum
 import pandas as pd
 import logging
@@ -388,3 +389,43 @@ class Kotak(Broker):
         except Exception as e:
             logging.error(e)
             return None
+
+
+class Neo(Broker):
+    """
+    Automated trading class for Neo Broker
+    """
+
+    def __init__(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        user_id: str,
+        password: str,
+        twofa: str,
+        **kwargs,
+    ):
+        self._user_id = user_id
+        self._password = password
+        self._consumer_key = consumer_key
+        self._consumer_secret = consumer_secret
+        self._mpin = twofa
+        self._kwargs = kwargs
+
+    def authenticate(self) -> Dict:
+        mobilenumber = self._kwargs.pop("mobilenumber", None)
+        pan = self._kwargs.pop("pan", None)
+        client = NeoAPI(
+            consumer_key=self._consumer_key,
+            consumer_secret=self._consumer_secret,
+            **self._kwargs,
+        )
+        self.neo = client
+        client.login(
+            password=self._password,
+            userid=self._user_id,
+            mobilenumber=mobilenumber,
+            pan=pan,
+            mpin=self._mpin,
+        )
+        return client.session_2fa(self._mpin)
