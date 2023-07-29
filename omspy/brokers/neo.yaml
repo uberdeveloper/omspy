@@ -1,0 +1,4 @@
+order_place:
+  symbol: trading_symbol
+  side: transaction_type
+  exchange: exchange_segment
