@@ -63,7 +63,34 @@ class Neo(Broker):
                 order_args.update({key: val})
             order_args.update(kwargs)
             response = self.neo.place_order(**order_args)
-            return response.get("nOrdNo")
+            if response.get("Error"):
+                logging.error(response["Error"])
+                return None
+            elif response.get("error"):
+                logging.error(response["error"])
+                return None
+            else:
+                return response.get("nOrdNo")
         except Exception as e:
             logging.error(e)
             return None
+
+    @pre
+    def order_modify(self, order_id: str, **kwargs) -> Optional[Dict]:
+        """
+        modify the order
+        """
+        modify_args = dict(validity="DAY", product="MIS", amo="NO")
+        for key in ("quantity", "price", "trigger_price", "disclosed_quantity"):
+            if key in kwargs:
+                kwargs[key] = str(kwargs[key])
+        modify_args.update(kwargs)
+        response = self.neo.modify_order(order_id=order_id, **modify_args)
+        return response
+
+    def order_cancel(self, order_id: str):
+        """
+        cancel an existing order
+        """
+        response = self.neo.cancel_order(order_id=order_id)
+        return response

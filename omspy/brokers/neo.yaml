@@ -2,3 +2,7 @@ order_place:
   symbol: trading_symbol
   side: transaction_type
   exchange: exchange_segment
+order_modify:
+  symbol: trading_symbol
+  side: transaction_type
+  exchange: exchange_segment
