@@ -14,36 +14,33 @@ class Neo(Broker):
         self,
         consumer_key: str,
         consumer_secret: str,
-        user_id: str,
+        mobilenumber: str,
         password: str,
         twofa: str,
+        user_id: Optional[str] = None,
         **kwargs,
     ):
         self._user_id = user_id
+        self._mobilenumber = mobilenumber
         self._password = password
         self._consumer_key = consumer_key
         self._consumer_secret = consumer_secret
         self._mpin = twofa
         self._kwargs = kwargs
         super(Neo, self).__init__()
-
-    def authenticate(self) -> Dict:
-        mobilenumber = self._kwargs.pop("mobilenumber", None)
-        pan = self._kwargs.pop("pan", None)
         client = NeoAPI(
             consumer_key=self._consumer_key,
             consumer_secret=self._consumer_secret,
             **self._kwargs,
         )
         self.neo = client
-        client.login(
+
+    def authenticate(self) -> Dict:
+        self.neo.login(
             password=self._password,
-            userid=self._user_id,
-            mobilenumber=mobilenumber,
-            pan=pan,
-            mpin=self._mpin,
+            mobilenumber=self._mobilenumber,
         )
-        return client.session_2fa(self._mpin)
+        return self.neo.session_2fa(self._mpin)
 
     @pre
     def order_place(self, **kwargs) -> Union[str, None]:

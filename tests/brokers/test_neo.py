@@ -8,10 +8,27 @@ from unittest.mock import patch, call
 
 @pytest.fixture
 def mock_neo():
-    broker = Neo("consumer_key", "consumer_secret", "user_id", "password", "two_fa")
+    broker = Neo(
+        "consumer_key", "consumer_secret", "mobilenumber", "password", "two_fa"
+    )
     with patch("neo_api_client.NeoAPI") as mock_broker:
         broker.neo = mock_broker
         return broker
+
+
+@patch("neo_api_client.NeoAPI")
+def test_authenticate(mock_broker):
+    broker = Neo(
+        "consumer_key",
+        "consumer_secret",
+        mobilenumber="+9112345678",
+        password="password",
+        twofa=1111,
+    )
+    broker.neo = mock_broker
+    broker.authenticate()
+    mock_broker.login.assert_called_once()
+    mock_broker.session_2fa.assert_called_once()
 
 
 def test_order_place(mock_neo):
