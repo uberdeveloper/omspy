@@ -16,6 +16,14 @@ def mock_neo():
         return broker
 
 
+@pytest.fixture
+def mock_data():
+    # mock data for neo
+    with open("tests/data/kotak_neo.json") as f:
+        dct = json.load(f)
+        return dct
+
+
 @patch("neo_api_client.NeoAPI")
 def test_authenticate(mock_broker):
     broker = Neo(
@@ -73,3 +81,22 @@ def test_order_cancel(mock_neo):
     broker = mock_neo
     broker.order_cancel(12345678)
     broker.neo.cancel_order.assert_called_once()
+
+
+def test_orders(mock_neo, mock_data):
+    mock_neo.neo.order_report.side_effect = [mock_data["orders"]] * 4
+    broker = mock_neo
+    orders = broker.orders
+    assert len(orders) == 2
+    for key in ("order_id", "symbol", "status", "product"):
+        for order in orders:
+            assert key in order
+
+
+def test_orders_no_data(mock_neo, mock_data):
+    mock_neo.neo.order_report.side_effect = dict(
+        stat="failure", reason="wrong connection"
+    )
+    broker = mock_neo
+    orders = broker.orders
+    assert orders == [{}]

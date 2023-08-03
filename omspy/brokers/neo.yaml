@@ -6,3 +6,8 @@ order_modify:
   symbol: trading_symbol
   side: transaction_type
   exchange: exchange_segment
+orders:
+  nOrdNo: order_id
+  sym: symbol
+  ordSt: status
+  prod: product

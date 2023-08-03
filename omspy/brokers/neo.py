@@ -91,3 +91,20 @@ class Neo(Broker):
         """
         response = self.neo.cancel_order(order_id=order_id)
         return response
+
+    @property
+    @post
+    def orders(self) -> List[Dict]:
+        """
+        return the list of orders
+        """
+        response = self.neo.order_report()
+        if "data" in response:
+            orderbook = response["data"]
+
+            for o in orderbook:
+                o["ordSt"] = str(o["ordSt"]).upper()
+            return orderbook
+        else:
+            logging.warning(response)
+            return [{}]
