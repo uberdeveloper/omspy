@@ -1,3 +1,6 @@
+### 0.15.0
+### Features
+* New broker `Neo` added
 ### 0.14.2
 Improvements to `FakeBroker` module
 ### Features
