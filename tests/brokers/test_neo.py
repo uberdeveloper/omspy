@@ -4,6 +4,7 @@ import pendulum
 import pytest
 import json
 from unittest.mock import patch, call
+from copy import deepcopy
 
 
 @pytest.fixture
@@ -100,3 +101,29 @@ def test_orders_no_data(mock_neo, mock_data):
     broker = mock_neo
     orders = broker.orders
     assert orders == [{}]
+
+
+def test_orders_positions_quantity(mock_neo, mock_data):
+    expected = mock_data["positions"]
+    expected_buy = deepcopy(expected)
+    expected_buy["data"][0]["flBuyQty"] = "75"
+    expected_sell = deepcopy(expected)
+    expected_sell["data"][0]["flSellQty"] = "75"
+    mock_neo.neo.positions.side_effect = [expected, expected_buy, expected_sell]
+    broker = mock_neo
+    positions = broker.positions
+    assert len(positions) == 1
+    assert positions[0]["quantity"] == 0
+    assert positions[0]["side"] == "SELL"
+
+    # Test buy position
+    positions = broker.positions
+    assert len(positions) == 1
+    assert positions[0]["quantity"] == 50
+    assert positions[0]["side"] == "BUY"
+
+    # Test buy positions
+    positions = broker.positions
+    assert len(positions) == 1
+    assert positions[0]["quantity"] == -50
+    assert positions[0]["side"] == "SELL"

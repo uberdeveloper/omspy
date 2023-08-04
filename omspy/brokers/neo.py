@@ -108,3 +108,26 @@ class Neo(Broker):
         else:
             logging.warning(response)
             return [{}]
+
+    @property
+    @post
+    def positions(self) -> List[Dict]:
+        """
+        return the list of positions
+        """
+        response = self.neo.positions()
+        if "data" in response:
+            position_book = response["data"]
+            for p in position_book:
+                try:
+                    quantity = int(p["flBuyQty"]) - int(p["flSellQty"])
+                    p["quantity"] = quantity
+                    if quantity > 0:
+                        p["side"] = "BUY"
+                    else:
+                        p["side"] = "SELL"
+                except Exception as e:
+                    logging.error(e)
+            return position_book
+        else:
+            return [{}]
