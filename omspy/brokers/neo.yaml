@@ -11,3 +11,18 @@ orders:
   sym: symbol
   ordSt: status
   prod: product
+  avgPrc: average_price
+  fldQty: filled_quantity
+  qty: quantity
+positions:
+  buyAmt: buy_amount
+  prod: product
+  flBuyQty: buy_quantity
+  flSellQty: sell_quantity
+  sellAmt: sell_amount
+  trdSym: symbol
+trades:
+  avgPrc: average_price
+  fldQty: filled_quantity
+  trdSym: symbol
+  nOrdNo: order_id

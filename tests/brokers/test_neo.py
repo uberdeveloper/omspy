@@ -89,7 +89,15 @@ def test_orders(mock_neo, mock_data):
     broker = mock_neo
     orders = broker.orders
     assert len(orders) == 2
-    for key in ("order_id", "symbol", "status", "product"):
+    for key in (
+        "order_id",
+        "symbol",
+        "status",
+        "product",
+        "average_price",
+        "filled_quantity",
+        "quantity",
+    ):
         for order in orders:
             assert key in order
 
@@ -127,3 +135,29 @@ def test_orders_positions_quantity(mock_neo, mock_data):
     assert len(positions) == 1
     assert positions[0]["quantity"] == -50
     assert positions[0]["side"] == "SELL"
+
+
+def test_positions(mock_neo, mock_data):
+    mock_neo.neo.positions.side_effect = [mock_data["positions"]] * 4
+    broker = mock_neo
+    positions = broker.positions
+    for key in (
+        "buy_amount",
+        "product",
+        "buy_quantity",
+        "sell_quantity",
+        "sell_amount",
+        "symbol",
+    ):
+        for position in positions:
+            assert key in position
+
+
+def test_trades(mock_neo, mock_data):
+    mock_neo.neo.trade_report.side_effect = [mock_data["trades"]] * 4
+    broker = mock_neo
+    trades = broker.trades
+    assert len(trades) == 3
+    for key in ("average_price", "filled_quantity", "symbol", "order_id"):
+        for trade in trades:
+            assert key in trade

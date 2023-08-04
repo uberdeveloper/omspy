@@ -131,3 +131,15 @@ class Neo(Broker):
             return position_book
         else:
             return [{}]
+
+    @property
+    @post
+    def trades(self) -> List[Dict]:
+        """
+        return the list of trades
+        """
+        response = self.neo.trade_report()
+        if "data" in response:
+            return response["data"]
+        else:
+            return [{}]
