@@ -97,6 +97,9 @@ def test_orders(mock_neo, mock_data):
         "average_price",
         "filled_quantity",
         "quantity",
+        "price",
+        "trigger_price",
+        "order_type",
     ):
         for order in orders:
             assert key in order
@@ -161,3 +164,42 @@ def test_trades(mock_neo, mock_data):
     for key in ("average_price", "filled_quantity", "symbol", "order_id"):
         for trade in trades:
             assert key in trade
+
+
+def test_orders_data_conversion(mock_neo, mock_data):
+    mock_neo.neo.order_report.return_value = mock_data["orders"]
+    orders = mock_neo.orders
+    int_cols = ["cnlQty", "quantity", "dscQty", "filled_quantity"]
+    float_cols = ["price", "trigger_price", "average_price", "refLmtPrc"]
+    for col in int_cols:
+        for order in orders:
+            assert type(order[col]) == int
+    for col in float_cols:
+        for order in orders:
+            assert type(order[col]) == float
+
+
+def test_positions_data_conversion(mock_neo, mock_data):
+    mock_neo.neo.positions.return_value = mock_data["positions"]
+    positions = mock_neo.positions
+    int_cols = ["cfBuyQty", "cfSellQty", "buy_quantity", "sell_quantity"]
+    float_cols = ["buy_amount", "cfSellAmt", "cfBuyAmt", "sell_amount"]
+    for col in int_cols:
+        for position in positions:
+            assert type(position[col]) == int
+    for col in float_cols:
+        for position in positions:
+            assert type(position[col]) == float
+
+
+def test_trades_data_conversion(mock_neo, mock_data):
+    mock_neo.neo.trade_report.return_value = mock_data["trades"]
+    trades = mock_neo.trades
+    int_cols = ["filled_quantity"]
+    float_cols = ["average_price"]
+    for col in int_cols:
+        for trade in trades:
+            assert type(trade[col]) == int
+    for col in float_cols:
+        for trade in trades:
+            assert type(trade[col]) == float

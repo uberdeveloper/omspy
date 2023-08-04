@@ -14,6 +14,9 @@ orders:
   avgPrc: average_price
   fldQty: filled_quantity
   qty: quantity
+  prc: price
+  trgPrc: trigger_price
+  prcTp: order_type
 positions:
   buyAmt: buy_amount
   prod: product

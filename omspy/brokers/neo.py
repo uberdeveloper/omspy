@@ -98,12 +98,22 @@ class Neo(Broker):
         """
         return the list of orders
         """
+        int_cols = ["cnlQty", "qty", "dscQty", "fldQty"]
+        float_cols = ["prc", "trgPrc", "avgPrc", "refLmtPrc"]
         response = self.neo.order_report()
         if "data" in response:
             orderbook = response["data"]
-
             for o in orderbook:
-                o["ordSt"] = str(o["ordSt"]).upper()
+                try:
+                    o["ordSt"] = str(o["ordSt"]).upper()
+                    for col in int_cols:
+                        if col in o:
+                            o[col] = int(o[col])
+                    for col in float_cols:
+                        if col in o:
+                            o[col] = float(o[col])
+                except Exception as e:
+                    logging.error(e)
             return orderbook
         else:
             logging.warning(response)
@@ -115,6 +125,8 @@ class Neo(Broker):
         """
         return the list of positions
         """
+        int_cols = ["cfBuyQty", "cfSellQty", "flBuyQty", "flSellQty"]
+        float_cols = ["buyAmt", "cfSellAmt", "cfBuyAmt", "sellAmt"]
         response = self.neo.positions()
         if "data" in response:
             position_book = response["data"]
@@ -126,6 +138,13 @@ class Neo(Broker):
                         p["side"] = "BUY"
                     else:
                         p["side"] = "SELL"
+
+                    for col in int_cols:
+                        if col in p:
+                            p[col] = int(p[col])
+                    for col in float_cols:
+                        if col in p:
+                            p[col] = float(p[col])
                 except Exception as e:
                     logging.error(e)
             return position_book
@@ -138,8 +157,21 @@ class Neo(Broker):
         """
         return the list of trades
         """
+        int_cols = ["fldQty"]
+        float_cols = ["avgPrc"]
         response = self.neo.trade_report()
         if "data" in response:
-            return response["data"]
+            tradebook = response["data"]
+            for t in tradebook:
+                try:
+                    for col in int_cols:
+                        if col in t:
+                            t[col] = int(t[col])
+                    for col in float_cols:
+                        if col in t:
+                            t[col] = float(t[col])
+                except Exception as e:
+                    logging.error(e)
+            return tradebook
         else:
             return [{}]
