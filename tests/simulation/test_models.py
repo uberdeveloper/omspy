@@ -61,6 +61,7 @@ def test_vorder_defaults(vorder_kwargs):
     assert vorder.pending_quantity == 100
     assert vorder.canceled_quantity == 0
     assert vorder.average_price == 0
+    assert vorder.order_type == OrderType.MARKET
 
 
 def test_vorder_quantities(vorder_kwargs):
@@ -502,3 +503,7 @@ def test_instrument_defaults():
     assert inst.volume is None
     assert inst.orderbook is None
     assert inst.last_update_time is None
+
+
+def test_order_fill_ltp():
+    pass

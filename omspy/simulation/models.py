@@ -36,6 +36,11 @@ class TickerMode(Enum):
     MANUAL = 2
 
 
+class OrderType(Enum):
+    MARKET = 1
+    LIMIT = 2
+
+
 class OHLC(BaseModel):
     open: float
     high: float
@@ -162,6 +167,7 @@ class VOrder(BaseModel):
     exchange_order_id: Optional[str]
     exchange_timestamp: Optional[pendulum.DateTime]
     status_message: Optional[str]
+    order_type: OrderType = OrderType.MARKET
     filled_quantity: float = 0
     pending_quantity: float = 0
     canceled_quantity: float = 0
@@ -446,3 +452,24 @@ class Instrument(BaseModel):
     expiry: Optional[pendulum.Date]
     orderbook: Optional[OrderBook]
     last_update_time: Optional[pendulum.DateTime]
+
+
+class OrderFill(BaseModel):
+    """
+    A simple order fill model
+    """
+
+    order: VOrder
+    last_price: float
+
+    def update(self, last_price: float = None):
+        """
+        update order
+        """
+        # Do nothing if order is complete
+        if self.order.is_done:
+            return
+        if last_price is None:
+            last_price = self.last_price
+
+        pass
