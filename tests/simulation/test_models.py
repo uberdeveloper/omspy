@@ -477,19 +477,28 @@ def test_ticker_update(basic_ticker):
 
 
 def test_vorder_side():
-    order = VOrder(symbol="aapl", quantity=100, side="buy",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="buy", order_id="123456789")
     assert order.side == Side.BUY
-    order = VOrder(symbol="aapl", quantity=100, side="BUY",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="BUY", order_id="123456789")
     assert order.side == Side.BUY
-    order = VOrder(symbol="aapl", quantity=100, side="s",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="s", order_id="123456789")
     assert order.side == Side.SELL
-    order = VOrder(symbol="aapl", quantity=100, side="sell",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="sell", order_id="123456789")
     assert order.side == Side.SELL
+
 
 def test_vorder_side_error():
     with pytest.raises(ValidationError):
-        order = VOrder(symbol="aapl", quantity=100, side="unknown",order_id='123456789')
+        order = VOrder(
+            symbol="aapl", quantity=100, side="unknown", order_id="123456789"
+        )
+
+
+def test_instrument_defaults():
+    inst = Instrument(
+        name="nifty", last_price=12340, open=12188, high=12400, low=12100, close=12340
+    )
+    assert inst.token is None
+    assert inst.volume is None
+    assert inst.orderbook is None
+    assert inst.last_update_time is None

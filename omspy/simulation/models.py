@@ -129,7 +129,6 @@ class Ticker(BaseModel):
         )
 
 
-
 class VQuote(OHLCV):
     orderbook: OrderBook
 
@@ -171,12 +170,12 @@ class VOrder(BaseModel):
     class Config:
         validate_assignment = True
 
-    @validator('side', pre=True, always=True)
+    @validator("side", pre=True, always=True)
     def accept_buy_sell_as_side(cls, v):
         if isinstance(v, str):
-            if v.lower()[0] == 'b':
+            if v.lower()[0] == "b":
                 return Side.BUY
-            elif v.lower()[0] == 's':
+            elif v.lower()[0] == "s":
                 return Side.SELL
             else:
                 raise TypeError(f"{v} is not a valid side, should be buy or sell")
@@ -427,3 +426,23 @@ class OrderBookResponse(GenericResponse):
 
 class PositionResponse(GenericResponse):
     data: List[VPosition]
+
+
+class Instrument(BaseModel):
+    """
+    Instrument containing data
+    """
+
+    name: str
+    token: Optional[int] = None
+    last_price: float
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: Optional[float]
+    open_interest: Optional[float]
+    strike: Optional[float]
+    expiry: Optional[pendulum.Date]
+    orderbook: Optional[OrderBook]
+    last_update_time: Optional[pendulum.DateTime]
