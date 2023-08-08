@@ -45,6 +45,12 @@ def ohlc_args():
     return dict(open=104, high=112, low=101, close=108, last_price=107)
 
 
+@pytest.fixture
+def order_fill_ltp():
+    order = VOrder(order_id="order_id", symbol="aapl", quantity=100, side=Side.BUY)
+    return OrderFill(order=order, last_price=128)
+
+
 def test_vtrade_defaults(vtrade):
     assert vtrade.price == 120
     assert vtrade.side == Side.BUY
@@ -505,5 +511,28 @@ def test_instrument_defaults():
     assert inst.last_update_time is None
 
 
-def test_order_fill_ltp():
-    pass
+def test_order_fill_ltp(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 100
+    assert order.is_done is True
+    assert order.average_price == 128
+    assert order.status == Status.COMPLETE
+
+    # Do not change once order is complete
+    fill.last_price = 130
+    fill.update()
+    assert order.average_price == 128
+    assert order.filled_quantity == 100
+
+
+def test_order_fill_different_ltp(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.quantity = 120
+    fill.update(last_price=129)
+    order = fill.order
+    assert order.filled_quantity == 120
+    assert order.is_done is True
+    assert order.average_price == 129
+    assert order.status == Status.COMPLETE
