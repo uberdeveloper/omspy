@@ -21,6 +21,8 @@ from omspy.simulation.models import (
     VUser,
     TickerMode,
     Ticker,
+    Instrument,
+    OrderFill,
 )
 
 SUCCESS = ResponseStatus.SUCCESS
@@ -196,7 +198,7 @@ class FakeBroker(BaseModel):
             kwargs["side"] = random.choice([Side.BUY, Side.SELL])
         return kwargs
 
-    def _get_random_symbols(self, n:Optional[int]=None)->List[str]:
+    def _get_random_symbols(self, n: Optional[int] = None) -> List[str]:
         """
         get random symbols
         """
@@ -677,3 +679,20 @@ class VirtualBroker(BaseModel):
         return the quote for the symbol or list of symbols
         """
         return _iterate_method(self._quote, symbol)
+
+
+class ReplicaBroker(BaseModel):
+    """
+    Replica Broker for simulation real brokers
+    """
+
+    name: str = "replica"
+    instruments: Dict[str, Instrument] = Field(default_factory=defaultdict)
+    orders: List[VOrder] = Field(default_factory=list)
+    users: set[str] = Field(default_factory=set)
+    _user_orders: Dict[str, List[VOrder]] = PrivateAttr()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.users.add("default")
+        self._user_orders = defaultdict(list)

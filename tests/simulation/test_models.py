@@ -4,6 +4,7 @@ import pendulum
 import pytest
 import random
 from pydantic import ValidationError
+from copy import deepcopy
 
 
 @pytest.fixture
@@ -570,3 +571,18 @@ def test_order_fill_ltp_sell(order_fill_ltp):
     fill.update()
     assert order.filled_quantity == 100
     assert order.average_price == order.price == 128
+
+
+def test_order_fill_modified_price(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.order_type = OrderType.LIMIT
+    fill.last_price = 128
+    fill.update()
+    for l in (128.05, 128.1, 128.25, 128.3, 128, 128.25):
+        fill.last_price = l
+        fill.update()
+        assert fill.order.is_done is False
+    fill.order.price = 128.3
+    fill.update()
+    assert fill.order.is_done is True
+    assert fill.order.price == fill.order.average_price == 128.3

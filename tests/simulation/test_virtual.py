@@ -38,6 +38,11 @@ def basic_broker_with_prices(basic_broker) -> VirtualBroker:
     return basic_broker
 
 
+@pytest.fixture
+def replica() -> ReplicaBroker:
+    pass
+
+
 def test_generate_price():
     random.seed(100)
     assert generate_price() == 102
@@ -716,3 +721,12 @@ def test_fake_broker_trades():
     assert len(trades) == 12
     assert all([o.price > 0 for o in trades]) is True
     assert all([o.quantity > 0 for o in trades]) is True
+
+
+def test_replica_broker_defaults():
+    broker = ReplicaBroker()
+    assert broker.name == "replica"
+    assert broker.instruments == dict()
+    assert broker.orders == list()
+    assert broker.users == set(["default"])
+    assert broker._user_orders == dict()

@@ -480,7 +480,7 @@ class OrderFill(BaseModel):
         elif order_type == OrderType.LIMIT:
             if side == Side.BUY:
                 if last_price < order.price:
-                    order.average_price = order.price 
+                    order.average_price = order.price
                     order.filled_quantity = order.quantity
             elif side == Side.SELL:
                 if last_price > order.price:
