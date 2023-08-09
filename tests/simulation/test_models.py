@@ -47,7 +47,9 @@ def ohlc_args():
 
 @pytest.fixture
 def order_fill_ltp():
-    order = VOrder(order_id="order_id", symbol="aapl", quantity=100, side=Side.BUY)
+    order = VOrder(
+        order_id="order_id", symbol="aapl", quantity=100, side=Side.BUY, price=127
+    )
     return OrderFill(order=order, last_price=128)
 
 
@@ -536,3 +538,35 @@ def test_order_fill_different_ltp(order_fill_ltp):
     assert order.is_done is True
     assert order.average_price == 129
     assert order.status == Status.COMPLETE
+
+
+def test_order_fill_ltp_buy(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.order_type = OrderType.LIMIT
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 0
+    fill.last_price = 128
+    fill.update()
+    assert order.filled_quantity == 0
+    fill.last_price = 126.95
+    fill.update()
+    assert order.filled_quantity == 100
+    assert order.average_price == order.price == 127
+
+
+def test_order_fill_ltp_sell(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.order_type = OrderType.LIMIT
+    fill.order.side = Side.SELL
+    fill.order.price = 128
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 0
+    fill.last_price = 127.5
+    fill.update()
+    assert order.filled_quantity == 0
+    fill.last_price = 128.05
+    fill.update()
+    assert order.filled_quantity == 100
+    assert order.average_price == order.price == 128

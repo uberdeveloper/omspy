@@ -467,7 +467,6 @@ class OrderFill(BaseModel):
         update order
         """
         # Do nothing if order is complete
-        print(self.order.is_done, self.order.average_price, self.order.status)
         if self.order.is_done:
             return
         last_price = last_price or self.last_price
@@ -478,5 +477,12 @@ class OrderFill(BaseModel):
             order.price = last_price
             order.average_price = last_price
             order.filled_quantity = order.quantity
-
-
+        elif order_type == OrderType.LIMIT:
+            if side == Side.BUY:
+                if last_price < order.price:
+                    order.average_price = order.price 
+                    order.filled_quantity = order.quantity
+            elif side == Side.SELL:
+                if last_price > order.price:
+                    order.average_price = order.price
+                    order.filled_quantity = order.quantity
