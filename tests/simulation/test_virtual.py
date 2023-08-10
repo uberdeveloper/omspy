@@ -4,6 +4,34 @@ import pendulum
 import random
 from unittest.mock import patch, Mock
 from pydantic import ValidationError
+import string
+
+
+def generate_instrument(**kwargs):
+    """
+    generate a random instrument
+    """
+    inst_args = dict()
+    name = "".join(random.choices(string.ascii_uppercase, k=random.randrange(4, 11)))
+    if "name" in kwargs:
+        name = kwargs.get("name")
+        kwargs.pop("name")
+    inst_args["name"] = name
+    if "last_price" in kwargs:
+        return Instrument(name=name, **kwargs)
+    else:
+        last_price = random.randrange(100, 200)
+        open_price = last_price + random.randrange(1, 10)
+        high = open_price + random.randrange(2, 20)
+        low = open_price - random.randrange(2, 20)
+        close = (last_price + open_price) / 2
+        inst_args.update(
+            dict(
+                last_price=last_price, open=open_price, high=high, low=low, close=close
+            )
+        )
+        inst_args.update(kwargs)
+        return Instrument(**inst_args)
 
 
 @pytest.fixture
@@ -40,7 +68,7 @@ def basic_broker_with_prices(basic_broker) -> VirtualBroker:
 
 @pytest.fixture
 def replica() -> ReplicaBroker:
-    pass
+    return ReplicaBroker()
 
 
 def test_generate_price():
@@ -730,3 +758,21 @@ def test_replica_broker_defaults():
     assert broker.orders == list()
     assert broker.users == set(["default"])
     assert broker._user_orders == dict()
+
+
+def test_replica_broker_update():
+    broker = ReplicaBroker()
+    random.seed(1000)
+    names = ["AAPL", "XOM", "DOW"]
+    instruments = []
+    for name in names:
+        inst = generate_instrument(name=name)
+        instruments.append(inst)
+    broker.update(instruments)
+    for name in names:
+        assert name in broker.instruments
+
+    # Update existing instrument
+    instruments[0].last_price = 144
+    broker.update([instruments[0]])
+    assert broker.instruments["AAPL"].last_price == 144

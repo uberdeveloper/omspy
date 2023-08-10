@@ -696,3 +696,15 @@ class ReplicaBroker(BaseModel):
         super().__init__(**data)
         self.users.add("default")
         self._user_orders = defaultdict(list)
+
+    def update(self, instruments: List[Instrument]):
+        """
+        update the given list of instruments
+        Note
+        -----
+        1) The instruments are directly updated and any
+        existing data is overwritten
+        """
+        for inst in instruments:
+            name = inst.name
+            self.instruments[name] = inst
