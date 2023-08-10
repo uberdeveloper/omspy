@@ -688,7 +688,7 @@ class ReplicaBroker(BaseModel):
 
     name: str = "replica"
     instruments: Dict[str, Instrument] = Field(default_factory=defaultdict)
-    orders: List[VOrder] = Field(default_factory=list)
+    orders: Dict[str, VOrder] = Field(default_factory=defaultdict)
     users: set[str] = Field(default_factory=set)
     _user_orders: Dict[str, List[VOrder]] = PrivateAttr()
 
@@ -708,3 +708,14 @@ class ReplicaBroker(BaseModel):
         for inst in instruments:
             name = inst.name
             self.instruments[name] = inst
+
+    def order_place(self, **kwargs) -> VOrder:
+        """
+        Place an order with the broker
+        """
+        user = kwargs.pop("user", "default")
+        order_id = uuid.uuid4().hex
+        order = VOrder(order_id=order_id, **kwargs)
+        self._user_orders[user].append(order)
+        self.orders[order_id] = order
+        return order

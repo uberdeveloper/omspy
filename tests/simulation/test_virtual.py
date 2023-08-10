@@ -67,8 +67,15 @@ def basic_broker_with_prices(basic_broker) -> VirtualBroker:
 
 
 @pytest.fixture
-def replica() -> ReplicaBroker:
-    return ReplicaBroker()
+def replica_with_instruments() -> ReplicaBroker:
+    broker = ReplicaBroker()
+    names = ["AAPL", "XOM", "DOW"]
+    instruments = []
+    for name in names:
+        inst = generate_instrument(name=name)
+        instruments.append(inst)
+    broker.update(instruments)
+    return broker
 
 
 def test_generate_price():
@@ -755,7 +762,7 @@ def test_replica_broker_defaults():
     broker = ReplicaBroker()
     assert broker.name == "replica"
     assert broker.instruments == dict()
-    assert broker.orders == list()
+    assert broker.orders == dict()
     assert broker.users == set(["default"])
     assert broker._user_orders == dict()
 
@@ -776,3 +783,38 @@ def test_replica_broker_update():
     instruments[0].last_price = 144
     broker.update([instruments[0]])
     assert broker.instruments["AAPL"].last_price == 144
+
+
+def test_replica_broker_order_place(replica_with_instruments):
+    known = pendulum.datetime(2023, 4, 1, 9, 30, tz="local")
+    broker = replica_with_instruments
+    with pendulum.test(known):
+        order = broker.order_place(symbol="aapl", side=1, quantity=10)
+        assert order.order_id in broker.orders
+        assert len(broker._user_orders["default"]) == 1
+        assert order.is_done is False
+        assert (
+            id(order)
+            == id(broker.orders[order.order_id])
+            == id(broker._user_orders["default"][0])
+        )
+
+    # Order status should not change with time
+    with pendulum.test(known.add(minutes=5)):
+        assert order.is_done is False
+        assert order.filled_quantity == 0
+
+
+def test_replica_broker_order_place_multiple_users(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(symbol="aapl", side=1, quantity=10)
+    for user in ("user1", "user2", "default"):
+        order = broker.order_place(symbol="aapl", side=1, quantity=10, user=user)
+    order = broker.order_place(symbol="aapl", side=1, quantity=10)
+    assert len(broker.orders) == 5
+    assert len(broker._user_orders) == 3
+    for k, v in broker._user_orders.items():
+        if k == "default":
+            assert len(v) == 3
+        else:
+            assert len(v) == 1
