@@ -51,7 +51,9 @@ def order_fill_ltp():
     order = VOrder(
         order_id="order_id", symbol="aapl", quantity=100, side=Side.BUY, price=127
     )
-    return OrderFill(order=order, last_price=128)
+    fill = OrderFill(order=order, last_price=128)
+    assert id(order) == id(fill.order)
+    return fill
 
 
 def test_vtrade_defaults(vtrade):
@@ -519,7 +521,7 @@ def test_order_fill_ltp(order_fill_ltp):
     fill.update()
     order = fill.order
     assert order.filled_quantity == 100
-    assert order.is_done is True
+    assert fill.done is True
     assert order.average_price == 128
     assert order.status == Status.COMPLETE
 
@@ -536,7 +538,7 @@ def test_order_fill_different_ltp(order_fill_ltp):
     fill.update(last_price=129)
     order = fill.order
     assert order.filled_quantity == 120
-    assert order.is_done is True
+    assert fill.done is True
     assert order.average_price == 129
     assert order.status == Status.COMPLETE
 
@@ -581,8 +583,8 @@ def test_order_fill_modified_price(order_fill_ltp):
     for l in (128.05, 128.1, 128.25, 128.3, 128, 128.25):
         fill.last_price = l
         fill.update()
-        assert fill.order.is_done is False
+        assert fill.done is False
     fill.order.price = 128.3
     fill.update()
-    assert fill.order.is_done is True
+    assert fill.done is True
     assert fill.order.price == fill.order.average_price == 128.3

@@ -690,6 +690,9 @@ class ReplicaBroker(BaseModel):
     instruments: Dict[str, Instrument] = Field(default_factory=defaultdict)
     orders: Dict[str, VOrder] = Field(default_factory=defaultdict)
     users: set[str] = Field(default_factory=set)
+    pending: List[VOrder] = Field(default_factory=list)
+    completed: List[VOrder] = Field(default_factory=list)
+    fills: List[OrderFill] = Field(default_factory=list)
     _user_orders: Dict[str, List[VOrder]] = PrivateAttr()
 
     def __init__(self, **data):
@@ -718,4 +721,10 @@ class ReplicaBroker(BaseModel):
         order = VOrder(order_id=order_id, **kwargs)
         self._user_orders[user].append(order)
         self.orders[order_id] = order
+        self.pending.append(order)
+
+        symbol = order.symbol
+        last_price = self.instruments[symbol].last_price
+        fill = OrderFill(order=order, last_price=last_price)
+        self.fills.append(fill)
         return order

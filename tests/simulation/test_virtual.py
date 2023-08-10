@@ -765,6 +765,9 @@ def test_replica_broker_defaults():
     assert broker.orders == dict()
     assert broker.users == set(["default"])
     assert broker._user_orders == dict()
+    assert broker.pending == []
+    assert broker.completed == []
+    assert broker.fills == []
 
 
 def test_replica_broker_update():
@@ -789,14 +792,19 @@ def test_replica_broker_order_place(replica_with_instruments):
     known = pendulum.datetime(2023, 4, 1, 9, 30, tz="local")
     broker = replica_with_instruments
     with pendulum.test(known):
-        order = broker.order_place(symbol="aapl", side=1, quantity=10)
+        order = broker.order_place(symbol="AAPL", side=1, quantity=10)
         assert order.order_id in broker.orders
         assert len(broker._user_orders["default"]) == 1
         assert order.is_done is False
+        assert len(broker.pending) == 1
+        assert len(broker.fills) == 1
+        assert broker.pending[0].order_id == order.order_id
         assert (
             id(order)
             == id(broker.orders[order.order_id])
             == id(broker._user_orders["default"][0])
+            == id(broker.pending[0])
+            == id(broker.fills[0].order)
         )
 
     # Order status should not change with time
@@ -807,10 +815,10 @@ def test_replica_broker_order_place(replica_with_instruments):
 
 def test_replica_broker_order_place_multiple_users(replica_with_instruments):
     broker = replica_with_instruments
-    order = broker.order_place(symbol="aapl", side=1, quantity=10)
+    order = broker.order_place(symbol="AAPL", side=1, quantity=10)
     for user in ("user1", "user2", "default"):
-        order = broker.order_place(symbol="aapl", side=1, quantity=10, user=user)
-    order = broker.order_place(symbol="aapl", side=1, quantity=10)
+        order = broker.order_place(symbol="AAPL", side=1, quantity=10, user=user)
+    order = broker.order_place(symbol="AAPL", side=1, quantity=10)
     assert len(broker.orders) == 5
     assert len(broker._user_orders) == 3
     for k, v in broker._user_orders.items():

@@ -462,6 +462,14 @@ class OrderFill(BaseModel):
     order: VOrder
     last_price: float
 
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.order = data["order"]
+
+    @property
+    def done(self):
+        return self.order.is_done
+
     def update(self, last_price: float = None):
         """
         update order
