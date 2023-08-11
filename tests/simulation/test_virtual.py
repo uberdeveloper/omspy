@@ -942,3 +942,34 @@ def test_replica_broker_order_modify_market(replica_with_instruments):
         == id(broker._user_orders["default"][0])
     )
     assert len(broker.completed) == 1
+
+
+def test_replica_broker_order_cancel(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_cancel(order.order_id)
+    assert len(broker.completed) == 1
+    assert order.is_done is True
+    assert len(broker.fills) == 1
+    broker.run_fill()
+    assert len(broker.fills) == 0
+
+
+def test_replica_broker_order_cancel_multiple_times(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    broker.run_fill()
+    assert order.is_done is False
+    for i in range(10):
+        broker.order_cancel(order.order_id)
+    assert len(broker.completed) == 1
+    assert order.is_done is True
+    assert len(broker.fills) == 1
+    broker.run_fill()
+    assert len(broker.fills) == 0

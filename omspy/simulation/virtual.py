@@ -739,6 +739,16 @@ class ReplicaBroker(BaseModel):
                 setattr(order, k, v)
         return order
 
+    def order_cancel(self, order_id: str) -> VOrder:
+        """
+        Cancel an existing order
+        """
+        order = self.orders[order_id]
+        if not (order.is_done):
+            order.canceled_quantity = order.quantity - order.filled_quantity
+            self.completed.append(order)
+        return order
+
     def run_fill(self):
         """
         run order fill for the existing pending orders
