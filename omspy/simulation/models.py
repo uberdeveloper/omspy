@@ -188,10 +188,11 @@ class VOrder(BaseModel):
         else:
             return v
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        if self.timestamp is None:
-            self.timestamp = pendulum.now(tz="local")
+    def _make_right_quantity(self):
+        """
+        Make the pending, filled and canceled correct
+        based on available data
+        """
         q = utils.update_quantity(
             q=self.quantity,
             f=self.filled_quantity,
@@ -201,6 +202,12 @@ class VOrder(BaseModel):
         self.filled_quantity = q.f
         self.pending_quantity = q.p
         self.canceled_quantity = q.c
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.timestamp is None:
+            self.timestamp = pendulum.now(tz="local")
+        self._make_right_quantity()
         if self.average_price is None:
             self.average_price = 0
         self._delay = 1e6  # delay in microseconds

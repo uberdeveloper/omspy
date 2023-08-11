@@ -626,3 +626,15 @@ def test_order_fill_as_market_buy():
     assert fill.order.price == 130
     fill.update()
     assert fill.order.average_price == 134
+
+
+def test_order_fill_ltp_all_quantity(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 100
+    assert order.pending_quantity == 0
+    assert order.canceled_quantity == 0
+    assert fill.done is True
+    assert order.average_price == 128
+    assert order.status == Status.COMPLETE
