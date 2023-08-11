@@ -728,3 +728,28 @@ class ReplicaBroker(BaseModel):
         fill = OrderFill(order=order, last_price=last_price)
         self.fills.append(fill)
         return order
+
+    def run_fill(self):
+        """
+        run order fill for the existing pending orders
+        """
+        if len(self.fills) == 0:
+            logging.info("No order to fill")
+        orders_done = set()
+        for i, fill in enumerate(self.fills):
+            symbol = fill.order.symbol
+            last_price = self.instruments[symbol].last_price
+            if last_price:
+                fill.last_price = last_price
+                fill.update()
+                if fill.done:
+                    orders_done.add(fill.order.order_id)
+            else:
+                logging.warning(f"Instrument not found for ticker {symbol}")
+
+        # Clean completed orders
+        if len(orders_done) > 0:
+            for order_id in orders_done:
+                comp = self.orders[order_id]
+                self.completed.append(comp)
+        self.fills = [fill for fill in self.fills if not (fill.done)]

@@ -4,6 +4,7 @@ import pendulum
 import random
 from unittest.mock import patch, Mock
 from pydantic import ValidationError
+from dataclasses import dataclass, asdict
 import string
 
 
@@ -68,6 +69,7 @@ def basic_broker_with_prices(basic_broker) -> VirtualBroker:
 
 @pytest.fixture
 def replica_with_instruments() -> ReplicaBroker:
+    random.seed(1000)
     broker = ReplicaBroker()
     names = ["AAPL", "XOM", "DOW"]
     instruments = []
@@ -75,6 +77,35 @@ def replica_with_instruments() -> ReplicaBroker:
         inst = generate_instrument(name=name)
         instruments.append(inst)
     broker.update(instruments)
+    return broker
+
+
+@pytest.fixture
+def replica_with_orders(replica_with_instruments) -> ReplicaBroker:
+    @dataclass
+    class Inputs:
+        symbol: str
+        side: int  # replace with enum by order
+        quantity: int
+        order_type: int  # replaced with enum by order
+        price: float
+        user: str
+
+    order_inputs = [
+        Inputs("AAPL", 1, 10, 1, 124, "user1"),
+        Inputs("AAPL", -1, 10, 2, 126, "default"),
+        Inputs("AAPL", 1, 20, 2, 124, "user2"),
+        Inputs("DOW", -1, 13, 1, 124, "user1"),
+        Inputs("DOW", 1, 18, 1, 124, "user2"),
+        Inputs("XOM", 1, 20, 2, 154, "user2"),  # passed
+        Inputs("XOM", 1, 30, 2, 135, "default"),
+        Inputs("XOM", -1, 30, 2, 140, "default"),  # passed
+        Inputs("AAPL", 1, 10, 2, 123, "default"),
+        Inputs("AAPL", 1, 10, 2, 122, "default"),
+    ]
+    broker = replica_with_instruments
+    for inputs in order_inputs:
+        broker.order_place(**asdict(inputs))
     return broker
 
 
@@ -826,3 +857,47 @@ def test_replica_broker_order_place_multiple_users(replica_with_instruments):
             assert len(v) == 3
         else:
             assert len(v) == 1
+
+
+def test_replica_order_fill(replica_with_orders):
+    broker = replica_with_orders
+    assert len(broker.orders) == 10
+    assert len(broker.completed) == 0
+    assert len(broker._user_orders) == 3
+    # Since we already knew the filled and non-filled orders
+    order_ids = [order.order_id for order in broker.orders.values()]
+    filled_ids = []
+    non_filled_ids = []
+    avg_prices = {
+        broker.fills[i].order.order_id: v
+        for i, v in zip((0, 3, 4, 5, 7), (125, 136, 136, 153, 153))
+    }
+
+    for i, v in enumerate(broker.fills, start=1):
+        if i in (2, 3, 7, 9, 10):
+            non_filled_ids.append(v.order.order_id)
+        else:
+            filled_ids.append(v.order.order_id)
+    broker.run_fill()
+    assert len(broker.completed) == len(broker.fills) == 5
+    assert broker.completed
+    print(broker.instruments)
+    for order in broker.completed:
+        assert order.order_id in filled_ids
+        assert order.average_price == avg_prices[order.order_id]
+    broker.instruments["AAPL"].last_price = 127
+    broker.run_fill()
+    assert len(broker.fills) == 4
+    assert len(broker.completed) == 6
+    assert broker.orders[order_ids[1]].average_price == 126
+    assert broker.orders[order_ids[1]].filled_quantity == 10
+    for i in range(10):
+        # results should be the same
+        broker.run_fill()
+    assert len(broker.fills) == 4
+    assert len(broker.completed) == 6
+    broker.instruments["AAPL"].last_price = 121.95
+    broker.run_fill()
+    assert len(broker.fills) == 1
+    assert len(broker.completed) == 9
+    assert order_ids[6] in broker.orders
