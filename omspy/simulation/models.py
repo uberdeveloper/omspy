@@ -496,6 +496,7 @@ class OrderFill(BaseModel):
                 if price < ltp:
                     self.order.filled_quantity = self.order.quantity
                     self.order.average_price = self.last_price
+            self.order._make_right_quantity()
 
     def update(self, last_price: float = None):
         """
@@ -512,12 +513,15 @@ class OrderFill(BaseModel):
             order.price = last_price
             order.average_price = last_price
             order.filled_quantity = order.quantity
+            order._make_right_quantity()
         elif order_type == OrderType.LIMIT:
             if side == Side.BUY:
                 if last_price < order.price:
                     order.average_price = order.price
                     order.filled_quantity = order.quantity
+                    order._make_right_quantity()
             elif side == Side.SELL:
                 if last_price > order.price:
                     order.average_price = order.price
                     order.filled_quantity = order.quantity
+                    order._make_right_quantity()

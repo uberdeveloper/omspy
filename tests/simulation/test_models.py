@@ -604,6 +604,7 @@ def test_order_fill_as_market_buy():
     fill = OrderFill(order=order, last_price=128)
     assert fill.done is True
     assert fill.order.filled_quantity == 100
+    assert fill.order.pending_quantity == 0
     assert fill.order.average_price == 128
     assert fill.order.price == 130
     fill.update()
@@ -622,6 +623,7 @@ def test_order_fill_as_market_buy():
     fill = OrderFill(order=order, last_price=134)
     assert fill.done is True
     assert fill.order.filled_quantity == 100
+    assert fill.order.pending_quantity == 0
     assert fill.order.average_price == 134
     assert fill.order.price == 130
     fill.update()
