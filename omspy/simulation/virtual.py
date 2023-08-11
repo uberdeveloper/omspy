@@ -729,6 +729,16 @@ class ReplicaBroker(BaseModel):
         self.fills.append(fill)
         return order
 
+    def order_modify(self, order_id: str, **kwargs) -> VOrder:
+        """
+        Modify an order with the broker
+        """
+        order = self.orders[order_id]
+        for k, v in kwargs.items():
+            if hasattr(order, k):
+                setattr(order, k, v)
+        return order
+
     def run_fill(self):
         """
         run order fill for the existing pending orders

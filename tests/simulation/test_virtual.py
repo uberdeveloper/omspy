@@ -901,3 +901,44 @@ def test_replica_order_fill(replica_with_orders):
     assert len(broker.fills) == 1
     assert len(broker.completed) == 9
     assert order_ids[6] in broker.orders
+
+
+def test_replica_broker_order_modify(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    order_id = order.order_id
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_modify(order_id, quantity=20, price=125.1)
+    assert broker.orders[order_id].quantity == 20
+    assert broker.orders[order_id].price == 125.1
+    broker.run_fill()
+    assert order.filled_quantity == 20
+    assert order.average_price == 125.1
+    assert order.is_done is True
+
+
+def test_replica_broker_order_modify_market(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    order_id = order.order_id
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_modify(order_id, quantity=20)
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_modify(order_id, order_type=1)
+    broker.run_fill()
+    assert order.filled_quantity == 20
+    assert order.average_price == 125
+    assert order.is_done is True
+    assert (
+        id(order)
+        == id(broker.orders[order_id])
+        == id(broker._user_orders["default"][0])
+    )
+    assert len(broker.completed) == 1
