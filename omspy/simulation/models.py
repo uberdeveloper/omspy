@@ -464,11 +464,31 @@ class OrderFill(BaseModel):
 
     def __init__(self, **data):
         super().__init__(**data)
-        self.order = data["order"]
+        self.order: VOrder = data["order"]
+        self._as_market()
 
     @property
     def done(self):
         return self.order.is_done
+
+    def _as_market(self):
+        """
+        Update order if the limit price behaves like a MARKET order
+        So, if the last price is 120 and a BUY order is sent for 122, the order would be filled at 120
+        """
+        side = self.order.side
+        price = self.order.price
+        order_type = self.order.order_type
+        ltp = self.last_price
+        if order_type == OrderType.LIMIT:
+            if side == Side.BUY:
+                if price > ltp:
+                    self.order.filled_quantity = self.order.quantity
+                    self.order.average_price = self.last_price
+            elif side == Side.SELL:
+                if price < ltp:
+                    self.order.filled_quantity = self.order.quantity
+                    self.order.average_price = self.last_price
 
     def update(self, last_price: float = None):
         """

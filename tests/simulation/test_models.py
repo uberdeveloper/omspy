@@ -587,4 +587,42 @@ def test_order_fill_modified_price(order_fill_ltp):
     fill.order.price = 128.3
     fill.update()
     assert fill.done is True
-    assert fill.order.price == fill.order.average_price == 128.3
+    # TODO: Check this
+    assert fill.order.price == 128.3
+    assert fill.order.average_price == 128.3
+
+
+def test_order_fill_as_market_buy():
+    order = VOrder(
+        order_id="order_id",
+        symbol="aapl",
+        quantity=100,
+        side=Side.BUY,
+        price=130,
+        order_type=OrderType.LIMIT,
+    )
+    fill = OrderFill(order=order, last_price=128)
+    assert fill.done is True
+    assert fill.order.filled_quantity == 100
+    assert fill.order.average_price == 128
+    assert fill.order.price == 130
+    fill.update()
+    assert fill.order.average_price == 128
+
+
+def test_order_fill_as_market_buy():
+    order = VOrder(
+        order_id="order_id",
+        symbol="aapl",
+        quantity=100,
+        side=Side.SELL,
+        price=130,
+        order_type=OrderType.LIMIT,
+    )
+    fill = OrderFill(order=order, last_price=134)
+    assert fill.done is True
+    assert fill.order.filled_quantity == 100
+    assert fill.order.average_price == 134
+    assert fill.order.price == 130
+    fill.update()
+    assert fill.order.average_price == 134
