@@ -640,3 +640,33 @@ def test_order_fill_ltp_all_quantity(order_fill_ltp):
     assert fill.done is True
     assert order.average_price == 128
     assert order.status == Status.COMPLETE
+
+
+def test_vorder_is_complete(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    assert order.is_complete is False
+    order.filled_quantity = 100
+    order._make_right_quantity()
+    assert order.is_complete is True
+    assert order.is_done is True
+    assert order.filled_quantity == order.quantity
+    assert order.status == Status.COMPLETE
+
+
+def test_vorder_is_complete_rejected(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    assert order.is_complete is False
+    order.canceled_quantity = 100
+    order._make_right_quantity()
+    assert order.is_complete is False
+    assert order.is_done is True
+
+
+def test_vorder_is_complete_partial_fill(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    order.filled_quantity = 50
+    order.canceled_quantity = 50
+    order._make_right_quantity()
+    assert order.is_complete is False
+    assert order.is_done is True
+    assert order.status == Status.PARTIAL_FILL

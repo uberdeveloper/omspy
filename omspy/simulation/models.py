@@ -297,7 +297,7 @@ class VOrder(BaseModel):
         """
         whether the order is finished either by fully filled
         or canceled
-        returns True if it is completed, False if pending
+        returns True if it is done, False if pending
         """
         if self.quantity == self.filled_quantity:
             return True
@@ -307,6 +307,19 @@ class VOrder(BaseModel):
             return False
         else:
             return True
+
+    @property
+    def is_complete(self) -> bool:
+        """
+        returns True if the entire order is completely filled
+        else False
+        """
+        if self.quantity == self.filled_quantity:
+            return True
+        elif self.status == Status.COMPLETE:
+            return True
+        else:
+            return False
 
     def modify_by_status(self, status: Status = Status.COMPLETE) -> bool:
         """
