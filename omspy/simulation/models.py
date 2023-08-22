@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, validator, PrivateAttr
 from typing import Optional, Union, Any, Dict, List
 from enum import Enum
 import random
+import uuid
 import pendulum
 import omspy.utils as utils
 from omspy.models import OrderBook
@@ -309,7 +310,7 @@ class VOrder(BaseModel):
             return True
 
     @property
-    def is_complete(self) -> bool:
+    def is_complete(self)->bool:
         """
         returns True if the entire order is completely filled
         else False
@@ -333,6 +334,17 @@ class VOrder(BaseModel):
             return True
         else:
             return False
+
+    def set_exchange_order_id(self):
+        if not(self.exchange_order_id):
+            self.exchange_order_id = uuid.uuid4().hex
+
+    def set_exchange_timestamp(self):
+        print(pendulum.now())
+        if not(self.exchange_timestamp):
+            print(pendulum.now())
+            self.exchange_timestamp = pendulum.now(tz='local')
+
 
 
 class VPosition(BaseModel):
