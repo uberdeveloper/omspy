@@ -4,6 +4,8 @@ import pendulum
 import pytest
 import random
 from pydantic import ValidationError
+from copy import deepcopy
+from unittest.mock  import patch
 
 
 @pytest.fixture
@@ -45,6 +47,16 @@ def ohlc_args():
     return dict(open=104, high=112, low=101, close=108, last_price=107)
 
 
+@pytest.fixture
+def order_fill_ltp():
+    order = VOrder(
+        order_id="order_id", symbol="aapl", quantity=100, side=Side.BUY, price=127
+    )
+    fill = OrderFill(order=order, last_price=128)
+    assert id(order) == id(fill.order)
+    return fill
+
+
 def test_vtrade_defaults(vtrade):
     assert vtrade.price == 120
     assert vtrade.side == Side.BUY
@@ -61,6 +73,7 @@ def test_vorder_defaults(vorder_kwargs):
     assert vorder.pending_quantity == 100
     assert vorder.canceled_quantity == 0
     assert vorder.average_price == 0
+    assert vorder.order_type == OrderType.MARKET
 
 
 def test_vorder_quantities(vorder_kwargs):
@@ -477,19 +490,207 @@ def test_ticker_update(basic_ticker):
 
 
 def test_vorder_side():
-    order = VOrder(symbol="aapl", quantity=100, side="buy",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="buy", order_id="123456789")
     assert order.side == Side.BUY
-    order = VOrder(symbol="aapl", quantity=100, side="BUY",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="BUY", order_id="123456789")
     assert order.side == Side.BUY
-    order = VOrder(symbol="aapl", quantity=100, side="s",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="s", order_id="123456789")
     assert order.side == Side.SELL
-    order = VOrder(symbol="aapl", quantity=100, side="sell",
-            order_id='123456789')
+    order = VOrder(symbol="aapl", quantity=100, side="sell", order_id="123456789")
     assert order.side == Side.SELL
+
 
 def test_vorder_side_error():
     with pytest.raises(ValidationError):
-        order = VOrder(symbol="aapl", quantity=100, side="unknown",order_id='123456789')
+        order = VOrder(
+            symbol="aapl", quantity=100, side="unknown", order_id="123456789"
+        )
+
+
+def test_instrument_defaults():
+    inst = Instrument(
+        name="nifty", last_price=12340, open=12188, high=12400, low=12100, close=12340
+    )
+    assert inst.token is None
+    assert inst.volume is None
+    assert inst.orderbook is None
+    assert inst.last_update_time is None
+
+
+def test_order_fill_ltp(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 100
+    assert fill.done is True
+    assert order.average_price == 128
+    assert order.status == Status.COMPLETE
+
+    # Do not change once order is complete
+    fill.last_price = 130
+    fill.update()
+    assert order.average_price == 128
+    assert order.filled_quantity == 100
+
+
+def test_order_fill_different_ltp(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.quantity = 120
+    fill.update(last_price=129)
+    order = fill.order
+    assert order.filled_quantity == 120
+    assert fill.done is True
+    assert order.average_price == 129
+    assert order.status == Status.COMPLETE
+
+
+def test_order_fill_ltp_buy(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.order_type = OrderType.LIMIT
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 0
+    fill.last_price = 128
+    fill.update()
+    assert order.filled_quantity == 0
+    fill.last_price = 126.95
+    fill.update()
+    assert order.filled_quantity == 100
+    assert order.average_price == order.price == 127
+
+
+def test_order_fill_ltp_sell(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.order_type = OrderType.LIMIT
+    fill.order.side = Side.SELL
+    fill.order.price = 128
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 0
+    fill.last_price = 127.5
+    fill.update()
+    assert order.filled_quantity == 0
+    fill.last_price = 128.05
+    fill.update()
+    assert order.filled_quantity == 100
+    assert order.average_price == order.price == 128
+
+
+def test_order_fill_modified_price(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.order.order_type = OrderType.LIMIT
+    fill.last_price = 128
+    fill.update()
+    for l in (128.05, 128.1, 128.25, 128.3, 128, 128.25):
+        fill.last_price = l
+        fill.update()
+        assert fill.done is False
+    fill.order.price = 128.3
+    fill.update()
+    assert fill.done is True
+    # TODO: Check this
+    assert fill.order.price == 128.3
+    assert fill.order.average_price == 128.3
+
+
+def test_order_fill_as_market_buy():
+    order = VOrder(
+        order_id="order_id",
+        symbol="aapl",
+        quantity=100,
+        side=Side.BUY,
+        price=130,
+        order_type=OrderType.LIMIT,
+    )
+    fill = OrderFill(order=order, last_price=128)
+    assert fill.done is True
+    assert fill.order.filled_quantity == 100
+    assert fill.order.pending_quantity == 0
+    assert fill.order.average_price == 128
+    assert fill.order.price == 130
+    fill.update()
+    assert fill.order.average_price == 128
+
+
+def test_order_fill_as_market_buy():
+    order = VOrder(
+        order_id="order_id",
+        symbol="aapl",
+        quantity=100,
+        side=Side.SELL,
+        price=130,
+        order_type=OrderType.LIMIT,
+    )
+    fill = OrderFill(order=order, last_price=134)
+    assert fill.done is True
+    assert fill.order.filled_quantity == 100
+    assert fill.order.pending_quantity == 0
+    assert fill.order.average_price == 134
+    assert fill.order.price == 130
+    fill.update()
+    assert fill.order.average_price == 134
+
+
+def test_order_fill_ltp_all_quantity(order_fill_ltp):
+    fill = order_fill_ltp
+    fill.update()
+    order = fill.order
+    assert order.filled_quantity == 100
+    assert order.pending_quantity == 0
+    assert order.canceled_quantity == 0
+    assert fill.done is True
+    assert order.average_price == 128
+    assert order.status == Status.COMPLETE
+
+
+def test_vorder_is_complete(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    assert order.is_complete is False
+    order.filled_quantity = 100
+    order._make_right_quantity()
+    assert order.is_complete is True
+    assert order.is_done is True
+    assert order.filled_quantity == order.quantity
+    assert order.status == Status.COMPLETE
+
+
+def test_vorder_is_complete_rejected(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    assert order.is_complete is False
+    order.canceled_quantity = 100
+    order._make_right_quantity()
+    assert order.is_complete is False
+    assert order.is_done is True
+
+
+def test_vorder_is_complete_partial_fill(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    order.filled_quantity = 50
+    order.canceled_quantity = 50
+    order._make_right_quantity()
+    assert order.is_complete is False
+    assert order.is_done is True
+    assert order.status == Status.PARTIAL_FILL
+
+
+def test_vorder_set_exchange_order_id(vorder_kwargs):
+    order = VOrder(**vorder_kwargs)
+    uid = uuid.uuid4()
+    with patch('uuid.uuid4') as uuid4:
+        uuid4.return_value = uid
+        order.set_exchange_order_id()
+        assert order.exchange_order_id == uid.hex
+    order.set_exchange_order_id()
+    order.set_exchange_order_id()
+    # Exchange id should not change
+    assert order.exchange_order_id == uid.hex
+
+def test_vorder_set_exchange_timestamp():
+    order = VOrder(order_id=uuid.uuid4().hex, symbol="aapl",
+            quantity=100, side=1)
+    known = pendulum.datetime(2023,1,1,10,5,tz='local')
+    with pendulum.test(known):
+        order.set_exchange_timestamp()
+        assert order.exchange_timestamp == known
+    order.set_exchange_timestamp()
+    assert order.exchange_timestamp == known

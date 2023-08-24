@@ -98,14 +98,14 @@ class Zerodha(Broker):
             )
             self._shortcuts()
         except TokenException:
-            print("Into Exception")
+            logging.error("Into Exception")
             self._login()
             self._shortcuts()
             self.ticker = KiteTicker(
                 api_key=self._api_key, access_token=self.kite.access_token
             )
         except:
-            print("Unknown Exception")
+            logging.error("Unknown Exception")
             self._login()
             self._shortcuts()
             self.ticker = KiteTicker(

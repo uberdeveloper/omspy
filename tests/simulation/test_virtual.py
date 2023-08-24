@@ -4,6 +4,35 @@ import pendulum
 import random
 from unittest.mock import patch, Mock
 from pydantic import ValidationError
+from dataclasses import dataclass, asdict
+import string
+
+
+def generate_instrument(**kwargs):
+    """
+    generate a random instrument
+    """
+    inst_args = dict()
+    name = "".join(random.choices(string.ascii_uppercase, k=random.randrange(4, 11)))
+    if "name" in kwargs:
+        name = kwargs.get("name")
+        kwargs.pop("name")
+    inst_args["name"] = name
+    if "last_price" in kwargs:
+        return Instrument(name=name, **kwargs)
+    else:
+        last_price = random.randrange(100, 200)
+        open_price = last_price + random.randrange(1, 10)
+        high = open_price + random.randrange(2, 20)
+        low = open_price - random.randrange(2, 20)
+        close = (last_price + open_price) / 2
+        inst_args.update(
+            dict(
+                last_price=last_price, open=open_price, high=high, low=low, close=close
+            )
+        )
+        inst_args.update(kwargs)
+        return Instrument(**inst_args)
 
 
 @pytest.fixture
@@ -36,6 +65,48 @@ def basic_broker_with_prices(basic_broker) -> VirtualBroker:
     for last_price in prices:
         basic_broker.update_tickers(last_price)
     return basic_broker
+
+
+@pytest.fixture
+def replica_with_instruments() -> ReplicaBroker:
+    random.seed(1000)
+    broker = ReplicaBroker()
+    names = ["AAPL", "XOM", "DOW"]
+    instruments = []
+    for name in names:
+        inst = generate_instrument(name=name)
+        instruments.append(inst)
+    broker.update(instruments)
+    return broker
+
+
+@pytest.fixture
+def replica_with_orders(replica_with_instruments) -> ReplicaBroker:
+    @dataclass
+    class Inputs:
+        symbol: str
+        side: int  # replace with enum by order
+        quantity: int
+        order_type: int  # replaced with enum by order
+        price: float
+        user: str
+
+    order_inputs = [
+        Inputs("AAPL", 1, 10, 1, 124, "user1"),
+        Inputs("AAPL", -1, 10, 2, 126, "default"),
+        Inputs("AAPL", 1, 20, 2, 124, "user2"),
+        Inputs("DOW", -1, 13, 1, 124, "user1"),
+        Inputs("DOW", 1, 18, 1, 124, "user2"),
+        Inputs("XOM", 1, 20, 2, 154, "user2"),  # passed
+        Inputs("XOM", 1, 30, 2, 135, "default"),
+        Inputs("XOM", -1, 30, 2, 140, "default"),  # passed
+        Inputs("AAPL", 1, 10, 2, 123, "default"),
+        Inputs("AAPL", 1, 10, 2, 122, "default"),
+    ]
+    broker = replica_with_instruments
+    for inputs in order_inputs:
+        broker.order_place(**asdict(inputs))
+    return broker
 
 
 def test_generate_price():
@@ -716,3 +787,189 @@ def test_fake_broker_trades():
     assert len(trades) == 12
     assert all([o.price > 0 for o in trades]) is True
     assert all([o.quantity > 0 for o in trades]) is True
+
+
+def test_replica_broker_defaults():
+    broker = ReplicaBroker()
+    assert broker.name == "replica"
+    assert broker.instruments == dict()
+    assert broker.orders == dict()
+    assert broker.users == set(["default"])
+    assert broker._user_orders == dict()
+    assert broker.pending == []
+    assert broker.completed == []
+    assert broker.fills == []
+
+
+def test_replica_broker_update():
+    broker = ReplicaBroker()
+    random.seed(1000)
+    names = ["AAPL", "XOM", "DOW"]
+    instruments = []
+    for name in names:
+        inst = generate_instrument(name=name)
+        instruments.append(inst)
+    broker.update(instruments)
+    for name in names:
+        assert name in broker.instruments
+
+    # Update existing instrument
+    instruments[0].last_price = 144
+    broker.update([instruments[0]])
+    assert broker.instruments["AAPL"].last_price == 144
+
+
+def test_replica_broker_order_place(replica_with_instruments):
+    known = pendulum.datetime(2023, 4, 1, 9, 30, tz="local")
+    broker = replica_with_instruments
+    with pendulum.test(known):
+        order = broker.order_place(symbol="AAPL", side=1, quantity=10)
+        assert order.order_id in broker.orders
+        assert len(broker._user_orders["default"]) == 1
+        assert order.is_done is False
+        assert len(broker.pending) == 1
+        assert len(broker.fills) == 1
+        assert broker.pending[0].order_id == order.order_id
+        assert (
+            id(order)
+            == id(broker.orders[order.order_id])
+            == id(broker._user_orders["default"][0])
+            == id(broker.pending[0])
+            == id(broker.fills[0].order)
+        )
+
+    # Order status should not change with time
+    with pendulum.test(known.add(minutes=5)):
+        assert order.is_done is False
+        assert order.filled_quantity == 0
+
+
+def test_replica_broker_order_place_multiple_users(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(symbol="AAPL", side=1, quantity=10)
+    for user in ("user1", "user2", "default"):
+        order = broker.order_place(symbol="AAPL", side=1, quantity=10, user=user)
+    order = broker.order_place(symbol="AAPL", side=1, quantity=10)
+    assert len(broker.orders) == 5
+    assert len(broker._user_orders) == 3
+    for k, v in broker._user_orders.items():
+        if k == "default":
+            assert len(v) == 3
+        else:
+            assert len(v) == 1
+
+
+def test_replica_order_fill(replica_with_orders):
+    broker = replica_with_orders
+    assert len(broker.orders) == 10
+    assert len(broker.completed) == 0
+    assert len(broker._user_orders) == 3
+    # Since we already knew the filled and non-filled orders
+    order_ids = [order.order_id for order in broker.orders.values()]
+    filled_ids = []
+    non_filled_ids = []
+    avg_prices = {
+        broker.fills[i].order.order_id: v
+        for i, v in zip((0, 3, 4, 5, 7), (125, 136, 136, 153, 153))
+    }
+
+    for i, v in enumerate(broker.fills, start=1):
+        if i in (2, 3, 7, 9, 10):
+            non_filled_ids.append(v.order.order_id)
+        else:
+            filled_ids.append(v.order.order_id)
+    broker.run_fill()
+    assert len(broker.completed) == len(broker.fills) == 5
+    assert broker.completed
+    print(broker.instruments)
+    for order in broker.completed:
+        assert order.order_id in filled_ids
+        assert order.average_price == avg_prices[order.order_id]
+    broker.instruments["AAPL"].last_price = 127
+    broker.run_fill()
+    assert len(broker.fills) == 4
+    assert len(broker.completed) == 6
+    assert broker.orders[order_ids[1]].average_price == 126
+    assert broker.orders[order_ids[1]].filled_quantity == 10
+    for i in range(10):
+        # results should be the same
+        broker.run_fill()
+    assert len(broker.fills) == 4
+    assert len(broker.completed) == 6
+    broker.instruments["AAPL"].last_price = 121.95
+    broker.run_fill()
+    assert len(broker.fills) == 1
+    assert len(broker.completed) == 9
+    assert order_ids[6] in broker.orders
+
+
+def test_replica_broker_order_modify(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    order_id = order.order_id
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_modify(order_id, quantity=20, price=125.1)
+    assert broker.orders[order_id].quantity == 20
+    assert broker.orders[order_id].price == 125.1
+    broker.run_fill()
+    assert order.filled_quantity == 20
+    assert order.average_price == 125.1
+    assert order.is_done is True
+
+
+def test_replica_broker_order_modify_market(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    order_id = order.order_id
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_modify(order_id, quantity=20)
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_modify(order_id, order_type=1)
+    broker.run_fill()
+    assert order.filled_quantity == 20
+    assert order.average_price == 125
+    assert order.is_done is True
+    assert (
+        id(order)
+        == id(broker.orders[order_id])
+        == id(broker._user_orders["default"][0])
+    )
+    assert len(broker.completed) == 1
+
+
+def test_replica_broker_order_cancel(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    broker.run_fill()
+    assert order.is_done is False
+    broker.order_cancel(order.order_id)
+    assert len(broker.completed) == 1
+    assert order.is_done is True
+    assert len(broker.fills) == 1
+    broker.run_fill()
+    assert len(broker.fills) == 0
+
+
+def test_replica_broker_order_cancel_multiple_times(replica_with_instruments):
+    broker = replica_with_instruments
+    order = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, order_type=2, price=124
+    )
+    broker.run_fill()
+    assert order.is_done is False
+    for i in range(10):
+        broker.order_cancel(order.order_id)
+    assert len(broker.completed) == 1
+    assert order.is_done is True
+    assert len(broker.fills) == 1
+    broker.run_fill()
+    assert len(broker.fills) == 0

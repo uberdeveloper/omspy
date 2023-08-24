@@ -21,6 +21,8 @@ from omspy.simulation.models import (
     VUser,
     TickerMode,
     Ticker,
+    Instrument,
+    OrderFill,
 )
 
 SUCCESS = ResponseStatus.SUCCESS
@@ -196,7 +198,7 @@ class FakeBroker(BaseModel):
             kwargs["side"] = random.choice([Side.BUY, Side.SELL])
         return kwargs
 
-    def _get_random_symbols(self, n:Optional[int]=None)->List[str]:
+    def _get_random_symbols(self, n: Optional[int] = None) -> List[str]:
         """
         get random symbols
         """
@@ -677,3 +679,97 @@ class VirtualBroker(BaseModel):
         return the quote for the symbol or list of symbols
         """
         return _iterate_method(self._quote, symbol)
+
+
+class ReplicaBroker(BaseModel):
+    """
+    Replica Broker for simulation real brokers
+    """
+
+    name: str = "replica"
+    instruments: Dict[str, Instrument] = Field(default_factory=defaultdict)
+    orders: Dict[str, VOrder] = Field(default_factory=defaultdict)
+    users: set[str] = Field(default_factory=set)
+    pending: List[VOrder] = Field(default_factory=list)
+    completed: List[VOrder] = Field(default_factory=list)
+    fills: List[OrderFill] = Field(default_factory=list)
+    _user_orders: Dict[str, List[VOrder]] = PrivateAttr()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.users.add("default")
+        self._user_orders = defaultdict(list)
+
+    def update(self, instruments: List[Instrument]):
+        """
+        update the given list of instruments
+        Note
+        -----
+        1) The instruments are directly updated and any
+        existing data is overwritten
+        """
+        for inst in instruments:
+            name = inst.name
+            self.instruments[name] = inst
+
+    def order_place(self, **kwargs) -> VOrder:
+        """
+        Place an order with the broker
+        """
+        user = kwargs.pop("user", "default")
+        order_id = uuid.uuid4().hex
+        order = VOrder(order_id=order_id, **kwargs)
+        self._user_orders[user].append(order)
+        self.orders[order_id] = order
+        self.pending.append(order)
+
+        symbol = order.symbol
+        last_price = self.instruments[symbol].last_price
+        fill = OrderFill(order=order, last_price=last_price)
+        self.fills.append(fill)
+        return order
+
+    def order_modify(self, order_id: str, **kwargs) -> VOrder:
+        """
+        Modify an order with the broker
+        """
+        order = self.orders[order_id]
+        for k, v in kwargs.items():
+            if hasattr(order, k):
+                setattr(order, k, v)
+        return order
+
+    def order_cancel(self, order_id: str) -> VOrder:
+        """
+        Cancel an existing order
+        """
+        order = self.orders[order_id]
+        if not (order.is_done):
+            order.canceled_quantity = order.quantity - order.filled_quantity
+            self.completed.append(order)
+        return order
+
+    def run_fill(self):
+        """
+        run order fill for the existing pending orders
+        """
+        if len(self.fills) == 0:
+            logging.info("No order to fill")
+        orders_done = set()
+        for i, fill in enumerate(self.fills):
+            symbol = fill.order.symbol
+            last_price = self.instruments[symbol].last_price
+            if last_price:
+                fill.last_price = last_price
+                fill.update()
+                if fill.done:
+                    orders_done.add(fill.order.order_id)
+            else:
+                logging.warning(f"Instrument not found for ticker {symbol}")
+
+        # Clean completed orders
+        if len(orders_done) > 0:
+            for order_id in orders_done:
+                comp = self.orders[order_id]
+                self.completed.append(comp)
+        self.fills = [fill for fill in self.fills if not (fill.done)]

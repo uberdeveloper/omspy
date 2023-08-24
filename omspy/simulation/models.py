@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, validator, PrivateAttr
 from typing import Optional, Union, Any, Dict, List
 from enum import Enum
 import random
+import uuid
 import pendulum
 import omspy.utils as utils
 from omspy.models import OrderBook
@@ -34,6 +35,11 @@ class Side(Enum):
 class TickerMode(Enum):
     RANDOM = 1
     MANUAL = 2
+
+
+class OrderType(Enum):
+    MARKET = 1
+    LIMIT = 2
 
 
 class OHLC(BaseModel):
@@ -129,7 +135,6 @@ class Ticker(BaseModel):
         )
 
 
-
 class VQuote(OHLCV):
     orderbook: OrderBook
 
@@ -163,6 +168,7 @@ class VOrder(BaseModel):
     exchange_order_id: Optional[str]
     exchange_timestamp: Optional[pendulum.DateTime]
     status_message: Optional[str]
+    order_type: OrderType = OrderType.MARKET
     filled_quantity: float = 0
     pending_quantity: float = 0
     canceled_quantity: float = 0
@@ -171,22 +177,23 @@ class VOrder(BaseModel):
     class Config:
         validate_assignment = True
 
-    @validator('side', pre=True, always=True)
+    @validator("side", pre=True, always=True)
     def accept_buy_sell_as_side(cls, v):
         if isinstance(v, str):
-            if v.lower()[0] == 'b':
+            if v.lower()[0] == "b":
                 return Side.BUY
-            elif v.lower()[0] == 's':
+            elif v.lower()[0] == "s":
                 return Side.SELL
             else:
                 raise TypeError(f"{v} is not a valid side, should be buy or sell")
         else:
             return v
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        if self.timestamp is None:
-            self.timestamp = pendulum.now(tz="local")
+    def _make_right_quantity(self):
+        """
+        Make the pending, filled and canceled correct
+        based on available data
+        """
         q = utils.update_quantity(
             q=self.quantity,
             f=self.filled_quantity,
@@ -196,6 +203,12 @@ class VOrder(BaseModel):
         self.filled_quantity = q.f
         self.pending_quantity = q.p
         self.canceled_quantity = q.c
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        if self.timestamp is None:
+            self.timestamp = pendulum.now(tz="local")
+        self._make_right_quantity()
         if self.average_price is None:
             self.average_price = 0
         self._delay = 1e6  # delay in microseconds
@@ -285,7 +298,7 @@ class VOrder(BaseModel):
         """
         whether the order is finished either by fully filled
         or canceled
-        returns True if it is completed, False if pending
+        returns True if it is done, False if pending
         """
         if self.quantity == self.filled_quantity:
             return True
@@ -295,6 +308,19 @@ class VOrder(BaseModel):
             return False
         else:
             return True
+
+    @property
+    def is_complete(self)->bool:
+        """
+        returns True if the entire order is completely filled
+        else False
+        """
+        if self.quantity == self.filled_quantity:
+            return True
+        elif self.status == Status.COMPLETE:
+            return True
+        else:
+            return False
 
     def modify_by_status(self, status: Status = Status.COMPLETE) -> bool:
         """
@@ -308,6 +334,17 @@ class VOrder(BaseModel):
             return True
         else:
             return False
+
+    def set_exchange_order_id(self):
+        if not(self.exchange_order_id):
+            self.exchange_order_id = uuid.uuid4().hex
+
+    def set_exchange_timestamp(self):
+        print(pendulum.now())
+        if not(self.exchange_timestamp):
+            print(pendulum.now())
+            self.exchange_timestamp = pendulum.now(tz='local')
+
 
 
 class VPosition(BaseModel):
@@ -427,3 +464,89 @@ class OrderBookResponse(GenericResponse):
 
 class PositionResponse(GenericResponse):
     data: List[VPosition]
+
+
+class Instrument(BaseModel):
+    """
+    Instrument containing data
+    """
+
+    name: str
+    token: Optional[int] = None
+    last_price: float
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: Optional[float]
+    open_interest: Optional[float]
+    strike: Optional[float]
+    expiry: Optional[pendulum.Date]
+    orderbook: Optional[OrderBook]
+    last_update_time: Optional[pendulum.DateTime]
+
+
+class OrderFill(BaseModel):
+    """
+    A simple order fill model
+    """
+
+    order: VOrder
+    last_price: float
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.order: VOrder = data["order"]
+        self._as_market()
+
+    @property
+    def done(self):
+        return self.order.is_done
+
+    def _as_market(self):
+        """
+        Update order if the limit price behaves like a MARKET order
+        So, if the last price is 120 and a BUY order is sent for 122, the order would be filled at 120
+        """
+        side = self.order.side
+        price = self.order.price
+        order_type = self.order.order_type
+        ltp = self.last_price
+        if order_type == OrderType.LIMIT:
+            if side == Side.BUY:
+                if price > ltp:
+                    self.order.filled_quantity = self.order.quantity
+                    self.order.average_price = self.last_price
+            elif side == Side.SELL:
+                if price < ltp:
+                    self.order.filled_quantity = self.order.quantity
+                    self.order.average_price = self.last_price
+            self.order._make_right_quantity()
+
+    def update(self, last_price: float = None):
+        """
+        update order
+        """
+        # Do nothing if order is complete
+        if self.order.is_done:
+            return
+        last_price = last_price or self.last_price
+        order = self.order
+        side = order.side
+        order_type = order.order_type
+        if order_type == OrderType.MARKET:
+            order.price = last_price
+            order.average_price = last_price
+            order.filled_quantity = order.quantity
+            order._make_right_quantity()
+        elif order_type == OrderType.LIMIT:
+            if side == Side.BUY:
+                if last_price < order.price:
+                    order.average_price = order.price
+                    order.filled_quantity = order.quantity
+                    order._make_right_quantity()
+            elif side == Side.SELL:
+                if last_price > order.price:
+                    order.average_price = order.price
+                    order.filled_quantity = order.quantity
+                    order._make_right_quantity()
