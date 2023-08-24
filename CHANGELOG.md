@@ -1,3 +1,9 @@
+### 0.15.0
+### Features
+* `ReplicaBroker` class added to simulation to replicate order fills based on real broker data
+### Improvements
+* `print` replaced with `logging` for zerodha broker
+
 ### 0.14.2
 Improvements to `FakeBroker` module
 ### Features
