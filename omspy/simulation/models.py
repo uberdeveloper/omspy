@@ -189,6 +189,24 @@ class VOrder(BaseModel):
         else:
             return v
 
+    @validator("order_type", pre=True, always=True)
+    def accept_order_type_as_str(cls, v):
+        """
+        accept order type as string also and convert it to enum
+        should be market or limit
+        """
+        if isinstance(v, str):
+            if v.upper() == "LIMIT":
+                return OrderType.LIMIT
+            elif v.upper() == "MARKET":
+                return OrderType.MARKET
+            else:
+                raise TypeError(
+                    f"{v} is not a valid  order type, should be one of LIMIT/MARKET"
+                )
+        else:
+            return v
+
     def _make_right_quantity(self):
         """
         Make the pending, filled and canceled correct
@@ -310,7 +328,7 @@ class VOrder(BaseModel):
             return True
 
     @property
-    def is_complete(self)->bool:
+    def is_complete(self) -> bool:
         """
         returns True if the entire order is completely filled
         else False
@@ -336,15 +354,14 @@ class VOrder(BaseModel):
             return False
 
     def set_exchange_order_id(self):
-        if not(self.exchange_order_id):
+        if not (self.exchange_order_id):
             self.exchange_order_id = uuid.uuid4().hex
 
     def set_exchange_timestamp(self):
         print(pendulum.now())
-        if not(self.exchange_timestamp):
+        if not (self.exchange_timestamp):
             print(pendulum.now())
-            self.exchange_timestamp = pendulum.now(tz='local')
-
+            self.exchange_timestamp = pendulum.now(tz="local")
 
 
 class VPosition(BaseModel):

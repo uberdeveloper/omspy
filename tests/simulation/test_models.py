@@ -5,7 +5,7 @@ import pytest
 import random
 from pydantic import ValidationError
 from copy import deepcopy
-from unittest.mock  import patch
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -676,7 +676,7 @@ def test_vorder_is_complete_partial_fill(vorder_kwargs):
 def test_vorder_set_exchange_order_id(vorder_kwargs):
     order = VOrder(**vorder_kwargs)
     uid = uuid.uuid4()
-    with patch('uuid.uuid4') as uuid4:
+    with patch("uuid.uuid4") as uuid4:
         uuid4.return_value = uid
         order.set_exchange_order_id()
         assert order.exchange_order_id == uid.hex
@@ -685,12 +685,26 @@ def test_vorder_set_exchange_order_id(vorder_kwargs):
     # Exchange id should not change
     assert order.exchange_order_id == uid.hex
 
+
 def test_vorder_set_exchange_timestamp():
-    order = VOrder(order_id=uuid.uuid4().hex, symbol="aapl",
-            quantity=100, side=1)
-    known = pendulum.datetime(2023,1,1,10,5,tz='local')
+    order = VOrder(order_id=uuid.uuid4().hex, symbol="aapl", quantity=100, side=1)
+    known = pendulum.datetime(2023, 1, 1, 10, 5, tz="local")
     with pendulum.test(known):
         order.set_exchange_timestamp()
         assert order.exchange_timestamp == known
     order.set_exchange_timestamp()
     assert order.exchange_timestamp == known
+
+
+def test_vorder_order_type_as_str(vorder_kwargs):
+    kwargs = vorder_kwargs
+    order = VOrder(order_type="LIMIT", **kwargs)
+    assert order.order_type == OrderType.LIMIT
+    order = VOrder(order_type="limit", **kwargs)
+    assert order.order_type == OrderType.LIMIT
+    order = VOrder(order_type="MARKET", **kwargs)
+    assert order.order_type == OrderType.MARKET
+    order = VOrder(order_type="market", **kwargs)
+    assert order.order_type == OrderType.MARKET
+    with pytest.raises(ValidationError):
+        order = VOrder(order_type="something", **kwargs)
