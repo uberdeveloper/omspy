@@ -1,13 +1,13 @@
 from omspy.base import Broker, post
 from typing import Optional, List, Dict, Union
 from ks_api_client import ks_api
-from neo_api_client import NeoAPI
 import pendulum
+import datetime
 import pandas as pd
 import logging
 
 
-def get_url(segment: Optional[str] = "cash") -> str:
+def get_url(segment: str = "cash") -> str:
     dt = pendulum.now(tz="Asia/Kolkata")
     date_string = dt.strftime("%d_%m_%Y")
     dct = {"cash": "Cash", "fno": "FNO"}
@@ -292,8 +292,14 @@ class Kotak(Broker):
                 try:
                     ts = order["orderTimestamp"]
                     ts2 = ts[:-6] + ts[-2:]
-                    order["exchange_timestamp"] = pendulum.parse(
+                    ts_string = pendulum.parse(
                         ts2, tz="Asia/Kolkata", strict=False
+                    ).to_iso8601_string()
+                    # Doing this conversion since pandas cannot gracefully
+                    # convert pendulum to datetime objects and we need pandas
+                    # to load orders as a dataframe for further analysis
+                    order["exchange_timestamp"] = datetime.datetime.fromisoformat(
+                        ts_string
                     )
                 except Exception as e:
                     logging.error(e)
@@ -389,5 +395,3 @@ class Kotak(Broker):
         except Exception as e:
             logging.error(e)
             return None
-
-

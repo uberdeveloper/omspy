@@ -3,6 +3,7 @@ from omspy.brokers.kotak import *
 from unittest.mock import patch, call
 import pytest
 import pendulum
+import datetime
 import json
 import os
 from copy import deepcopy
@@ -462,10 +463,15 @@ def test_orders_exchange_timestamp(mock_kotak):
             (2022, 4, 25, 15, 20, 40),
         ]
         expected_timestamp = [
-            pendulum.datetime(*ts, tz="Asia/Kolkata") for ts in ts_array
+            pendulum.datetime(*ts, tz="Asia/Kolkata").to_iso8601_string()
+            for ts in ts_array
+        ]
+        expected_timestamp = [
+            datetime.datetime.fromisoformat(ts) for ts in expected_timestamp
         ]
         for order, ts in zip(orders, expected_timestamp):
             assert order["exchange_timestamp"] == ts
+            assert type(order["exchange_timestamp"]) == datetime.datetime
 
 
 def test_close_all_positions(mock_kotak):

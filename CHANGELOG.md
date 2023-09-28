@@ -1,6 +1,7 @@
 ### 0.16.1
 ### Improvements
 * `VOrder` can now accept string as order types like MARKET/LIMIT in addition to `OrderType` Enum
+* `Kotak` broker exchange_timestamp in orders would datetime objects instead of pendulum objects
 ### 0.16.0
 ### Features
 * `ReplicaBroker` class added to simulation to replicate order fills based on real broker data
