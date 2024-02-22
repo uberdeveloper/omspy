@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "omspy"
-version = "0.16.1"
+version = "0.16.2"
 description = ""
 license = "MIT"
 authors = ["Ubermensch <uberdeveloper001@gmail.com>"]
@@ -11,7 +11,7 @@ repository = "https://github.com/uberdeveloper/omspy"
 python = "^3.8"
 pendulum = "^2.1.2"
 pydantic = "^1.8.2"
-PyYAML = "^5.4.1"
+PyYAML = "^6.0.0"
 sqlite-utils = "^3.22.1"
 
 [tool.poetry.group.server.dependencies]
