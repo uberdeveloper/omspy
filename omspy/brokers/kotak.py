@@ -3,8 +3,10 @@ from typing import Optional, List, Dict, Union
 from ks_api_client import ks_api
 import pendulum
 import datetime
+from io import StringIO
 import pandas as pd
 import logging
+import requests
 
 
 def get_url(segment: str = "cash") -> str:
@@ -109,8 +111,10 @@ def download_file(url: str, num_cols: int) -> pd.DataFrame:
     returns an empty Dataframe in case of an error
     """
     try:
-        df = pd.read_table(
-            url, delimiter="|", parse_dates=["expiry"], usecols=range(num_cols)
+        req = requests.get(url)
+        text = StringIO(req.text)
+        df = pd.read_csv(
+            text, delimiter="|", parse_dates=["expiry"], usecols=range(num_cols)
         )
         df = df.rename(columns=lambda x: x.lower())
         return df.drop_duplicates(subset=["instrumenttoken"])
