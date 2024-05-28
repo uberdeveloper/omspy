@@ -1,6 +1,8 @@
+### 0.16.4
+* `Kotak` broker updated for latest master format 
+
 ### 0.16.3
 * Dependencies updated to match python3.10 and above
-
 ### 0.16.1
 ### Improvements
 * `VOrder` can now accept string as order types like MARKET/LIMIT in addition to `OrderType` Enum
