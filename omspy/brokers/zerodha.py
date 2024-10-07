@@ -3,15 +3,11 @@ from omspy.base import Broker, pre, post
 from typing import Optional, List, Dict
 from copy import deepcopy
 import logging
+import nodriver as uc
+import time
 
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 from kiteconnect.exceptions import (
     TokenException,
@@ -112,48 +108,39 @@ class Zerodha(Broker):
                 api_key=self._api_key, access_token=self.kite.access_token
             )
 
-    def _login(self) -> None:
-        import time
-
+    async def _async_login(self) -> None:
         self.kite = KiteConnect(api_key=self._api_key)
-        options = Options()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
-        driver = webdriver.Chrome(options=options)
-        driver.get(self.kite.login_url())
-        login_form = WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "login-form"))
-        )
-        login_form.find_elements_by_tag_name("input")[0].send_keys(self._user_id)
-        login_form.find_elements_by_tag_name("input")[1].send_keys(self._password)
-        WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
-        )
-        driver.find_element_by_xpath('//button[@type="submit"]').click()
-        totp_pass = pyotp.TOTP(self._totp).now()
-        twofa_pass = self._pin if self.is_pin is True else totp_pass
-        twofa_form = WebDriverWait(driver, 45).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "twofa-form"))
-        )
-        twofa_form.find_elements_by_tag_name("input")[0].send_keys(twofa_pass)
-        try:
-            WebDriverWait(driver, 45).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "button-orange"))
-            )
-            driver.find_element_by_xpath('//button[@type="submit"]').click()
-        except Exception as e:
-            # Added to debug since zerodha automatically authenticates OTP
-            logging.debug(e)
-
+        browser = await uc.start(headless=True)
+        url = self.kite.login_url()
+        page = await browser.get(url)
+        await page.get_content()
+        user_id = await page.select('input[id="userid"]')
+        await user_id.send_keys(self._user_id)
+        password = await page.select('input[id="password"]')
+        await password.send_keys(self._password)
+        button = await page.select('button[type="submit"]')
+        await button.click()
         time.sleep(2)
-        token = get_key(driver.current_url)
+        twofa_pass = pyotp.TOTP(self._totp).now()
+        twofa = await page.select('input[id="userid"]')
+        await twofa.send_keys(twofa_pass)
+        button = await page.select('button[type="submit"]')
+        await button.click()
+        time.sleep(2)
+        await page.get_content()
+        current_url = await page.evaluate("window.location.href")
+        token = get_key(current_url)
         access = self.kite.generate_session(
             request_token=token, api_secret=self._secret
         )
         self.kite.set_access_token(access["access_token"])
         with open("token.tok", "w") as f:
             f.write(access["access_token"])
-        driver.close()
+        time.sleep(1)
+        browser.stop()
+
+    def _login(self) -> None:
+        uc.loop().run_until_complete(self._async_login())
 
     @property
     @post
