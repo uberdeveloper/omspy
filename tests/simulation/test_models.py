@@ -200,7 +200,7 @@ def test_vposition_price():
 
 def test_response():
     known = pendulum.datetime(2023, 2, 1, 12, 44, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         resp = Response(status="success")
         assert resp.status == ResponseStatus.SUCCESS
         assert resp.timestamp == known
@@ -321,22 +321,22 @@ def test_vorder_is_done(vorder_kwargs, filled, pending, canceled, expected):
 
 def test_vorder_is_past_delay(vorder_kwargs):
     known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = VOrder(**vorder_kwargs)
         assert order.is_past_delay is False
-    with pendulum.test(known.add(seconds=3)):
+    with pendulum.travel_to(known.add(seconds=3)):
         assert order.is_past_delay is True
 
 
 def test_vorder_custom_delay(vorder_kwargs):
     known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = VOrder(**vorder_kwargs)
         order._delay = 5e6
         assert order.is_past_delay is False
-    with pendulum.test(known.add(seconds=3)):
+    with pendulum.travel_to(known.add(seconds=3)):
         assert order.is_past_delay is False
-    with pendulum.test(known.add(seconds=5)):
+    with pendulum.travel_to(known.add(seconds=5)):
         assert order.is_past_delay is False
 
 
@@ -397,15 +397,15 @@ def test_vorder_modify_by_status_pending(vorder_simple):
 
 def test_vorder_modify_by_status(vorder_kwargs):
     known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = VOrder(**vorder_kwargs)
         order.modify_by_status()
         assert order.is_done is False
         assert order.filled_quantity == 0
-    with pendulum.test(known.add(seconds=1)):
+    with pendulum.travel_to(known.add(seconds=1)):
         order.modify_by_status()
         assert order.status == Status.OPEN
-    with pendulum.test(known.add(seconds=2)):
+    with pendulum.travel_to(known.add(seconds=2)):
         order.modify_by_status()
         assert order.status == Status.COMPLETE
         assert order.is_done is True
@@ -414,21 +414,21 @@ def test_vorder_modify_by_status(vorder_kwargs):
 
 def test_vorder_modify_by_status_do_not_modify_done(vorder_kwargs):
     known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = VOrder(**vorder_kwargs)
-    with pendulum.test(known.add(seconds=2)):
+    with pendulum.travel_to(known.add(seconds=2)):
         order.modify_by_status()
         assert order.status == Status.COMPLETE
-    with pendulum.test(known.add(seconds=5)):
+    with pendulum.travel_to(known.add(seconds=5)):
         order.modify_by_status(Status.CANCELED)
         assert order.status == Status.COMPLETE
 
 
 def test_vorder_modify_by_status_partial_fill(vorder_kwargs):
     known = pendulum.datetime(2023, 1, 1, 11, 20, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = VOrder(**vorder_kwargs)
-    with pendulum.test(known.add(seconds=2)):
+    with pendulum.travel_to(known.add(seconds=2)):
         order.modify_by_status(Status.PARTIAL_FILL)
         assert order.filled_quantity < order.quantity
         assert order.canceled_quantity > 0
@@ -689,7 +689,7 @@ def test_vorder_set_exchange_order_id(vorder_kwargs):
 def test_vorder_set_exchange_timestamp():
     order = VOrder(order_id=uuid.uuid4().hex, symbol="aapl", quantity=100, side=1)
     known = pendulum.datetime(2023, 1, 1, 10, 5, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         order.set_exchange_timestamp()
         assert order.exchange_timestamp == known
     order.set_exchange_timestamp()

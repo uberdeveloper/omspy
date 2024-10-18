@@ -63,12 +63,12 @@ def mock_kotak():
     ],
 )
 def test_get_url(segment, date, expected):
-    with pendulum.test(date):
+    with pendulum.travel_to(date):
         assert get_url(segment) == expected
 
 
 def test_get_url_no_segment():
-    with pendulum.test(pendulum.datetime(2022, 3, 31)):
+    with pendulum.travel_to(pendulum.datetime(2022, 3, 31)):
         assert (
             get_url()
             == "https://preferred.kotaksecurities.com/security/production/TradeApiInstruments_Cash_31_03_2022.txt"

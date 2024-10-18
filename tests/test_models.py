@@ -79,48 +79,49 @@ def test_order_lock_defaults(now):
 
 
 def test_order_lock_methods():
-    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz=None)
+    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz="Asia/Kolkata")
     lock = OrderLock()
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         lock.create(20)
         assert lock.creation_lock_till == known.add(seconds=20)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         lock.modify(60)
         assert lock.modification_lock_till == pendulum.datetime(
-            2022, 1, 1, 10, 11, 15, tz=None
+            2022, 1, 1, 10, 11, 15, tz="local"
         )
         lock.cancel(15)
         assert lock.cancellation_lock_till == pendulum.datetime(
-            2022, 1, 1, 10, 10, 30, tz=None
+            2022, 1, 1, 10, 10, 30, tz="Asia/Kolkata"
         )
 
 
 def test_order_lock_methods_max_duration():
-    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz=None)
-    lock = OrderLock()
-    with pendulum.test(known):
+    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz="local")
+    lock = OrderLock(timezone="local")
+    with pendulum.travel_to(known, freeze=True):
         lock.create(90)
+        print(pendulum.now())
         assert lock.creation_lock_till == pendulum.datetime(
-            2022, 1, 1, 10, 11, 15, tz=None
+            2022, 1, 1, 10, 11, 15, tz="local"
         )
         lock.max_order_creation_lock_time = 120
         lock.create(90)
         assert lock.creation_lock_till == pendulum.datetime(
-            2022, 1, 1, 10, 11, 45, tz=None
+            2022, 1, 1, 10, 11, 45, tz="local"
         )
 
 
 @pytest.mark.parametrize("method", ["can_create", "can_modify", "can_cancel"])
 def test_order_lock_can_methods(method):
-    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz=None)
-    with pendulum.test(known):
+    known = pendulum.datetime(2022, 1, 1, 10, 10, 15, tz="Asia/Kolkata")
+    with pendulum.travel_to(known, freeze=True):
         lock = OrderLock()
         assert getattr(lock, method) is False
-    with pendulum.test(known.add(seconds=1)):
+    with pendulum.travel_to(known.add(seconds=1)):
         assert getattr(lock, method) is True
         assert getattr(lock, method[4:])(10)
         assert getattr(lock, method) is False
-    with pendulum.test(known.add(seconds=12)):
+    with pendulum.travel_to(known.add(seconds=12)):
         assert getattr(lock, method) is True
 
 

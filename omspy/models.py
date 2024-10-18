@@ -312,7 +312,7 @@ class CandleStick(BaseModel):
                 end_time=pendulum.today(tz=self.timezone).add(hours=15, minutes=30),
             )
             self.timer = timer
-        period = pendulum.period(self.timer.start_time, self.timer.end_time)
+        period = pendulum.interval(self.timer.start_time, self.timer.end_time)
         for p in period.range("seconds", self.interval):
             self.periods.append(p)
         # The first period is popped since it is the start

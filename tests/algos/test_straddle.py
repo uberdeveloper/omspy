@@ -6,7 +6,7 @@ from pydantic import ValidationError
 @pytest.fixture
 def simple_straddle():
     known = pendulum.datetime(2022, 1, 1)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         return ShortStraddle(
             start_time=pendulum.datetime(2022, 1, 1, 10, 10),
             end_time=pendulum.datetime(2022, 1, 1, 15, 10),
@@ -17,7 +17,7 @@ def simple_straddle():
 @pytest.fixture
 def price_straddle():
     known = pendulum.datetime(2022, 1, 1, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         return ShortStraddle(
             start_time=pendulum.datetime(2022, 1, 1, 10, 10, tz="local"),
             end_time=pendulum.datetime(2022, 1, 1, 15, 10, tz="local"),
@@ -31,7 +31,7 @@ def price_straddle():
 
 def test_base_strategy_defaults():
     known = pendulum.datetime(2022, 1, 1)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         base = BaseStrategy(
             start_time=pendulum.datetime(2022, 1, 1, 10, 10),
             end_time=pendulum.datetime(2022, 1, 1, 15, 10),
@@ -51,7 +51,7 @@ def test_base_strategy_end_time_less_than_start_time():
 
 def test_base_strategy_start_time_less_than_now():
     known = pendulum.datetime(2022, 1, 4, 10, 15)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         with pytest.raises(ValidationError):
             base = BaseStrategy(
                 start_time=pendulum.datetime(2022, 1, 4, 10, 12),
@@ -61,7 +61,7 @@ def test_base_strategy_start_time_less_than_now():
 
 def test_base_strategy_time():
     known = pendulum.datetime(2022, 1, 1)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         base = BaseStrategy(
             start_time=pendulum.datetime(2022, 1, 1, 10, 10),
             end_time=pendulum.datetime(2022, 1, 1, 15, 10),
@@ -238,13 +238,13 @@ def test_short_straddle_make_sequential_orders_not_before_and_after_time(
 ):
     straddle = price_straddle
     known = pendulum.datetime(2022, 1, 1, 10, 5, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         straddle.create_order()
         assert len(straddle.order.orders) == 4
         straddle._make_sequential_orders()
         assert len(straddle._pegs) == 2
     known = pendulum.datetime(2022, 2, 1, 10, 5, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         straddle.create_order()
         assert len(straddle.order.orders) == 4
         straddle._make_sequential_orders()
@@ -253,7 +253,7 @@ def test_short_straddle_make_sequential_orders_not_before_and_after_time(
 
 def test_short_straddle_make_sequential_orders(price_straddle):
     known = pendulum.datetime(2022, 1, 1, 10, 11)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         straddle = price_straddle
         straddle._make_sequential_orders()
         assert len(straddle._pegs) == 0

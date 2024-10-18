@@ -33,13 +33,13 @@ def ohlc_data():
 @pytest.fixture
 def simple_candlestick():
     known = pendulum.datetime(2022, 1, 1, 0, 0)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         return CandleStick(symbol="NIFTY")
 
 
 def test_candlestick_initial_settings(simple_candlestick):
     known = pendulum.datetime(2022, 1, 1)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         cdl = simple_candlestick
         assert cdl.symbol == "NIFTY"
         assert cdl.high == -1e100
@@ -107,7 +107,7 @@ def test_candlestick_update_prices_candle(simple_candlestick):
         cdl.ltp = i
         cdl._update_prices()
     known = pendulum.datetime(2022, 1, 1, 9, 20, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         ts = pendulum.now(tz="local")
         cdl.update_candle(timestamp=ts)
         candle = Candle(timestamp=ts, open=100, high=103, low=99, close=99)
@@ -139,7 +139,7 @@ def test_candlestick_bearish_bars(ohlc_data, simple_candlestick):
 )
 def test_candlestick_periods(interval, expected1, expected2):
     known = pendulum.datetime(2022, 1, 1, tz="local")
-    with pendulum.test(known.add(hours=9)):
+    with pendulum.travel_to(known.add(hours=9)):
         cdl = CandleStick(symbol="NIFTY", interval=interval)
         assert len(cdl.periods) == expected1
         assert cdl.next_interval == expected2
@@ -147,14 +147,14 @@ def test_candlestick_periods(interval, expected1, expected2):
 
 def test_candlestick_timezone():
     known = pendulum.datetime(2022, 1, 1, 0, 0)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         cdl = CandleStick(symbol="NIFTY", timezone="local")
         assert (
             cdl.timer.start_time.timezone_name == pendulum.now(tz="local").timezone_name
         )
         assert cdl.periods[0].timezone_name == pendulum.now(tz="local").timezone_name
 
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         cdl = CandleStick(symbol="EURONEXT", timezone="Europe/Paris")
         assert cdl.timer.start_time.timezone_name == "Europe/Paris"
         assert cdl.periods[0].timezone_name == "Europe/Paris"
@@ -163,22 +163,22 @@ def test_candlestick_timezone():
 def test_candlestick_get_next_interval(simple_candlestick):
     cdl = simple_candlestick
     known = pendulum.datetime(2022, 1, 1, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         assert cdl.next_interval == pendulum.datetime(2022, 1, 1, 9, 20, tz="local")
         assert len(cdl.periods) == 74
-    with pendulum.test(known.add(hours=9, minutes=37)):
+    with pendulum.travel_to(known.add(hours=9, minutes=37)):
         assert cdl.get_next_interval() == pendulum.datetime(
             2022, 1, 1, 9, 40, tz="local"
         )
         assert len(cdl.periods) == 70
         assert cdl.periods[0] == pendulum.datetime(2022, 1, 1, 9, 45, tz="local")
-    with pendulum.test(known.add(hours=15, minutes=21)):
+    with pendulum.travel_to(known.add(hours=15, minutes=21)):
         assert cdl.get_next_interval() == pendulum.datetime(
             2022, 1, 1, 15, 25, tz="local"
         )
         assert len(cdl.periods) == 1
         assert cdl.periods[0] == pendulum.datetime(2022, 1, 1, 15, 30, tz="local")
-    with pendulum.test(known.add(hours=15, minutes=40)):
+    with pendulum.travel_to(known.add(hours=15, minutes=40)):
         assert cdl.get_next_interval() is None
         assert len(cdl.periods) == 0
         assert cdl.periods == []
@@ -187,13 +187,13 @@ def test_candlestick_get_next_interval(simple_candlestick):
 def test_candlestick_update():
     # @@@ assumption [add test case]: this file location change breaks below paths
     known = pendulum.datetime(2022, 7, 1, 0, 0)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         cdl = CandleStick(symbol="NIFTY")
     df = pd.read_csv(ROOT / "nifty_ticks.csv", parse_dates=["timestamp"])
     for i, row in df.iterrows():
         ts = pendulum.instance(row["timestamp"], tz="local")
         ltp = row["last_price"]
-        with pendulum.test(ts):
+        with pendulum.travel_to(ts):
             cdl.update(ltp)
     candles = [
         Candle(
@@ -225,7 +225,7 @@ def test_candlestick_update_interval():
     expected = pd.read_csv(
         ROOT / "nifty_candles_2min.csv", parse_dates=["timestamp"]
     ).iloc[:5]
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         cdl = CandleStick(symbol="NIFTY", interval=120)
     candles = []
     for i, row in expected.iterrows():
@@ -240,10 +240,8 @@ def test_candlestick_update_interval():
     for i, row in df.iterrows():
         ts = pendulum.instance(row["timestamp"], tz="local")
         ltp = row["last_price"]
-        with pendulum.test(ts):
+        with pendulum.travel_to(ts):
             cdl.update(ltp)
-    print(len(cdl.candles))
-    print(len(candles))
     assert cdl.candles == candles
     assert cdl.ltp == 15706.25
     assert cdl._last_ltp == 15703.25

@@ -12,7 +12,7 @@ def simple():
 
 @pytest.fixture
 def simple_timer():
-    with pendulum.test(pendulum.datetime(2022, 4, 1)):
+    with pendulum.travel_to(pendulum.datetime(2022, 4, 1)):
         return Timer(
             start_time=pendulum.datetime(2022, 4, 1, 9, 20),
             end_time=pendulum.datetime(2022, 4, 1, 15, 20),
@@ -21,7 +21,7 @@ def simple_timer():
 
 @pytest.fixture
 def time_tracker():
-    with pendulum.test(pendulum.datetime(2022, 4, 1)):
+    with pendulum.travel_to(pendulum.datetime(2022, 4, 1)):
         return TimeTracker(
             name="tracker",
             start_time=pendulum.datetime(2022, 4, 1, 9, 20),
@@ -62,7 +62,7 @@ def test_timer_end_time_less_than_start_time():
 
 def test_timer_start_time_less_than_now():
     known = pendulum.datetime(2022, 1, 4, 10, 15)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         with pytest.raises(ValidationError):
             base = Timer(
                 start_time=pendulum.datetime(2022, 1, 4, 10, 12),
@@ -73,19 +73,19 @@ def test_timer_start_time_less_than_now():
 def test_timer_has_started(simple_timer):
     timer = simple_timer
     known = pendulum.datetime(2022, 4, 1, 9, 15)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         assert timer.has_started is False
-    with pendulum.test(known.add(minutes=6)):
+    with pendulum.travel_to(known.add(minutes=6)):
         assert timer.has_started is True
 
 
 def test_timer_has_completed(simple_timer):
     timer = simple_timer
     known = pendulum.datetime(2022, 4, 1, 9, 25)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         assert timer.has_started is True
         assert timer.has_completed is False
-    with pendulum.test(known.add(hours=6)):
+    with pendulum.travel_to(known.add(hours=6)):
         assert timer.has_completed is True
 
 
@@ -106,11 +106,11 @@ def test_time_tracker_inherit(time_tracker):
 def test_timer_is_running(time_tracker):
     tracker = time_tracker
     known = pendulum.datetime(2022, 4, 1)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         assert tracker.is_running is False
-    with pendulum.test(known.add(minutes=600)):
+    with pendulum.travel_to(known.add(minutes=600)):
         assert tracker.is_running is True
-    with pendulum.test(known.add(minutes=920)):
+    with pendulum.travel_to(known.add(minutes=920), freeze=True):
         assert tracker.is_running is True
-    with pendulum.test(known.add(minutes=921)):
+    with pendulum.travel_to(known.add(minutes=921)):
         assert tracker.is_running is False
