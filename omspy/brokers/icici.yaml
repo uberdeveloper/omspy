@@ -1,0 +1,12 @@
+orders:
+  stock_code: symbol
+  action: side
+positions:
+  exchange_code: exchange
+  stock_code: symbol
+order_place:
+  symbol: stock_code
+  exchange: exchange_code
+  side: action
+  tag: user_remark
+
