@@ -9,4 +9,8 @@ order_place:
   exchange: exchange_code
   side: action
   tag: user_remark
+  trigger_price: stoploss
+order_modify:
+  trigger_price: stoploss
+  exchange: exchange_code
 
