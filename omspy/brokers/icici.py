@@ -7,6 +7,7 @@ import nodriver as uc
 import time
 from breeze_connect import BreezeConnect
 import pendulum
+from omspy.utils import tick
 
 
 class Icici(Broker):
@@ -42,18 +43,60 @@ class Icici(Broker):
         details = self.breeze.get_customer_details(api_session=self._session_token)
         return details
 
+    def _get_order_type(self, **kwargs) -> str:
+        """
+        get order type based on the keyword arguments
+        """
+        order_type = kwargs.pop("order_type", "MARKET")
+        if "price" in kwargs:
+            if kwargs["price"] == 0:
+                return "MARKET"
+            else:
+                return "LIMIT"
+        elif "stoploss" in kwargs:
+            return "LIMIT"
+        elif "stop" in order_type.lower():
+            return "LIMIT"
+        elif "sl" in order_type.lower():
+            return "LIMIT"
+        return order_type
+
+    def _get_price_args(self, order_type: str, **kwargs) -> Dict:
+        """
+        return price arguments based on order type
+        and kwargs
+        """
+        order_type = str(order_type).upper()
+        side = str(kwargs.get("action")).lower()
+        if order_type == "LIMIT":
+            price = kwargs["price"]
+            tick_size = 0.01 if price < 100 else 0.05
+            return dict(price=price, stoploss=0)
+        elif order_type == "SL-M":
+            stoploss = kwargs["stoploss"]
+            tick_size = 0.01 if stoploss < 100 else 0.05
+            if side == "buy":
+                price = tick(stoploss * 1.01, tick_size)
+                return dict(price=price, stoploss=stoploss)
+            else:
+                price = tick(stoploss * 0.99, tick_size)
+                return dict(price=price, stoploss=stoploss)
+        elif order_type == "SL":
+            price = kwargs["price"]
+            return dict(price=price, stoploss=0)
+        else:
+            return dict(price=0, stoploss=0)
+
     @pre
     def order_place(self, **kwargs) -> Optional[str]:
         """
         Place an order
         """
         symbol = kwargs.pop("stock_code")
-        order_type = kwargs.pop("order_type", "MARKET")
-        if "stop" in order_type.lower():
+        order_type = kwargs.pop("order_type", self._get_order_type(**kwargs))
+        price_args = self._get_price_args(order_type, **kwargs)
+        if "sl" in order_type.lower() or "stop" in order_type.lower():
             order_type = "LIMIT"
-        elif "sl" in order_type.lower():
-            order_type = "LIMIT"
-
         name = self.breeze.get_names(exchange_code="NSE", stock_code=symbol)
         order_args = dict(
             validity="day",
@@ -63,6 +106,7 @@ class Icici(Broker):
             order_type=order_type,
         )
         order_args.update(kwargs)
+        order_args.update(price_args)
         response = self.breeze.place_order(**order_args)
         success = response["Success"]
         if success and "order_id" in success:
@@ -75,17 +119,7 @@ class Icici(Broker):
         """
         Modify an existing order
         """
-        if "price" in kwargs:
-            if kwargs["price"] == 0:
-                order_type = "MARKET"
-            else:
-                order_type = "LIMIT"
-        elif "stoploss" in kwargs:
-            order_type = "LIMIT"
-        elif "sl" in kwargs:
-            order_type = "LIMIT"
-        else:
-            order_type = "MARKET"
+        order_type = self._get_order_type(**kwargs)
         order_args = dict(
             validity="day",
             exchange_code="NSE",
