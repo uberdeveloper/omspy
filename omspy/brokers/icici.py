@@ -21,7 +21,7 @@ class Icici(Broker):
         PIN,
         totp: Optional[str] = None,
         session_token: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ):
         self.base_url = "https://api.icicidirect.com/apiuser/"
         self._api_key = api_key
@@ -34,9 +34,8 @@ class Icici(Broker):
         self._store_access_token = True
         super(Icici, self).__init__()
 
-
     async def _async_login(self):
-        url =f"https://api.icicidirect.com/apiuser/login?api_key={quote_plus(self._api_key)}"
+        url = f"https://api.icicidirect.com/apiuser/login?api_key={quote_plus(self._api_key)}"
         browser = await uc.start(headless=False)
         page = await browser.get(url)
         await page.get_content()
@@ -52,7 +51,7 @@ class Icici(Broker):
         time.sleep(2)
         otp = pyotp.TOTP(self._totp).now()
         twofa = await page.select_all('input[inputmode="decimal"]')
-        for n,ctrl in zip(str(otp),twofa):
+        for n, ctrl in zip(str(otp), twofa):
             await ctrl.send_keys(n)
         button = await page.select('input[id="Button1"]')
         await button.click()
@@ -61,22 +60,23 @@ class Icici(Broker):
         current_url = await page.evaluate("window.location.href")
         time.sleep(2)
         parsed_args = parse_qs(urlparse(current_url).query)
-        if 'apisession' in parsed_args:
-            self._session_token = int(parsed_args['apisession'][0])
-            with open("icici_session_token.txt","w") as f:
+        if "apisession" in parsed_args:
+            self._session_token = int(parsed_args["apisession"][0])
+            with open("icici_session_token.txt", "w") as f:
                 f.write(str(self._session_token))
         browser.stop()
 
     def _login(self):
         uc.loop().run_until_complete(self._async_login())
 
-    def _login_with_token_file(self,token_filename:Optional[str]=None):
+    def _login_with_token_file(self, token_filename: Optional[str] = None):
         if token_filename is None:
-            token_filename = 'icici_session_token.txt'
-        with open(token_filename,'r') as f:
+            token_filename = "icici_session_token.txt"
+        with open(token_filename, "r") as f:
             self._session_token = int(f.read())
-        self.breeze.generate_session(api_secret=self._secret, session_token=self._session_token)
-
+        self.breeze.generate_session(
+            api_secret=self._secret, session_token=self._session_token
+        )
 
     def authenticate(self):
         self.breeze = BreezeConnect(self._api_key)
@@ -247,3 +247,22 @@ class Icici(Broker):
         else:
             positions = []
         return positions
+
+    @property
+    @post
+    def trades(self) -> List[Optional[Dict]]:
+        """
+        Return all the trades
+        """
+        tz = "Asia/Kolkata"
+        from_date = str(pendulum.today(tz))
+        to_date = str(pendulum.now(tz))
+        response = self.breeze.get_trade_list(
+            exchange_code="NSE", from_date=from_date, to_date=to_date
+        )
+        success = response["Success"]
+        if isinstance(success, list):
+            tradebook = success
+        else:
+            tradebook = []
+        return tradebook

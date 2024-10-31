@@ -13,4 +13,10 @@ order_place:
 order_modify:
   trigger_price: stoploss
   exchange: exchange_code
-
+trades:
+  stock_code: symbol
+  action: side
+  exchange_code: exchange
+  average_cost: price
+  order_reference: order_id
+  order_trade_date: timestamp
