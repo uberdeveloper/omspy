@@ -8,6 +8,7 @@ import time
 from breeze_connect import BreezeConnect
 import pendulum
 from omspy.utils import tick
+from urllib.parse import quote_plus, parse_qs, urlparse
 
 
 class Icici(Broker):
@@ -33,11 +34,66 @@ class Icici(Broker):
         self._store_access_token = True
         super(Icici, self).__init__()
 
+
+    async def _async_login(self):
+        url =f"https://api.icicidirect.com/apiuser/login?api_key={quote_plus(self._api_key)}"
+        browser = await uc.start(headless=False)
+        page = await browser.get(url)
+        await page.get_content()
+        user_id = await page.select('input[id="txtuid"]')
+        await user_id.send_keys(str(self._user_id))
+        password = await page.select('input[id="txtPass"]')
+        await password.send_keys(str(self._password))
+        accept = await page.select('input[id="chkssTnc"]')
+        await accept.click()
+
+        button = await page.select('input[type="button"]')
+        await button.click()
+        time.sleep(2)
+        otp = pyotp.TOTP(self._totp).now()
+        twofa = await page.select_all('input[inputmode="decimal"]')
+        for n,ctrl in zip(str(otp),twofa):
+            await ctrl.send_keys(n)
+        button = await page.select('input[id="Button1"]')
+        await button.click()
+        time.sleep(2)
+        await page.get_content()
+        current_url = await page.evaluate("window.location.href")
+        time.sleep(2)
+        parsed_args = parse_qs(urlparse(current_url).query)
+        if 'apisession' in parsed_args:
+            self._session_token = int(parsed_args['apisession'][0])
+            with open("icici_session_token.txt","w") as f:
+                f.write(str(self._session_token))
+        browser.stop()
+
+    def _login(self):
+        uc.loop().run_until_complete(self._async_login())
+
+    def _login_with_token_file(self,token_filename:Optional[str]=None):
+        if token_filename is None:
+            token_filename = 'icici_session_token.txt'
+        with open(token_filename,'r') as f:
+            self._session_token = int(f.read())
+        self.breeze.generate_session(api_secret=self._secret, session_token=self._session_token)
+
+
     def authenticate(self):
         self.breeze = BreezeConnect(self._api_key)
-        self.breeze.generate_session(
-            api_secret=self._secret, session_token=self._session_token
-        )
+        if not self._session_token:
+            try:
+                self._login_with_token_file()
+            except Exception as e:
+                logging.error(e)
+                logging.info("Trying a fresh login")
+                self._login()
+                self.breeze.generate_session(
+                    api_secret=self._secret, session_token=self._session_token
+                )
+        else:
+            self.breeze.generate_session(
+                api_secret=self._secret, session_token=self._session_token
+            )
 
     def profile(self):
         details = self.breeze.get_customer_details(api_session=self._session_token)
