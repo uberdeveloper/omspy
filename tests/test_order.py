@@ -210,10 +210,10 @@ def test_order_update_simple():
 
 def test_order_update_timestamp():
     known = pendulum.datetime(2021, 1, 1, 12, tz="Europe/Paris")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = Order(symbol="aapl", side="buy", quantity=10, timezone="Europe/Paris")
     assert order.timestamp == known
-    with pendulum.test(known.add(minutes=5)):
+    with pendulum.travel_to(known.add(minutes=5)):
         order.update(
             {"filled_quantity": 7, "average_price": 912, "exchange_order_id": "abcd"}
         )
@@ -275,18 +275,18 @@ def test_order_update_do_not_update_cancelled_order():
 
 def test_order_update_do_not_update_timestamp_for_completed_orders():
     known = pendulum.datetime(2022, 11, 5, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = Order(symbol="aapl", side="buy", quantity=10)
     for i in (10, 20, 30, 40):
-        with pendulum.test(known.add(seconds=i)):
+        with pendulum.travel_to(known.add(seconds=i)):
             order.update({"filled_quantity": 10})
             assert order.last_updated_at == known.add(seconds=10)
 
     # Test with a rejected order
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = Order(symbol="aapl", side="buy", quantity=10)
     for i in (10, 20, 30, 40):
-        with pendulum.test(known.add(seconds=i)):
+        with pendulum.travel_to(known.add(seconds=i)):
             order.update({"filled_quantity": 5})
             order.status = "REJECTED"
             assert order.last_updated_at == known.add(seconds=10)
@@ -527,7 +527,7 @@ def test_simple_order_do_not_execute_completed_order():
 
 def test_order_expires():
     known = pendulum.datetime(2021, 1, 1, 12, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = Order(symbol="aapl", side="buy", quantity=10)
         assert order.expires_in == (60 * 60 * 12) - 1
     order = Order(symbol="aapl", side="buy", quantity=10, expires_in=600)
@@ -538,31 +538,27 @@ def test_order_expires():
 
 def test_order_expiry_times():
     known = pendulum.datetime(2021, 1, 1, 9, 30, tz="UTC")
-    pendulum.set_test_now(known)
-    order = Order(symbol="aapl", side="buy", quantity=10, expires_in=60)
-    assert order.expires_in == 60
-    assert order.time_to_expiry == 60
-    assert order.time_after_expiry == 0
-    known = known.add(seconds=40)
-    pendulum.set_test_now(known)
-    assert order.time_to_expiry == 20
-    assert order.time_after_expiry == 0
-    known = known.add(seconds=60)
-    pendulum.set_test_now(known)
-    assert order.time_to_expiry == 0
-    assert order.time_after_expiry == 40
-    pendulum.set_test_now()
+    with pendulum.travel_to(known):
+
+        order = Order(symbol="aapl", side="buy", quantity=10, expires_in=60)
+        assert order.expires_in == 60
+        assert order.time_to_expiry == 60
+        assert order.time_after_expiry == 0
+    with pendulum.travel_to(known.add(seconds=40)):
+        assert order.time_to_expiry == 20
+        assert order.time_after_expiry == 0
+    with pendulum.travel_to(known.add(seconds=100)):
+        assert order.time_to_expiry == 0
+        assert order.time_after_expiry == 40
 
 
 def test_order_has_expired():
     known = pendulum.datetime(2021, 1, 1, 10, tz="UTC")
-    pendulum.set_test_now(known)
-    order = Order(symbol="aapl", side="buy", quantity=10, expires_in=60)
-    assert order.has_expired is False
-    known = known.add(seconds=60)
-    pendulum.set_test_now(known)
-    assert order.has_expired is True
-    pendulum.set_test_now()
+    with pendulum.travel_to(known):
+        order = Order(symbol="aapl", side="buy", quantity=10, expires_in=60)
+        assert order.has_expired is False
+    with pendulum.travel_to(known.add(seconds=60)):
+        assert order.has_expired is True
 
 
 def test_order_has_parent():
@@ -575,49 +571,45 @@ def test_order_has_parent():
 
 def test_compound_order_check_flags_convert_to_market_after_expiry():
     known = pendulum.datetime(2021, 1, 1, 10)
-    pendulum.set_test_now(known)
-    with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        com = CompoundOrder(broker=broker)
-        com.add_order(
-            symbol="aapl",
-            side="buy",
-            quantity=10,
-            order_type="LIMIT",
-            price=650,
-            order_id="abcdef",
-            expires_in=30,
-            convert_to_market_after_expiry=True,
-        )
-        com.execute_all()
-        com.check_flags()
-        known = known.add(seconds=30)
-        pendulum.set_test_now(known)
+    with pendulum.travel_to(known):
+        with patch("omspy.brokers.zerodha.Zerodha") as broker:
+            com = CompoundOrder(broker=broker)
+            com.add_order(
+                symbol="aapl",
+                side="buy",
+                quantity=10,
+                order_type="LIMIT",
+                price=650,
+                order_id="abcdef",
+                expires_in=30,
+                convert_to_market_after_expiry=True,
+            )
+            com.execute_all()
+            com.check_flags()
+    with pendulum.travel_to(known.add(seconds=30)):
         com.check_flags()
         broker.order_modify.assert_called_once()
-    pendulum.set_test_now()
 
 
 def test_compound_order_check_flags_cancel_after_expiry():
     known = pendulum.datetime(2021, 1, 1, 10)
-    pendulum.set_test_now(known)
-    with patch("omspy.brokers.zerodha.Zerodha") as broker:
-        com = CompoundOrder(broker=broker)
-        com.add_order(
-            symbol="aapl",
-            side="buy",
-            quantity=10,
-            order_type="LIMIT",
-            price=650,
-            order_id="abcdef",
-            expires_in=30,
-        )
-        com.execute_all()
-        com.check_flags()
-        known = known.add(seconds=30)
-        pendulum.set_test_now(known)
+    with pendulum.travel_to(known):
+        with patch("omspy.brokers.zerodha.Zerodha") as broker:
+            com = CompoundOrder(broker=broker)
+            com.add_order(
+                symbol="aapl",
+                side="buy",
+                quantity=10,
+                order_type="LIMIT",
+                price=650,
+                order_id="abcdef",
+                expires_in=30,
+            )
+            com.execute_all()
+            com.check_flags()
+    with pendulum.travel_to(known.add(seconds=30)):
         com.check_flags()
         broker.order_cancel.assert_called_once()
-    pendulum.set_test_now()
 
 
 def test_compound_order_completed_orders(simple_compound_order):
@@ -1170,16 +1162,16 @@ def test_order_update_pending_quantity_in_data():
 def test_order_lock_no_lock():
     known = pendulum.datetime(2022, 1, 1, 10, 10)
     with patch("omspy.brokers.paper.Paper") as broker:
-        with pendulum.test(known):
+        with pendulum.travel_to(known):
             order = Order(symbol="aapl", side="buy", quantity=10)
             order.execute(broker=broker)
         for i in range(10):
-            with pendulum.test(known.add(seconds=i + 1)):
+            with pendulum.travel_to(known.add(seconds=i + 1)):
                 order.modify(broker=broker)
         broker.order_place.assert_called_once()
         assert broker.order_modify.call_count == 10
         for i in range(6):
-            with pendulum.test(known.add(seconds=i + 1)):
+            with pendulum.travel_to(known.add(seconds=i + 1)):
                 order.cancel(broker=broker)
         assert broker.order_cancel.call_count == 6
 
@@ -1187,19 +1179,19 @@ def test_order_lock_no_lock():
 def test_order_lock_modify_and_cancel():
     known = pendulum.datetime(2022, 1, 1, 10, 10)
     with patch("omspy.brokers.paper.Paper") as broker:
-        with pendulum.test(known):
+        with pendulum.travel_to(known):
             order = Order(symbol="aapl", side="buy", quantity=10)
             order.execute(broker=broker)
         for i in range(10):
-            with pendulum.test(known.add(seconds=i + 1)):
+            with pendulum.travel_to(known.add(seconds=i + 1)):
                 if i == 5:
                     order.add_lock(1, 3)
                 order.modify(broker=broker)
         assert broker.order_modify.call_count == 6
         for i in range(6):
-            with pendulum.test(known):
+            with pendulum.travel_to(known):
                 order.add_lock(2, 10)
-            with pendulum.test(known.add(seconds=i + 1)):
+            with pendulum.travel_to(known.add(seconds=i + 1)):
                 order.cancel(broker=broker)
         broker.order_cancel.assert_not_called()
 
@@ -1207,11 +1199,11 @@ def test_order_lock_modify_and_cancel():
 def test_order_lock_cancel():
     known = pendulum.datetime(2022, 1, 1, 10, 10)
     with patch("omspy.brokers.paper.Paper") as broker:
-        with pendulum.test(known):
+        with pendulum.travel_to(known):
             order = Order(symbol="aapl", side="buy", quantity=10)
             order.execute(broker=broker)
         for i in range(10):
-            with pendulum.test(known.add(seconds=i + 1)):
+            with pendulum.travel_to(known.add(seconds=i + 1)):
                 if i % 2 == 0:
                     order.cancel(broker=broker)
                 if i % 6 == 0:

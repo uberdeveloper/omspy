@@ -98,7 +98,7 @@ def test_multi_order_create(users_simple, simple_order):
     multi = MultiUser(users=users_simple)
     order.create(users=multi)
     assert order.count == 3
-    for (order, expected) in zip(order.orders, (10, 5, 20)):
+    for order, expected in zip(order.orders, (10, 5, 20)):
         assert order.order.quantity == expected
 
 
@@ -154,7 +154,7 @@ def test_multi_order_create_clean_before_running_again(users_simple, simple_orde
     order.quantity = 100
     order.create(multi)
     assert order.count == 3
-    for (order, expected) in zip(order.orders, (100, 50, 200)):
+    for order, expected in zip(order.orders, (100, 50, 200)):
         assert order.order.quantity == expected
 
 
@@ -229,7 +229,7 @@ def test_multi_order_update(users_simple, simple_order):
     multi = MultiUser(users=users_simple)
     order.execute(multi)
     fake_ids = ["1111", "2222", "3333"]
-    for (o, fi) in zip(order.orders, fake_ids):
+    for o, fi in zip(order.orders, fake_ids):
         o.order.order_id = fi
     update = {
         "1111": {"filled_quantity": 3, "exchange_order_id": "aaaa"},
@@ -249,7 +249,7 @@ def test_multi_order_update_save_db(users_simple, simple_order):
     multi = MultiUser(users=users_simple)
     order.execute(multi)
     fake_ids = ["1111", "2222", "3333"]
-    for (o, fi) in zip(order.orders, fake_ids):
+    for o, fi in zip(order.orders, fake_ids):
         o.order.order_id = fi
     update = {
         "1111": {"filled_quantity": 3, "exchange_order_id": "aaaa"},

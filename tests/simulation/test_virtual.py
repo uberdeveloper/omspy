@@ -185,7 +185,7 @@ def test_virtual_broker_is_failure(basic_broker):
 def test_virtual_broker_order_place_success(basic_broker):
     b = basic_broker
     known = pendulum.datetime(2023, 2, 1, 10, 17)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         response = b.order_place(symbol="aapl", quantity=10, side=1)
         assert response.status == "success"
         assert response.timestamp == known
@@ -196,7 +196,7 @@ def test_virtual_broker_order_place_success(basic_broker):
 def test_virtual_broker_order_place_success_fields(basic_broker):
     b = basic_broker
     known = pendulum.datetime(2023, 2, 1, 10, 17)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         response = b.order_place(
             symbol="aapl", quantity=10, side=1, price=100, trigger_price=99
         )
@@ -219,7 +219,7 @@ def test_virtual_broker_order_place_failure(basic_broker):
     b = basic_broker
     b.failure_rate = 1.0
     known = pendulum.datetime(2023, 2, 1, 10, 17)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         response = b.order_place(symbol="aapl", quantity=10, side=1, price=100)
         assert response.status == "failure"
         assert response.timestamp == known
@@ -236,7 +236,7 @@ def test_virtual_broker_order_place_user_response(basic_broker):
 def test_virtual_broker_order_place_validation_error(basic_broker):
     b = basic_broker
     known = pendulum.datetime(2023, 2, 1, 10, 17)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         response = b.order_place()
         assert response.status == "failure"
         assert response.timestamp == known
@@ -692,27 +692,27 @@ def test_virtual_broker_order_place_delay(basic_broker_with_users):
 def test_virtual_broker_get_order_by_status(basic_broker_with_users):
     b = basic_broker_with_users
     known = pendulum.datetime(2023, 2, 1, 10, 17)
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
 
         resp = b.order_place(symbol="aapl", quantity=10, side=1)
         order_id = resp.data.order_id
         order = b.get(order_id)
         assert order.pending_quantity == 10
-    with pendulum.test(known.add(seconds=2)):
+    with pendulum.travel_to(known.add(seconds=2)):
         b.get(order_id)
         assert order.status == Status.COMPLETE
         assert order.filled_quantity == 10
-    with pendulum.test(known.add(seconds=3)):
+    with pendulum.travel_to(known.add(seconds=3)):
         b.get(order_id, status=Status.CANCELED)
         assert order.status == Status.COMPLETE
 
     # Order with custom status
 
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         resp = b.order_place(symbol="goog", quantity=10, side=1)
         order_id = resp.data.order_id
         order = b.get(order_id)
-    with pendulum.test(known.add(seconds=3)):
+    with pendulum.travel_to(known.add(seconds=3)):
         b.get(order_id, status=Status.CANCELED)
         assert order.status == Status.CANCELED
         assert order.filled_quantity == 0
@@ -822,7 +822,7 @@ def test_replica_broker_update():
 def test_replica_broker_order_place(replica_with_instruments):
     known = pendulum.datetime(2023, 4, 1, 9, 30, tz="local")
     broker = replica_with_instruments
-    with pendulum.test(known):
+    with pendulum.travel_to(known):
         order = broker.order_place(symbol="AAPL", side=1, quantity=10)
         assert order.order_id in broker.orders
         assert len(broker._user_orders["default"]) == 1
@@ -839,7 +839,7 @@ def test_replica_broker_order_place(replica_with_instruments):
         )
 
     # Order status should not change with time
-    with pendulum.test(known.add(minutes=5)):
+    with pendulum.travel_to(known.add(minutes=5)):
         assert order.is_done is False
         assert order.filled_quantity == 0
 

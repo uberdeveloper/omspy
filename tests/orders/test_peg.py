@@ -15,7 +15,7 @@ def existing_peg():
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10009)
         broker.order_modify.side_effect = range(10000, 10009)
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             order = Order(
                 symbol="goog",
                 quantity=200,
@@ -33,7 +33,7 @@ def order_list():
     # Since order locks are acquired based on current time
     # we are using time based analysis
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         orders = [
             Order(symbol="aapl", side="buy", quantity=10),
             Order(symbol="goog", side="buy", quantity=10),
@@ -48,7 +48,7 @@ def sequential_peg(order_list):
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10099)
         broker.order_modify.side_effect = range(10000, 10099)
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             order_list.append(Order(symbol="dow", side="buy", quantity=10))
             peg = PegSequential(orders=order_list, broker=broker)
             return peg
@@ -64,7 +64,7 @@ def test_basic_peg():
 
 def test_peg_market_defaults():
     known = pendulum.datetime(2022, 1, 1, 10)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=Paper())
         assert peg.num_pegs == 0
         assert peg._max_pegs == 6
@@ -75,7 +75,7 @@ def test_peg_market_defaults():
 def test_peg_market_connection():
     connection = create_db()
     known = pendulum.datetime(2022, 1, 1, 10)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegMarket(
             symbol="aapl",
             side="buy",
@@ -93,7 +93,7 @@ def test_peg_market_connection():
 
 def test_peg_market_change_defaults():
     known = pendulum.datetime(2022, 1, 1, 10, 5, 45, tz="Asia/Kolkata")
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegMarket(
             symbol="aapl",
             side="buy",
@@ -133,49 +133,49 @@ def test_peg_market_update_ltp():
 @patch("omspy.brokers.paper.Paper")
 def test_peg_market_next_peg(broker):
     known = pendulum.datetime(2022, 1, 1, 10)
-    pendulum.set_test_now(known)
-    peg = PegMarket(
-        symbol="aapl",
-        side="buy",
-        quantity=100,
-        broker=broker,
-        order_args={"product": "mis", "validity": "day"},
-    )
-    assert peg.next_peg == pendulum.now().add(seconds=10)
-    pendulum.set_test_now(known.add(seconds=13))
-    peg.run()
-    assert peg.next_peg == pendulum.datetime(2022, 1, 1, 10, second=23)
-    broker.order_modify.assert_called_once()
-    pendulum.set_test_now(known.add(seconds=24))
-    peg.run()
-    assert peg.next_peg == pendulum.datetime(2022, 1, 1, 10, second=34)
-    assert broker.order_modify.call_count == 2
+    with pendulum.travel_to(known, freeze=True):
+        peg = PegMarket(
+            symbol="aapl",
+            side="buy",
+            quantity=100,
+            broker=broker,
+            order_args={"product": "mis", "validity": "day"},
+        )
+        assert peg.next_peg == pendulum.now().add(seconds=10)
+    with pendulum.travel_to(known.add(seconds=13), freeze=True):
+        peg.run()
+        assert peg.next_peg == pendulum.datetime(2022, 1, 1, 10, second=23)
+        broker.order_modify.assert_called_once()
+    with pendulum.travel_to(known.add(seconds=24)):
+        peg.run()
+        assert peg.next_peg == pendulum.datetime(2022, 1, 1, 10, second=34)
+        assert broker.order_modify.call_count == 2
 
 
 @patch("omspy.brokers.paper.Paper")
 def test_peg_market_cancel_on_expiry(broker):
     known = pendulum.datetime(2022, 1, 1, 10)
-    pendulum.set_test_now(known)
-    peg = PegMarket(
-        symbol="aapl",
-        side="buy",
-        quantity=100,
-        broker=broker,
-        order_args={"product": "mis", "validity": "day"},
-    )
+    with pendulum.travel_to(known):
+        peg = PegMarket(
+            symbol="aapl",
+            side="buy",
+            quantity=100,
+            broker=broker,
+            order_args={"product": "mis", "validity": "day"},
+        )
     peg.convert_to_market_after_expiry = False
     peg.orders[0].order_id = "abcdef"
-    pendulum.set_test_now(known.add(seconds=61))
-    peg.run()
+    with pendulum.travel_to(known.add(seconds=61)):
+        peg.run()
     broker.order_cancel.assert_called_once()
 
 
 @patch("omspy.brokers.paper.Paper")
 def test_peg_market_execute_price(broker):
     known = pendulum.datetime(2022, 1, 1, 10)
-    pendulum.set_test_now(known)
-    peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=broker)
-    assert peg.orders[0].price is None
+    with pendulum.travel_to(known, freeze=True):
+        peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=broker)
+        assert peg.orders[0].price is None
     peg.update_ltp({"aapl": 107})
     peg.execute()
     assert peg.orders[0].price == 107
@@ -184,17 +184,18 @@ def test_peg_market_execute_price(broker):
 @patch("omspy.brokers.paper.Paper")
 def test_peg_market_run_is_pending(broker):
     known = pendulum.datetime(2022, 1, 1, 10)
-    pendulum.set_test_now(known)
-    peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=broker)
+    with pendulum.travel_to(known, freeze=True):
+        peg = PegMarket(symbol="aapl", side="buy", quantity=100, broker=broker)
     peg.update_ltp({"aapl": 107})
     peg.execute()
     peg.orders[0].filled_quantity = 100
     peg.orders[0].average_price = 106.75
-    pendulum.set_test_now(known.add(seconds=11))
-    peg.run()
-    pendulum.set_test_now(known.add(seconds=22))
-    peg.run()
-    pendulum.set_test_now(known.add(seconds=33))
+    with pendulum.travel_to(known.add(seconds=11)):
+        peg.run()
+    with pendulum.travel_to(known.add(seconds=22)):
+        peg.run()
+    with pendulum.travel_to(known.add(seconds=33)):
+        peg.run()
     peg.run()
     broker.order_place.assert_called_once()
     broker.order_modify.assert_not_called()
@@ -207,7 +208,7 @@ def test_existing_peg_defaults():
     peg = PegExisting(order=order, broker=broker)
     assert peg.order.order_type == "LIMIT"
     known = pendulum.datetime(2022, 1, 1, 9, 15, 30)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegExisting(order=order, broker=broker, duration=10, peg_every=3)
         assert peg.num_pegs == 0
         assert peg._max_pegs == 3
@@ -255,7 +256,7 @@ def test_existing_peg_order_modify_args(existing_peg):
     peg.modify_args = {"tag": "modified"}
     peg.execute()
     peg.broker.order_place.assert_called_once()
-    with pendulum.test(known.add(seconds=10)):
+    with pendulum.travel_to(known.add(seconds=10)):
         peg.run(ltp=120)
         peg.broker.order_modify.assert_called_once()
     call_args = peg.broker.order_modify.call_args_list
@@ -273,7 +274,7 @@ def test_existing_peg_order_modify_args(existing_peg):
 @patch("omspy.brokers.zerodha.Zerodha")
 def test_existing_peg_run(broker):
     known = pendulum.datetime(2022, 4, 1, 10, 0)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         order = Order(symbol="amzn", quantity=20, side="buy")
         peg = PegExisting(order=order, broker=broker)
         peg.execute()
@@ -281,7 +282,7 @@ def test_existing_peg_run(broker):
         peg.run(ltp=228)
         assert order.price is None
     known = known.add(seconds=11)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.run(ltp=228)
         assert order.price == 228
         broker.order_modify.assert_called_once()
@@ -291,12 +292,12 @@ def test_existing_peg_validation_pending():
     known = pendulum.datetime(2022, 4, 1, 10, 0)
     order = Order(symbol="amzn", quantity=20, side="buy", status="COMPLETE")
     with pytest.raises(ValidationError):
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             peg = PegExisting(order=order)
     order.status = None
     order.filled_quantity = 20
     with pytest.raises(ValidationError):
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             peg = PegExisting(order=order)
 
 
@@ -305,26 +306,26 @@ def test_existing_peg_full_run(existing_peg):
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     order, broker = peg.order, peg.broker
     assert order.order_type == "LIMIT"
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.execute()
         broker.order_place.assert_called_once()
         for price in (271, 264, 268):
             peg.run(ltp=price)
             broker.order_modify.assert_not_called()
     known = known.add(seconds=4)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         order.filled_quantity = 122
         peg.run(ltp=252)
         assert order.price == 252
         broker.order_modify.assert_called_once()
     known = known.add(seconds=3)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         order.filled_quantity = 122
         peg.run(ltp=252)
         assert order.price == 252
         broker.order_modify.assert_called_once()
     known = known.add(seconds=4)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.run(ltp=250.9)
         assert broker.order_modify.call_count == 2
         call_args = broker.order_modify.call_args_list
@@ -347,16 +348,16 @@ def test_existing_peg_full_run_cancel(existing_peg):
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     order, broker = peg.order, peg.broker
     order.convert_to_market_after_expiry = False
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.execute()
         broker.order_place.assert_called_once()
     known = known.add(seconds=4)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.run(ltp=252)
         assert order.price == 252
         broker.order_modify.assert_called_once()
     known = known.add(seconds=10)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.run(ltp=250.9)
         broker.order_cancel.assert_called_once()
         broker.order_place.assert_called_once()
@@ -373,11 +374,11 @@ def test_existing_peg_run_complete(existing_peg):
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     order, broker = peg.order, peg.broker
     order.convert_to_market_after_expiry = False
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.execute()
         broker.order_place.assert_called_once()
     known = known.add(seconds=4)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         order.filled_quantity = 200
         peg.run(ltp=252)
         broker.order_modify.assert_not_called()
@@ -390,19 +391,19 @@ def test_existing_peg_run_order_lock(existing_peg):
     peg.lock_duration = 4
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     order, broker = peg.order, peg.broker
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.execute()
         broker.order_place.assert_called_once()
     known = known.add(seconds=4)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.run(ltp=252)
         broker.order_modify.assert_called_once()
     known = known.add(seconds=5)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.run(ltp=252)
         assert broker.order_modify.call_count == 2
     known = known.add(seconds=5)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.run(ltp=252)
         assert broker.order_modify.call_count == 3
 
@@ -410,7 +411,7 @@ def test_existing_peg_run_order_lock(existing_peg):
 def test_peg_sequential_defaults(order_list):
     orders = order_list
     known = pendulum.datetime(2022, 1, 1, 9, 10)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegSequential(orders=orders)
         assert len(peg.orders) == 3
         assert peg.timezone is None
@@ -501,7 +502,7 @@ def test_peg_sequential_set_current_order_existing(order_list):
     # and check the timestamp is the same for the same order
     orders = order_list
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegSequential(orders=orders, peg_every=3)
         peg_args = dict(duration=12, peg_every=3, lock_duration=2)
         peg_order = PegExisting(order=orders[0], **peg_args)
@@ -510,7 +511,7 @@ def test_peg_sequential_set_current_order_existing(order_list):
         assert peg.order._expire_at == known.add(seconds=12)
     for i in range(10):
         k = known.add(seconds=i)
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.set_current_order()
             assert peg.order._expire_at == known.add(seconds=12)
 
@@ -518,19 +519,19 @@ def test_peg_sequential_set_current_order_existing(order_list):
 def test_peg_sequential_has_expired(order_list):
     orders = order_list
     known = pendulum.datetime(2022, 1, 1, 10, 10)
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegSequential(orders=order_list, duration=10)
         assert peg.has_expired is False
-    with pendulum.test(known.add(seconds=25)):
+    with pendulum.travel_to(known.add(seconds=25)):
         assert peg.has_expired is False
-    with pendulum.test(known.add(seconds=31)):
+    with pendulum.travel_to(known.add(seconds=31)):
         assert peg.has_expired is True
 
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg = PegSequential(orders=order_list + order_list, duration=30)
-    with pendulum.test(known.add(seconds=180)):
+    with pendulum.travel_to(known.add(seconds=180)):
         assert peg.has_expired is False
-    with pendulum.test(known.add(seconds=181)):
+    with pendulum.travel_to(known.add(seconds=181)):
         assert peg.has_expired is True
 
 
@@ -544,7 +545,7 @@ def test_peg_sequential_run(sequential_peg):
     peg.run(ltp=ltp1)
 
     assert peg.order.order.symbol == "aapl"
-    with pendulum.test(known.add(seconds=15)):
+    with pendulum.travel_to(known.add(seconds=15)):
         assert peg.order.order.symbol == "aapl"
         peg.broker.order_place.assert_called_once()
         for i in range(4):
@@ -564,7 +565,7 @@ def test_peg_sequential_run_modify(sequential_peg):
     peg.run(ltp=ltp1)
     for i in range(30):
         k = known.add(seconds=10 + i)
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             if i % 7 == 0:
                 if peg.order:
                     peg.order.order.filled_quantity = 10
@@ -584,7 +585,7 @@ def test_peg_sequential_cancel_all(sequential_peg):
     peg = sequential_peg
     peg.cancel_all()
     peg.broker.order_cancel.assert_not_called()
-    for (order, num) in zip(peg.orders, range(10000, 10009)):
+    for order, num in zip(peg.orders, range(10000, 10009)):
         order.order_id = num
     peg.cancel_all()
     assert peg.broker.order_cancel.call_count == 4
@@ -605,7 +606,7 @@ def test_peg_sequential_dont_execute_after_time(sequential_peg):
             for order in peg.orders[1:]:
                 if order.status is None:
                     order.status = "CANCELED"
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
     assert peg.broker.order_place.call_count == 2
     assert peg.broker.order_cancel.call_count == 1
@@ -616,7 +617,7 @@ def test_peg_sequential_dont_execute_after_time2(sequential_peg):
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
     k = known.add(seconds=60)
-    with pendulum.test(k):
+    with pendulum.travel_to(k):
         peg.run(ltp=ltp1)
     assert peg.broker.order_place.call_count == 1
     assert peg.broker.order_cancel.call_count == 0
@@ -631,7 +632,7 @@ def test_peg_sequential_modify_after_time(sequential_peg):
     ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
     for i in range(30):
         k = known.add(seconds=i)
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
             if i == 3:
                 peg.orders[0].update({"filled_quantity": 10})
@@ -656,7 +657,7 @@ def test_peg_sequential_modify_after_time2(sequential_peg):
     ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
     for i in range(25):
         k = known.add(seconds=i)
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
             if i == 5:
                 peg.orders[0].update({"filled_quantity": 10})
@@ -730,7 +731,7 @@ def test_peg_sequential_skip_subsequent_if_failed(sequential_peg):
             peg.orders[0].status = "COMPLETE"
         if i > 20:
             peg.orders[1].status = "CANCELED"
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
     assert peg.broker.order_place.call_count == 2
     assert [order.status for order in peg.orders] == [
@@ -748,7 +749,7 @@ def test_peg_sequential_order_place_order_args(order_list):
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10099)
         broker.order_modify.side_effect = range(10000, 10099)
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             peg = PegSequential(
                 orders=order_list,
                 broker=broker,
@@ -761,7 +762,7 @@ def test_peg_sequential_order_place_order_args(order_list):
         if i == 10:
             peg.orders[0].filled_quantity = 10
             peg.orders[0].status = "COMPLETE"
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
     call_args = peg.broker.order_place.call_args_list
     assert call_args[0].kwargs == dict(
@@ -782,14 +783,14 @@ def test_peg_sequential_execute_all_order_args(order_list):
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10099)
         broker.order_modify.side_effect = range(10000, 10099)
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             peg = PegSequential(
                 orders=order_list,
                 broker=broker,
                 order_args={"validity": "day", "exchange": "nfo"},
             )
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
-    with pendulum.test(known):
+    with pendulum.travel_to(known, freeze=True):
         peg.execute_all()
     assert peg.broker.order_place.call_count == 3
     call_args = peg.broker.order_place.call_args_list
@@ -812,7 +813,7 @@ def test_peg_sequential_order_modify_args(order_list):
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10099)
         broker.order_modify.side_effect = range(10000, 10099)
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             peg = PegSequential(
                 orders=order_list,
                 broker=broker,
@@ -826,7 +827,7 @@ def test_peg_sequential_order_modify_args(order_list):
         if i == 10:
             peg.orders[0].filled_quantity = 10
             peg.orders[0].status = "COMPLETE"
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
     call_args = peg.broker.order_modify.call_args_list
     assert call_args[0].kwargs == dict(
@@ -847,7 +848,7 @@ def test_peg_sequential_force_order_type(order_list):
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10099)
         broker.order_modify.side_effect = range(10000, 10099)
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             peg = PegSequential(
                 orders=order_list,
                 broker=broker,
@@ -864,7 +865,7 @@ def test_peg_sequential_force_order_type(order_list):
         elif i == 8:
             peg.orders[1].filled_quantity = 10
             peg.orders[1].status = "COMPLETE"
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
     assert peg.broker.order_place.call_count == 3
 
@@ -901,7 +902,7 @@ def test_peg_sequential_force_order_type_different_types(order_list):
     with patch("omspy.brokers.zerodha.Zerodha") as broker:
         broker.order_place.side_effect = range(10000, 10099)
         broker.order_modify.side_effect = range(10000, 10099)
-        with pendulum.test(known):
+        with pendulum.travel_to(known, freeze=True):
             peg = PegSequential(
                 orders=order_list,
                 broker=broker,
@@ -922,7 +923,7 @@ def test_peg_sequential_force_order_type_different_types(order_list):
         elif i == 20:
             peg.orders[2].filled_quantity = 10
             peg.orders[2].status = "COMPLETE"
-        with pendulum.test(k):
+        with pendulum.travel_to(k):
             peg.run(ltp=ltp1)
     assert peg.broker.order_place.call_count == 4
 
