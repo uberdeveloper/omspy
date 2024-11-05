@@ -1,6 +1,7 @@
 """
 General utility functions for conversion and else
 """
+
 from typing import Dict, Any, List, Union, NamedTuple
 from omspy.models import BasicPosition
 from collections import defaultdict

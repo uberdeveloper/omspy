@@ -1,6 +1,7 @@
 """
 This module contains the list of basic models
 """
+
 from pydantic import BaseModel, validator, PrivateAttr
 from typing import Optional, List, Union
 from copy import deepcopy

@@ -1,6 +1,7 @@
 """
 Module for multi-user multi-broker implementation
 """
+
 from pydantic import BaseModel
 from omspy.base import Broker
 from omspy.order import Order
