@@ -232,6 +232,9 @@ class Icici(Broker):
             for order in orderbook:
                 status = str(order["status"]).upper()
                 order["status"] = status_map.get(status, "PENDING")
+                order["filled_quantity"] = int(order["quantity"]) - int(order["pending_quantity"]) - int(order[
+                    "cancelled_quantity"])
+                order['action'] = order['action'].upper()
         return orderbook
 
     @property
