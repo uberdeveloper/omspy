@@ -1,5 +1,15 @@
+### 0.17.0
+Better support for latest python version and broker improvements
+### Features
+* New broker `ICICI` added
+### Improvements
+* selenium dependency removed and replaced with nodriver
+* pendulum upgraded to version 3.0
+* packages upgraded for python version 3.10 and above
+* brokers ~`Fyers`~ and ~`MasterTrust`~ removed
+
 ### 0.16.4
-* `Kotak` broker updated for latest master format 
+* `Kotak` broker updated for latest master format
 
 ### 0.16.3
 * Dependencies updated to match python3.10 and above
