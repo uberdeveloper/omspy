@@ -110,7 +110,7 @@ class Zerodha(Broker):
 
     async def _async_login(self) -> None:
         self.kite = KiteConnect(api_key=self._api_key)
-        browser = await uc.start(headless=True)
+        browser = await uc.start(headless=False)
         url = self.kite.login_url()
         page = await browser.get(url)
         await page.get_content()
