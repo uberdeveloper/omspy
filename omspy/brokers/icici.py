@@ -36,7 +36,7 @@ class Icici(Broker):
 
     async def _async_login(self):
         url = f"https://api.icicidirect.com/apiuser/login?api_key={quote_plus(self._api_key)}"
-        browser = await uc.start(headless=False)
+        browser = await uc.start(headless=True)
         page = await browser.get(url)
         await page.get_content()
         user_id = await page.select('input[id="txtuid"]')
