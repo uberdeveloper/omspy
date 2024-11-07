@@ -6,6 +6,9 @@ import logging
 import nodriver as uc
 import time
 
+connect = uc.Connection
+connect._prepare_headless
+
 from kiteconnect import KiteConnect
 from kiteconnect import KiteTicker
 

@@ -1,3 +1,5 @@
+### 0.17.1
+Bug fix for zerodha broker headless mode
 ### 0.17.0
 Better support for latest python version and broker improvements
 ### Features
