@@ -1,3 +1,7 @@
+### 0.17.2
+### Fixes
+ * Deprecation notice added to Kotak broker
+ * Neo broker `order_place` method to automatically correct order type and trading symbol
 ### 0.17.1
 Bug fix for zerodha broker headless mode
 ### 0.17.0
