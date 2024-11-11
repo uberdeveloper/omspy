@@ -7,6 +7,13 @@ from io import StringIO
 import pandas as pd
 import logging
 import requests
+import warnings
+
+DEPRECIATION_WARNING = """
+This Kotak module would be removed from version 0.19.0.
+Use the Neo module to access the kotak broker
+"""
+warnings.warn(DEPRECIATION_WARNING, DeprecationWarning, stacklevel=2)
 
 
 def get_url(segment: str = "cash") -> str:

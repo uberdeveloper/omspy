@@ -47,6 +47,9 @@ class Neo(Broker):
         """
         place an order
         """
+        if "order_type" in kwargs:
+            if str(kwargs["order_type"]).upper() == "LIMIT":
+                kwargs["order_type"] = "L"
         try:
             order_args = dict(
                 exchange_segment="NSE",
@@ -60,6 +63,8 @@ class Neo(Broker):
                 order_args.update({key: val})
             order_args.update(kwargs)
             response = self.neo.place_order(**order_args)
+            if order_args["exchange_segment"] in ("NSE", "BSE"):
+                order_args["trading_symbol"] = f"{order_args['trading_symbol']}-EQ"
             if response.get("Error"):
                 logging.error(response["Error"])
                 return None
