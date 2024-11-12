@@ -62,9 +62,10 @@ class Neo(Broker):
                 val = str(kwargs.pop(key, 0))
                 order_args.update({key: val})
             order_args.update(kwargs)
-            response = self.neo.place_order(**order_args)
             if order_args["exchange_segment"] in ("NSE", "BSE"):
-                order_args["trading_symbol"] = f"{order_args['trading_symbol']}-EQ"
+                if not(order_args["trading_symbol"].endswith("EQ")):
+                    order_args["trading_symbol"] = f"{order_args['trading_symbol']}-EQ"
+            response = self.neo.place_order(**order_args)
             if response.get("Error"):
                 logging.error(response["Error"])
                 return None

@@ -7,6 +7,7 @@ from unittest.mock import patch, call
 from copy import deepcopy
 
 
+
 @pytest.fixture
 def mock_neo():
     broker = Neo(
@@ -39,12 +40,9 @@ def test_authenticate(mock_broker):
     mock_broker.login.assert_called_once()
     mock_broker.session_2fa.assert_called_once()
 
-
-def test_order_place(mock_neo):
-    broker = mock_neo
-    broker.order_place(symbol="SBIN-EQ", side="buy", quantity=1)
-    broker.neo.place_order.assert_called_once()
-    expected = dict(
+@pytest.fixture
+def expected_args():
+    return dict(
         exchange_segment="NSE",
         product="MIS",
         price="0",
@@ -56,6 +54,54 @@ def test_order_place(mock_neo):
         disclosed_quantity="0",
         trigger_price="0",
     )
+
+
+def test_order_place(mock_neo, expected_args):
+    broker = mock_neo
+    broker.order_place(symbol="SBIN-EQ", side="buy", quantity=1)
+    broker.neo.place_order.assert_called_once()
+    expected = expected_args
+    call_list = broker.neo.place_order.call_args_list
+    assert call_list[0].kwargs == expected
+
+    broker.order_place(symbol="SBIN-EQ", side="sell", quantity=1)
+    expected.update(transaction_type="S")
+    assert call_list[1].kwargs == expected
+
+def test_order_place_limit(mock_neo, expected_args):
+    broker = mock_neo
+    broker.order_place(symbol="SBIN-EQ", side="buy", quantity=1, price=100, order_type="limit")
+    broker.neo.place_order.assert_called_once()
+    expected = expected_args
+    expected.update(price="100", order_type="L")
+    call_list = broker.neo.place_order.call_args_list
+    assert call_list[0].kwargs == expected
+
+def test_order_place_suffix(mock_neo, expected_args):
+    broker = mock_neo
+    broker.order_place(symbol="SBIN", side="buy", quantity=1, price=100, order_type="limit")
+    broker.neo.place_order.assert_called_once()
+    expected = expected_args
+    expected.update(price="100", order_type="L")
+    call_list = broker.neo.place_order.call_args_list
+    assert call_list[0].kwargs == expected
+
+    # Change exchange and try
+    broker.order_place(symbol="SBIN", side="buy", quantity=1, price=100, order_type="limit", exchange_segment="BSE")
+    expected.update(exchange_segment="BSE")
+    assert call_list[1].kwargs == expected
+
+    # Change other exchange and try
+    broker.order_place(symbol="SBIN", side="buy", quantity=1, price=100, order_type="limit", exchange_segment="mcx")
+    expected.update(exchange_segment="mcx", trading_symbol="SBIN")
+    assert call_list[2].kwargs == expected
+
+
+def test_order_place_eq_suffix(mock_neo, expected_args):
+    broker = mock_neo
+    broker.order_place(symbol="SBIN-EQ", side="buy", quantity=1)
+    broker.neo.place_order.assert_called_once()
+    expected = expected_args
     call_list = broker.neo.place_order.call_args_list
     assert call_list[0].kwargs == expected
 
