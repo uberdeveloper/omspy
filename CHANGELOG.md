@@ -1,3 +1,9 @@
+### 0.17.3
+### Improvements
+ * `Neo` broker authentication improved to automatically store session token and retry next time
+### Fixes
+ * `MARKET` order in order placement in `Neo` broker is now automatically adjusted
+ * `order_place` and `order_modify` methods in `Neo` broker to automatically adjust correct order type
 ### 0.17.2
 ### Fixes
  * Deprecation notice added to Kotak broker
