@@ -28,19 +28,57 @@ class Neo(Broker):
         self._mpin = twofa
         self._kwargs = kwargs
         super(Neo, self).__init__()
+        try:
+            with open("neo_token.txt", "r") as f:
+                token = f.read()
+        except Exception as e:
+            logging.error(e)
+            token = None
+        if "access_token" not in self._kwargs:
+            self._kwargs["access_token"] = token
+        self._load_neo_instance()
+
+    def _save_token(self, token: str, filename: str = "neo_token.txt"):
+        try:
+            with open(filename, "w") as f:
+                f.write(token)
+        except Exception as e:
+            logging.error(e)
+
+    def _load_neo_instance(self):
         client = NeoAPI(
             consumer_key=self._consumer_key,
             consumer_secret=self._consumer_secret,
             **self._kwargs,
         )
+        token = client.configuration.bearer_token
+        if token:
+            self._save_token(token)
         self.neo = client
 
     def authenticate(self) -> Dict:
-        self.neo.login(
-            password=self._password,
-            mobilenumber=self._mobilenumber,
-        )
-        return self.neo.session_2fa(self._mpin)
+        try:
+            response = self.neo.login(
+                password=self._password,
+                mobilenumber=self._mobilenumber,
+            )
+            if "data" in response:
+                return self.neo.session_2fa(self._mpin)
+            else:
+                logging.info("Trying a fresh login")
+                self._kwargs["access_token"] = None
+                self._load_neo_instance()
+                self.neo.login(password=self._password, mobilenumber=self._mobilenumber)
+                return self.neo.session_2fa(self._mpin)
+        except Exception as e:
+            logging.error(e)
+            self._kwargs["access_token"] = None
+            self._load_neo_instance()
+            self.neo.login(
+                password=self._password,
+                mobilenumber=self._mobilenumber,
+            )
+            return self.neo.session_2fa(self._mpin)
 
     @pre
     def order_place(self, **kwargs) -> Union[str, None]:
@@ -50,6 +88,9 @@ class Neo(Broker):
         if "order_type" in kwargs:
             if str(kwargs["order_type"]).upper() == "LIMIT":
                 kwargs["order_type"] = "L"
+            elif str(kwargs["order_type"]).upper() == "MARKET":
+                kwargs["order_type"] = "MKT"
+
         try:
             order_args = dict(
                 exchange_segment="NSE",
@@ -63,7 +104,7 @@ class Neo(Broker):
                 order_args.update({key: val})
             order_args.update(kwargs)
             if order_args["exchange_segment"] in ("NSE", "BSE"):
-                if not(order_args["trading_symbol"].endswith("EQ")):
+                if not (order_args["trading_symbol"].endswith("EQ")):
                     order_args["trading_symbol"] = f"{order_args['trading_symbol']}-EQ"
             response = self.neo.place_order(**order_args)
             if response.get("Error"):
@@ -83,7 +124,12 @@ class Neo(Broker):
         """
         modify the order
         """
-        modify_args = dict(validity="DAY", product="MIS", amo="NO")
+        if "order_type" in kwargs:
+            if str(kwargs["order_type"]).upper() == "LIMIT":
+                kwargs["order_type"] = "L"
+            elif str(kwargs["order_type"]).upper() == "MARKET":
+                kwargs["order_type"] = "MKT"
+        modify_args = dict(validity="DAY", product="MIS", amo="NO", order_type="MKT")
         for key in ("quantity", "price", "trigger_price", "disclosed_quantity"):
             if key in kwargs:
                 kwargs[key] = str(kwargs[key])
