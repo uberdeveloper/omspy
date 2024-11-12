@@ -51,9 +51,12 @@ class Neo(Broker):
             consumer_secret=self._consumer_secret,
             **self._kwargs,
         )
-        token = client.configuration.bearer_token
-        if token:
-            self._save_token(token)
+        try:
+            token = client.configuration.bearer_token
+            if token:
+                self._save_token(token)
+        except Exception as e:
+            logging.error(e)
         self.neo = client
 
     def authenticate(self) -> Dict:
@@ -129,7 +132,7 @@ class Neo(Broker):
                 kwargs["order_type"] = "L"
             elif str(kwargs["order_type"]).upper() == "MARKET":
                 kwargs["order_type"] = "MKT"
-        modify_args = dict(validity="DAY", product="MIS", amo="NO", order_type="MKT")
+        modify_args = dict(validity="DAY", product="MIS", amo="NO")
         for key in ("quantity", "price", "trigger_price", "disclosed_quantity"):
             if key in kwargs:
                 kwargs[key] = str(kwargs[key])
