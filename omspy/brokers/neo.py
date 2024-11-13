@@ -161,6 +161,9 @@ class Neo(Broker):
             for o in orderbook:
                 try:
                     o["ordSt"] = str(o["ordSt"]).upper()
+                    o["trnsTp"] = (
+                        "BUY" if str(o["trnsTp"]).upper()[0] == "B" else "SELL"
+                    )
                     for col in int_cols:
                         if col in o:
                             o[col] = int(o[col])

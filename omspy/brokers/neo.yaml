@@ -17,6 +17,11 @@ orders:
   prc: price
   trgPrc: trigger_price
   prcTp: order_type
+  trnsTp: side
+  exOrdId: exchange_order_id
+  hsUpTm: exchange_timestamp
+  cnlQty: cancelled_quantity
+  dscQty: disclosed_quantity
 positions:
   buyAmt: buy_amount
   prod: product

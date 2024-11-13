@@ -236,14 +236,35 @@ def test_trades(mock_neo, mock_data):
 def test_orders_data_conversion(mock_neo, mock_data):
     mock_neo.neo.order_report.return_value = mock_data["orders"]
     orders = mock_neo.orders
-    int_cols = ["cnlQty", "quantity", "dscQty", "filled_quantity"]
+    int_cols = [
+        "cancelled_quantity",
+        "quantity",
+        "disclosed_quantity",
+        "filled_quantity",
+    ]
     float_cols = ["price", "trigger_price", "average_price", "refLmtPrc"]
+    str_cols = [
+        "order_id",
+        "symbol",
+        "status",
+        "product",
+        "order_type",
+        "side",
+        "exchange_timestamp",
+        "exchange_order_id",
+    ]
     for col in int_cols:
         for order in orders:
             assert type(order[col]) == int
     for col in float_cols:
         for order in orders:
             assert type(order[col]) == float
+    for col in str_cols:
+        for order in orders:
+            assert type(order[col]) == str
+    # Check for side
+    for order in orders:
+        assert order["side"] in ("BUY", "SELL")
 
 
 def test_positions_data_conversion(mock_neo, mock_data):
