@@ -40,6 +40,7 @@ class TickerMode(Enum):
 class OrderType(Enum):
     MARKET = 1
     LIMIT = 2
+    STOP = 3
 
 
 class OHLC(BaseModel):
@@ -358,9 +359,7 @@ class VOrder(BaseModel):
             self.exchange_order_id = uuid.uuid4().hex
 
     def set_exchange_timestamp(self):
-        print(pendulum.now())
         if not (self.exchange_timestamp):
-            print(pendulum.now())
             self.exchange_timestamp = pendulum.now(tz="local")
 
 
@@ -531,11 +530,24 @@ class OrderFill(BaseModel):
         ltp = self.last_price
         if order_type == OrderType.LIMIT:
             if side == Side.BUY:
-                if price > ltp:
+                if ltp < price:
                     self.order.filled_quantity = self.order.quantity
                     self.order.average_price = self.last_price
             elif side == Side.SELL:
-                if price < ltp:
+                if ltp > price:
+                    self.order.filled_quantity = self.order.quantity
+                    self.order.average_price = self.last_price
+            self.order._make_right_quantity()
+        elif order_type == OrderType.STOP:
+            price = self.order.trigger_price
+            if not price:
+                price = self.order.price
+            if side == Side.BUY:
+                if ltp > price:
+                    self.order.filled_quantity = self.order.quantity
+                    self.order.average_price = self.last_price
+            elif side == Side.SELL:
+                if ltp < price:
                     self.order.filled_quantity = self.order.quantity
                     self.order.average_price = self.last_price
             self.order._make_right_quantity()
@@ -565,5 +577,18 @@ class OrderFill(BaseModel):
             elif side == Side.SELL:
                 if last_price > order.price:
                     order.average_price = order.price
+                    order.filled_quantity = order.quantity
+                    order._make_right_quantity()
+        elif order_type == OrderType.STOP:
+            if not order.trigger_price:
+                order.trigger_price = order.price
+            if side == Side.BUY:
+                if last_price > order.trigger_price:
+                    order.average_price = last_price
+                    order.filled_quantity = order.quantity
+                    order._make_right_quantity()
+            elif side == Side.SELL:
+                if last_price < order.trigger_price:
+                    order.average_price = last_price
                     order.filled_quantity = order.quantity
                     order._make_right_quantity()
