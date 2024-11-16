@@ -68,7 +68,6 @@ def test_authenticate():
             "user_id", "password", "totpcode", "vendor_code", "app_key", "imei"
         )
         broker.authenticate()
-        print(mock_broker.call_args_list)
         broker.finvasia.login.assert_called_once()
 
 

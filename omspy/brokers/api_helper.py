@@ -52,7 +52,6 @@ class ShoonyaApiPy(NorenApi):
             self,
             host="https://api.shoonya.com/NorenWClientTP/",
             websocket="wss://api.shoonya.com/NorenWSTP/",
-            eodhost="https://api.shoonya.com/chartApi/getdata/",
         )
         global api
         api = self
