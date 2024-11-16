@@ -175,9 +175,12 @@ def test_orders(mock_neo, mock_data):
         "price",
         "trigger_price",
         "order_type",
+        "side",
+        "exchange",
     ):
         for order in orders:
             assert key in order
+    assert [order["side"] for order in orders] == ["BUY", "BUY"]
 
 
 def test_orders_no_data(mock_neo, mock_data):

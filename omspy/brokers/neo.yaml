@@ -22,6 +22,7 @@ orders:
   hsUpTm: exchange_timestamp
   cnlQty: cancelled_quantity
   dscQty: disclosed_quantity
+  exSeg: exchange
 positions:
   buyAmt: buy_amount
   prod: product
