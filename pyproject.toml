@@ -13,6 +13,7 @@ pendulum = {extras = ["test"], version = "^3.0.0"}
 pydantic = "^1.8.2"
 PyYAML = "^6.0.0"
 sqlite-utils = "^3.22.1"
+pyotp = "^2.9.0"
 
 [tool.poetry.group.server.dependencies]
 fastapi = "^0.92.0"
@@ -25,7 +26,6 @@ httpx = "^0.23.3"
 pytest = "^8.3.3"
 
 [tool.poetry.group.brokers.dependencies]
-pyotp = "^2.6.0"
 kiteconnect = "^5.0.0"
 requests = "^2.25.0"
 ks-api-client = {git = "https://github.com/osparamatrix/ks-orderapi-python.git"}
@@ -33,6 +33,7 @@ nodriver = "^0.37"
 requests-oauthlib = "^2.0.0"
 pandas = "^2.2.3"
 numpy = "<2.0.0"
+breeze-connect = "^1.0.58"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
