@@ -1,3 +1,22 @@
+### 0.18.0
+### Features
+ * STOP order simulation added to `OrderFill` #40
+ * `utils.load_broker` to automatically load broker from credentials file
+### Improvements
+ * finvasia broker upgraded to Norenapi version 0.3
+ * #38 All brokers to be initialized to None
+ * #39 All broker connections to be done only during authentication
+ * extra attribute added to yaml files for all brokers
+ * `pytop` library added to main dependency
+
+### Fixes
+ * `orders` property for all brokers to return empty list in case of errors (no empty dictionary inside list)
+ * **Neo** broker `orders` property to infer side automatically
+ * **Icici** broker proper data conversion for orders
+ * #35 when both random numbers are same, the end number is changed automatically to prevent raising error
+### 0.17.4
+### Fixes
+ * side added to `orders` property in `Neo` broker
 ### 0.17.3
 ### Improvements
  * `Neo` broker authentication improved to automatically store session token and retry next time
