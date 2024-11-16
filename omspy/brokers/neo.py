@@ -176,7 +176,7 @@ class Neo(Broker):
             return orderbook
         else:
             logging.warning(response)
-            return [{}]
+            return []
 
     @property
     @post

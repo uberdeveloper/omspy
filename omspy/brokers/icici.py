@@ -208,7 +208,7 @@ class Icici(Broker):
 
     @property
     @post
-    def orders(self) -> List[Optional[Dict]]:
+    def orders(self) -> List[Dict]:
         """
         Return all the orders
         """

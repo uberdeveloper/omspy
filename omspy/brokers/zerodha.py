@@ -168,7 +168,7 @@ class Zerodha(Broker):
                 order["status"] = status_map.get(order["status"])
             return orderbook
         else:
-            return [{}]
+            return []
 
     @property
     @post

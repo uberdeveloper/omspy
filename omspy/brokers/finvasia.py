@@ -66,8 +66,8 @@ class Finvasia(Broker):
     @post
     def orders(self) -> List[Dict]:
         orderbook = self.finvasia.get_order_book()
-        if len(orderbook) == 0:
-            return orderbook
+        if not orderbook:
+            return []
 
         order_list = []
         float_cols = ["avgprc", "prc", "rprc", "trgprc"]
