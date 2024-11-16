@@ -2,6 +2,11 @@ orders:
   stock_code: symbol
   action: side
   user_remark: tag
+  stoploss: trigger_price
+  LTP: last_price
+  order_datetime: timestamp
+  exchange_code: exchange
+
 positions:
   exchange_code: exchange
   stock_code: symbol

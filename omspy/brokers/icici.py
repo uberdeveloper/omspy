@@ -37,7 +37,7 @@ class Icici(Broker):
 
     async def _async_login(self):
         url = f"https://api.icicidirect.com/apiuser/login?api_key={quote_plus(self._api_key)}"
-        browser = await uc.start(headless=True)
+        browser = await uc.start(headless=False)
         page = await browser.get(url)
         await page.get_content()
         user_id = await page.select('input[id="txtuid"]')
@@ -231,6 +231,23 @@ class Icici(Broker):
         }
         if len(orderbook) > 0:
             for order in orderbook:
+                int_cols = [
+                    "quantity",
+                    "pending_quantity",
+                    "cancelled_quantity",
+                ]
+                float_cols = [
+                    "price",
+                    "trigger_price",
+                    "average_price",
+                ]
+                for col in int_cols:
+                    if col in order:
+                        order[col] = int(order[col])
+                for col in float_cols:
+                    if col in order:
+                        order[col] = float(order[col])
+
                 status = str(order["status"]).upper()
                 order["status"] = status_map.get(status, "PENDING")
                 order["filled_quantity"] = (
