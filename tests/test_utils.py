@@ -1,12 +1,18 @@
 import os
-from pathlib import PurePath
 from collections import namedtuple
+import yaml
+from pathlib import PurePath
 
 from omspy.utils import *
 from copy import deepcopy
 import pytest
 import pandas as pd
 import itertools
+
+from omspy.brokers.zerodha import Zerodha
+from omspy.brokers.finvasia import Finvasia
+from omspy.brokers.neo import Neo
+from omspy.brokers.icici import Icici
 
 DATA_ROOT = PurePath(__file__).parent.parent / "tests" / "data"
 Q = namedtuple("qty", "q f p c")
@@ -32,6 +38,12 @@ def dict_for_filter():
     C = f([1, 2, 3, 4, 5, 6], 4)
     dct = [dict(x=x, y=y, z=z) for x, y, z in zip(A, B, C)]
     return dct
+
+
+@pytest.fixture
+def credentials():
+    with open(DATA_ROOT / "credentials.yaml") as f:
+        return yaml.safe_load(f)
 
 
 def test_create_basic_positions_from_orders_dict_keys(load_orders):
@@ -237,3 +249,59 @@ def test_stop_loss_step_decimal(test_input, expected):
 )
 def test_update_quantity(q, f, p, c, expected):
     assert update_quantity(q, f, p, c) == expected
+
+
+def test_load_broker_string():
+    filename = "tests/data/credentials.yaml"
+    broker = load_broker(filename)
+    assert isinstance(broker, Zerodha)
+
+
+def test_load_broker_pathlib():
+    filename = DATA_ROOT / "credentials.yaml"
+    print(filename, type(filename))
+    print(isinstance(filename, pathlib.PurePath))
+    broker = load_broker(filename)
+    assert isinstance(broker, Zerodha)
+
+
+def test_load_broker_dict(credentials):
+    broker = load_broker(credentials[0])
+    assert isinstance(broker, Zerodha)
+
+
+def test_load_broker_list(credentials):
+    broker = load_broker(credentials, index=0)
+    assert isinstance(broker, Zerodha)
+    broker = load_broker(credentials, index=1)
+    assert isinstance(broker, Neo)
+
+
+def test_load_broker_all_available_brokers(credentials):
+    broker = load_broker(credentials, index=0)
+    assert isinstance(broker, Zerodha)
+    broker = load_broker(credentials, index=1)
+    assert isinstance(broker, Neo)
+    broker = load_broker(credentials, index=2)
+    assert isinstance(broker, Icici)
+    broker = load_broker(credentials, index=3)
+    assert isinstance(broker, Finvasia)
+
+
+def test_load_broker_wrong_config(credentials):
+    cred = credentials[0]
+    del cred["name"]
+    with pytest.raises(KeyError):
+        load_broker(cred)
+
+
+def test_load_broker_no_broker(credentials):
+    cred = credentials[0]
+    cred["name"] = "robinhood"
+    with pytest.raises(ValueError):
+        res = load_broker(cred)
+
+
+def test_load_broker_no_index(credentials):
+    with pytest.raises(IndexError):
+        load_broker(credentials, index=4)

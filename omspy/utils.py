@@ -5,6 +5,9 @@ General utility functions for conversion and else
 from typing import Dict, Any, List, Union, NamedTuple
 from omspy.models import BasicPosition
 from collections import defaultdict
+import pathlib
+import yaml
+import logging
 
 
 class UQty(NamedTuple):
@@ -146,3 +149,89 @@ def update_quantity(q: float, f: float, p: float, c: float) -> UQty:
     else:
         p = q - p
     return UQty(q, f, p, c)
+
+
+def load_broker(
+    credentials: Union[
+        str, dict, list[dict], pathlib.PurePath, pathlib.Path
+    ] = "credentials.yaml",
+    index: int = 0,
+) -> Any:
+    """
+    load broker based on given data in the expected format
+    expected format for a broker is a dictionary with 2 keys, name and config. name is the broker module name and config is a dictionary containing arguments to the broker
+    ```
+    {
+        "name": "broker_module_name",
+        "config": {
+            "api_key": "api key",
+            "api_secret": "api secret",
+            "access_token": "access token",
+            "refresh_token": "refresh token",
+            "user_id": "user id",
+    }
+    credentials
+        string , dictionary or list of dictionaries containing broker credentials in requested format
+        default filename `credentials.yaml` in the current directory
+        * if credentials is a string or a pathlib path, it will be treated as filename
+        * if name is a dict, then it will be treated as dictionary and the index argument is discarded
+        * if name is a list, then it will be treated as list of dictionaries
+    index
+        index of the broker in the list
+        this argument is discared if a dictionary is given
+    Note
+    -----
+    1. This only initializes the broker, it does not authenticate the broker.
+    2. the `config` key is a dictionary containing arguments specific  to a broker and it must contain arguments matching the specific broker
+    3. returns `None` if the specified broker is not found
+    """
+    from omspy.brokers.zerodha import Zerodha
+    from omspy.brokers.finvasia import Finvasia
+    from omspy.brokers.icici import Icici
+    from omspy.brokers.neo import Neo
+
+    broker_mapping = {
+        "zerodha": Zerodha,
+        "finvasia": Finvasia,
+        "icici": Icici,
+        "neo": Neo,
+    }
+
+    def _load_instance(creds):
+        try:
+            name = creds["name"].lower()
+            broker_module = broker_mapping[name]
+            if broker_module:
+                try:
+                    broker = broker_module(**creds["config"])
+                    return broker
+                except Exception as e:
+                    logging.error(e)
+                    return
+        except KeyError as e:
+            logging.error(e)
+            error_msg = f"""
+             Broker {creds["name"]} not available.
+             Available brokers are {list(broker_mapping.keys())}
+             If you have this broker installed locally,
+             kindly submit a pull request
+             """
+            raise ValueError(error_msg)
+
+    if isinstance(credentials, str):
+        with open(credentials, "r") as f:
+            broker_list = yaml.safe_load(f)
+        creds = broker_list[index]
+        return _load_instance(creds)
+    elif isinstance(credentials, (pathlib.PurePath, pathlib.Path)):
+        with open(str(credentials), "r") as f:
+            broker_list = yaml.safe_load(f)
+        creds = broker_list[index]
+        return _load_instance(creds)
+    elif isinstance(credentials, dict):
+        return _load_instance(credentials)
+    elif isinstance(credentials, list):
+        creds = credentials[index]
+        return _load_instance(creds)
+    else:
+        raise ValueError("Invalid credentials format")
