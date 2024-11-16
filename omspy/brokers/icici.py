@@ -32,6 +32,7 @@ class Icici(Broker):
         self._totp = totp
         self._session_token = session_token
         self._store_access_token = True
+        self.breeze = None
         super(Icici, self).__init__()
 
     async def _async_login(self):

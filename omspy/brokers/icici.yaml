@@ -1,6 +1,7 @@
 orders:
   stock_code: symbol
   action: side
+  user_remark: tag
 positions:
   exchange_code: exchange
   stock_code: symbol

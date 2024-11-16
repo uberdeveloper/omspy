@@ -20,6 +20,11 @@ def mock_kite():
     return broker
 
 
+def test_broker_none():
+    broker = Zerodha("api_key", "secret", "user_id", "password", "pin")
+    assert broker.kite is None
+
+
 def test_profile(mock_kite):
     broker = mock_kite
     with open(KITE_CONNECT_ROOT / "profile.json") as f:

@@ -62,6 +62,7 @@ class Zerodha(Broker):
         self.exchange = exchange
         self.product = product
         self._store_access_token = True
+        self.kite = None
         super(Zerodha, self).__init__()
 
     def _shortcuts(self) -> None:

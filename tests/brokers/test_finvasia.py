@@ -6,6 +6,7 @@ import yaml
 import json
 from unittest.mock import patch
 import pendulum
+import omspy
 
 # @@@ assumption [add test case]: this file location change breaks below paths
 DATA_ROOT = PurePath(__file__).parent.parent.parent / "tests" / "data"
@@ -41,7 +42,10 @@ def mod():
         return yaml.safe_load(f)
 
 
-def test_defaults(broker):
+def test_defaults():
+    broker = Finvasia(
+        "user_id", "password", "totpcode", "vendor_code", "app_key", "imei"
+    )
     assert broker._user_id == "user_id"
     assert broker._password == "password"
     assert broker._pin == "totpcode"
@@ -49,6 +53,7 @@ def test_defaults(broker):
     assert broker._app_key == "app_key"
     assert broker._imei == "imei"
     assert hasattr(broker, "finvasia")
+    assert broker.finvasia is None
 
 
 def test_login(broker):
@@ -56,9 +61,15 @@ def test_login(broker):
     broker.finvasia.login.assert_called_once()
 
 
-def test_authenticate(broker):
-    broker.authenticate()
-    broker.finvasia.login.assert_called_once()
+def test_authenticate():
+    # Patching with finvasia module instead of api_helper
+    with patch("omspy.brokers.finvasia.ShoonyaApiPy") as mock_broker:
+        broker = Finvasia(
+            "user_id", "password", "totpcode", "vendor_code", "app_key", "imei"
+        )
+        broker.authenticate()
+        print(mock_broker.call_args_list)
+        broker.finvasia.login.assert_called_once()
 
 
 def test_get_order_type(broker):

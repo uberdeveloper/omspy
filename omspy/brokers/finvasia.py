@@ -26,7 +26,7 @@ class Finvasia(Broker):
         self._vendor_code = vendor_code
         self._app_key = app_key
         self._imei = imei
-        self.finvasia = ShoonyaApiPy()
+        self.finvasia = None
         super(Finvasia, self).__init__()
 
     @property
@@ -47,6 +47,7 @@ class Finvasia(Broker):
         """
         Authenticate the user
         """
+        self.finvasia = ShoonyaApiPy()
         return self.login()
 
     def _convert_symbol(self, symbol: str, exchange: str = "NSE") -> str:

@@ -57,6 +57,14 @@ def expected_args():
     )
 
 
+def test_defaults():
+    broker = Neo(
+        "consumer_key", "consumer_secret", "mobilenumber", "password", "two_fa"
+    )
+    assert broker.neo is None
+    assert "access_token" in broker._kwargs
+
+
 def test_order_place(mock_neo, expected_args):
     broker = mock_neo
     broker.order_place(symbol="SBIN-EQ", side="buy", quantity=1)

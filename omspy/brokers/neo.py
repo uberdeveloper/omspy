@@ -27,6 +27,7 @@ class Neo(Broker):
         self._consumer_secret = consumer_secret
         self._mpin = twofa
         self._kwargs = kwargs
+        self.neo = None
         super(Neo, self).__init__()
         try:
             with open("neo_token.txt", "r") as f:
@@ -36,7 +37,6 @@ class Neo(Broker):
             token = None
         if "access_token" not in self._kwargs:
             self._kwargs["access_token"] = token
-        self._load_neo_instance()
 
     def _save_token(self, token: str, filename: str = "neo_token.txt"):
         try:
@@ -61,6 +61,7 @@ class Neo(Broker):
 
     def authenticate(self) -> Dict:
         try:
+            self._load_neo_instance()
             response = self.neo.login(
                 password=self._password,
                 mobilenumber=self._mobilenumber,
