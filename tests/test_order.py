@@ -1544,3 +1544,9 @@ def test_compound_order_keys_hashable(order_kwargs):
         com.add_order(**order_kwargs, key={"a": 5})
     assert len(com.orders) == 1
     assert com.get((4, 5)) == com.orders[0]
+
+
+def test_compound_order_len(simple_compound_order):
+    co = simple_compound_order
+    assert len(co) == 3
+    assert len(co) == len(co.orders)

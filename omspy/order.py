@@ -471,6 +471,9 @@ class CompoundOrder(BaseModel):
             for i, o in enumerate(self.orders):
                 self._index[i] = o
 
+    def __len__(self):
+        return len(self.orders)
+
     @property
     def count(self) -> int:
         """
