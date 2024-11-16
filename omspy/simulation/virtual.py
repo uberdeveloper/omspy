@@ -75,9 +75,12 @@ def generate_price(start: int = 100, end: int = 110) -> int:
     Note
     ----
     1) If the start value is greater than end value, the values are swapped
+    2) If start value and end value are same suitable adjustment is made
     """
     if start > end:
         start, end = end, start
+    if start == end:
+        end = max(start + 2, int(start * 1.1))
     return random.randrange(start, end)
 
 
@@ -150,6 +153,8 @@ def generate_ohlc(start: int = 100, end: int = 110, volume: int = 10000) -> OHLC
     """
     if start > end:
         start, end = end, start
+    if start == end:
+        end = max(start + 2, int(start * 1.1))
     a = random.randrange(start, end)
     b = random.randrange(start, end)
     high, low = max(a, b), min(a, b)

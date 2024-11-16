@@ -116,6 +116,18 @@ def test_generate_price():
     assert generate_price(110, 100) == 107
 
 
+def test_generate_price_same_start_and_end():
+    with patch("random.randrange") as randrange:
+        price = generate_price(100, 100)
+        randrange.assert_called_once_with(100, 110)
+    with patch("random.randrange") as randrange:
+        price = generate_price(1000, 1000)
+        randrange.assert_called_once_with(1000, 1100)
+    with patch("random.randrange") as randrange:
+        price = generate_price(4, 4)
+        randrange.assert_called_once_with(4, 6)
+
+
 def test_generate_orderbook_default():
     ob = generate_orderbook()
     ob.bid[-1].price == 99.96
