@@ -6,7 +6,6 @@ orders:
   LTP: last_price
   order_datetime: timestamp
   exchange_code: exchange
-
 positions:
   exchange_code: exchange
   stock_code: symbol
@@ -18,6 +17,8 @@ order_place:
   trigger_price: stoploss
 order_modify:
   trigger_price: stoploss
+  exchange: exchange_code
+order_cancel:
   exchange: exchange_code
 trades:
   stock_code: symbol
