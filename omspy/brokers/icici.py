@@ -235,18 +235,28 @@ class Icici(Broker):
                     "quantity",
                     "pending_quantity",
                     "cancelled_quantity",
+                    "disclosed_quantity",
                 ]
                 float_cols = [
                     "price",
-                    "trigger_price",
+                    "stoploss",
                     "average_price",
                 ]
                 for col in int_cols:
-                    if col in order:
-                        order[col] = int(order[col])
+                    try:
+                        if col in order:
+                            if order[col]:
+                                order[col] = int(order[col])
+                    except Exception as e:
+                        logging.error(f"Error {e} in {col}; forcing value to be zero")
+                        order[col] = 0
                 for col in float_cols:
-                    if col in order:
-                        order[col] = float(order[col])
+                    try:
+                        if col in order:
+                            order[col] = float(order[col])
+                    except Exception as e:
+                        logging.error(f"Error {e} in {col}; forcing value to be zero")
+                        order[col] = 0.0
 
                 status = str(order["status"]).upper()
                 order["status"] = status_map.get(status, "PENDING")

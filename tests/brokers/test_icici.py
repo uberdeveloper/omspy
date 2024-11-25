@@ -81,3 +81,61 @@ def test_orders(mock_icici, mock_data):
             672.45,
             154.31,
         ]
+
+
+def test_orders_float_cols(mock_icici, mock_data):
+    mock_icici.breeze.get_order_list.side_effect = [mock_data["orders"]] * 4
+    broker = mock_icici
+    orders = broker.orders
+    float_cols = ["price", "trigger_price", "average_price"]
+    for col in float_cols:
+        for order in orders:
+            assert isinstance(order[col], float)
+
+
+def test_orders_int_cols(mock_icici, mock_data):
+    mock_icici.breeze.get_order_list.side_effect = [mock_data["orders"]] * 4
+    broker = mock_icici
+    orders = broker.orders
+    int_cols = [
+        "quantity",
+        "pending_quantity",
+        "cancelled_quantity",
+        "disclosed_quantity",
+        "filled_quantity",
+    ]
+    for col in int_cols:
+        for order in orders:
+            assert isinstance(order[col], int)
+
+
+def test_orders_float_cols_data_errors(mock_icici, mock_data):
+    # Manually induce an error
+    mock_data["orders"]["Success"][0]["price"] = "na"
+    mock_icici.breeze.get_order_list.side_effect = [mock_data["orders"]] * 4
+    broker = mock_icici
+    orders = broker.orders
+    float_cols = ["price", "trigger_price", "average_price"]
+    for col in float_cols:
+        for order in orders:
+            assert isinstance(order[col], float)
+        assert [order["price"] for order in orders] == [0.0, 1130.3, 678.85, 154.31]
+
+
+def test_orders_int_cols_data_errors(mock_icici, mock_data):
+    # Manually induce an error
+    mock_data["orders"]["Success"][0]["quantity"] = "na"
+    mock_icici.breeze.get_order_list.side_effect = [mock_data["orders"]] * 4
+    broker = mock_icici
+    orders = broker.orders
+    int_cols = [
+        "quantity",
+        "pending_quantity",
+        "cancelled_quantity",
+        "disclosed_quantity",
+        "filled_quantity",
+    ]
+    for col in int_cols:
+        for order in orders:
+            assert isinstance(order[col], int)
+        assert [order["quantity"] for order in orders] == [0, 2, 4, 20]
