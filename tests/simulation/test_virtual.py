@@ -1005,3 +1005,29 @@ def test_fake_broker_return_order_id_only():
     assert isinstance(response, VOrder)
     response = broker.order_cancel(order_id="some_order_id")
     assert isinstance(response, VOrder)
+
+
+def test_fake_broker_average_price_fill():
+    broker = FakeBroker(name="faker")
+    for attr in ("order_place", "order_modify", "order_cancel"):
+        resp = getattr(broker, attr)(symbol="AAPL", side=1, quantity=10)
+        assert resp.average_price == 0.0
+        resp = getattr(broker, attr)(symbol="AAPL", side=1, quantity=10, price=120)
+        assert resp.average_price == 120.0
+        resp = getattr(broker, attr)(
+            symbol="AAPL", side=1, quantity=10, trigger_price=125
+        )
+        assert resp.average_price == 125.0
+        resp = getattr(broker, attr)(
+            symbol="AAPL", side=1, quantity=10, price=120, trigger_price=125
+        )
+        assert resp.average_price == 125.0
+        resp = getattr(broker, attr)(
+            symbol="AAPL",
+            side=1,
+            quantity=10,
+            price=120,
+            trigger_price=125,
+            average_price=123,
+        )
+        assert resp.average_price == 123

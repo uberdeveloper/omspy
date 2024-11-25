@@ -338,6 +338,17 @@ class FakeBroker(BaseModel):
         """
         return _iterate_method(self._quote, symbol, **kwargs)
 
+    def _avg_fill_price(self, **kwargs) -> float:
+        """
+        get the average fill price based on keyword arguments
+        """
+        if "average_price" not in kwargs:
+            price = kwargs.get("price", 0)
+            trigger_price = kwargs.get("trigger_price", 0)
+            return max(price, trigger_price)
+        else:
+            return kwargs["average_price"]
+
     @user_response
     def order_place(self, **kwargs) -> VOrder:
         """
@@ -347,6 +358,8 @@ class FakeBroker(BaseModel):
         order_args = self._create_order_args(**kwargs)
         quantity = order_args["quantity"]
         order_args["filled_quantity"] = quantity
+        order_args["average_price"] = self._avg_fill_price(**kwargs)
+
         if status:
             if status in (Status.CANCELED, Status.REJECTED):
                 order_args.update(dict(filled_quantity=0, canceled_quantity=quantity))
@@ -376,6 +389,7 @@ class FakeBroker(BaseModel):
         quantity = modify_args["quantity"]
         order_id = modify_args.pop("order_id", uuid.uuid4().hex)
         modify_args["pending_quantity"] = quantity
+        modify_args["average_price"] = self._avg_fill_price(**kwargs)
         if self.return_order_id_only:
             return order_id
         return VOrder(order_id=order_id, **modify_args)
@@ -391,6 +405,7 @@ class FakeBroker(BaseModel):
         quantity = cancel_args["quantity"]
         order_id = cancel_args.pop("order_id", uuid.uuid4().hex)
         cancel_args["canceled_quantity"] = quantity
+        cancel_args["average_price"] = self._avg_fill_price(**kwargs)
         if self.return_order_id_only:
             return order_id
         return VOrder(order_id=order_id, **cancel_args)
