@@ -4,6 +4,14 @@ from typing import Optional, List, Dict, Union, Set
 import pendulum
 import pyotp
 import logging
+import warnings
+
+DEPRECATION_WARNING = """
+This module would be replaced by the more common Noren
+module from version 0.20.0.
+See https://github.com/uberdeveloper/omspy-brokers for the legacy module (not actively maintained)
+"""
+warnings.warn(DEPRECATION_WARNING, DeprecationWarning, stacklevel=2)
 
 
 class Finvasia(Broker):

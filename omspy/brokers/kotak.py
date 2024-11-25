@@ -9,11 +9,11 @@ import logging
 import requests
 import warnings
 
-DEPRECIATION_WARNING = """
+DEPRECATION_WARNING = """
 This Kotak module would be removed from version 0.19.0.
 Use the Neo module to access the kotak broker
 """
-warnings.warn(DEPRECIATION_WARNING, DeprecationWarning, stacklevel=2)
+warnings.warn(DEPRECATION_WARNING, DeprecationWarning, stacklevel=2)
 
 
 def get_url(segment: str = "cash") -> str:
