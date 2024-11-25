@@ -13,6 +13,7 @@ from omspy.simulation.models import (
     ResponseStatus,
     VOrder,
     VTrade,
+    OHLC,
     OHLCV,
     Side,
     Status,
@@ -350,7 +351,7 @@ class FakeBroker(BaseModel):
             return kwargs["average_price"]
 
     @user_response
-    def order_place(self, **kwargs) -> VOrder:
+    def order_place(self, **kwargs) -> Union[VOrder, str]:
         """
         Place an order with the broker
         """
@@ -380,7 +381,7 @@ class FakeBroker(BaseModel):
         return VOrder(order_id=order_id, **order_args)
 
     @user_response
-    def order_modify(self, **kwargs) -> VOrder:
+    def order_modify(self, **kwargs) -> Union[VOrder, str]:
         """
         Modify an order with the broker
         All orders are returned with status OPEN
@@ -395,7 +396,7 @@ class FakeBroker(BaseModel):
         return VOrder(order_id=order_id, **modify_args)
 
     @user_response
-    def order_cancel(self, **kwargs) -> VOrder:
+    def order_cancel(self, **kwargs) -> Union[VOrder, str]:
         """
         Cancel an order with the broker
         All orders are returned with status CANCELED with
@@ -473,7 +474,7 @@ class FakeBroker(BaseModel):
         if not symbols:
             n = random.randrange(1, len(self._symbols)) * 2
             symbols = self._get_random_symbols(n)
-        trades = []
+        trades_list = []
         for symbol in symbols:
             order_id = uuid.uuid4().hex
             trade_id = uuid.uuid4().hex
@@ -487,8 +488,8 @@ class FakeBroker(BaseModel):
                 side=random.choice(list(Side)),
                 price=price,
             )
-            trades.append(trade)
-        return trades
+            trades_list.append(trade)
+        return trades_list
 
 
 class VirtualBroker(BaseModel):
@@ -517,9 +518,9 @@ class VirtualBroker(BaseModel):
 
     def __init__(self, **data):
         super().__init__(**data)
-        self._orders = defaultdict(list)
+        self._orders = defaultdict(VOrder)
         self._clients = set()
-        self._delay = 1e6
+        self._delay = 1_000_000
 
     @property
     def clients(self) -> Set[str]:
@@ -545,7 +546,7 @@ class VirtualBroker(BaseModel):
         """
         get the order
         """
-        order: VOrder = self._orders.get(order_id)
+        order = self._orders.get(order_id)
         if order:
             order.modify_by_status(status)
             return order
@@ -680,14 +681,14 @@ class VirtualBroker(BaseModel):
         """
         return _iterate_method(self._ltp, symbol)
 
-    def _ohlc(self, symbol: str) -> Optional[Dict[str, OHLCV]]:
+    def _ohlc(self, symbol: str) -> Optional[Dict[str, OHLC]]:
         ticker = self.tickers.get(symbol)
         if ticker:
             return {symbol: ticker.ohlc()}
         else:
             return None
 
-    def ohlc(self, symbol: Union[str, Iterable]) -> Optional[Dict[str, OHLCV]]:
+    def ohlc(self, symbol: Union[str, Iterable]) -> Optional[Dict[str, OHLC]]:
         """
         Get OHLC prices
         """
