@@ -1,3 +1,9 @@
+### 0.18.1
+### Fixes
+* #45 Type conversion fixed
+* Deprecation message added for inactive broker modules
+### Improvments
+* #41 return order_id only
 ### 0.18.0
 ### Features
  * STOP order simulation added to `OrderFill` #40
