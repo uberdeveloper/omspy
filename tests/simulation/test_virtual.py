@@ -985,3 +985,23 @@ def test_replica_broker_order_cancel_multiple_times(replica_with_instruments):
     assert len(broker.fills) == 1
     broker.run_fill()
     assert len(broker.fills) == 0
+
+
+def test_fake_broker_return_order_id_only():
+    broker = FakeBroker(name="faker", return_order_id_only=True)
+
+    response = broker.order_place(symbol="AAPL", side=1, quantity=10)
+    assert isinstance(response, str)
+    response = broker.order_modify(order_id="some_id", quantity=20)
+    assert isinstance(response, str)
+    response = broker.order_cancel(order_id="some_order_id")
+    assert isinstance(response, str)
+
+    # Return VOrder now
+    broker.return_order_id_only = False
+    response = broker.order_place(symbol="AAPL", side=1, quantity=10)
+    assert isinstance(response, VOrder)
+    response = broker.order_modify(order_id="some_id", quantity=20)
+    assert isinstance(response, VOrder)
+    response = broker.order_cancel(order_id="some_order_id")
+    assert isinstance(response, VOrder)

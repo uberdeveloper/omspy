@@ -171,9 +171,16 @@ def generate_ohlc(start: int = 100, end: int = 110, volume: int = 10000) -> OHLC
 class FakeBroker(BaseModel):
     """
     A fake instance to generate random stock data
+    name
+        name of the fake broker, a friendly name for identification
+    return_order_id_only
+        bool: default False
+        return order_id instead of `VOrder` when calling
+        order place, modify and cancel functions
     """
 
     name: str = "faker"
+    return_order_id_only: bool = False
     _symbols: List[str] = [
         "AXP",
         "AAPL",
@@ -355,6 +362,8 @@ class FakeBroker(BaseModel):
                 order_args.update(dict(filled_quantity=a, pending_quantity=b))
         order_id = uuid.uuid4().hex
         order_args.update(kwargs)
+        if self.return_order_id_only:
+            return order_id
         return VOrder(order_id=order_id, **order_args)
 
     @user_response
@@ -367,6 +376,8 @@ class FakeBroker(BaseModel):
         quantity = modify_args["quantity"]
         order_id = modify_args.pop("order_id", uuid.uuid4().hex)
         modify_args["pending_quantity"] = quantity
+        if self.return_order_id_only:
+            return order_id
         return VOrder(order_id=order_id, **modify_args)
 
     @user_response
@@ -380,6 +391,8 @@ class FakeBroker(BaseModel):
         quantity = cancel_args["quantity"]
         order_id = cancel_args.pop("order_id", uuid.uuid4().hex)
         cancel_args["canceled_quantity"] = quantity
+        if self.return_order_id_only:
+            return order_id
         return VOrder(order_id=order_id, **cancel_args)
 
     @user_response
