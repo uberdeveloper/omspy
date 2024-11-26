@@ -1031,3 +1031,13 @@ def test_fake_broker_average_price_fill():
             average_price=123,
         )
         assert resp.average_price == 123
+
+
+def test_fake_broker_average_price_fill_none():
+    broker = FakeBroker(name="faker")
+    response = broker.order_place(symbol="AAPL", side=1, quantity=10, price=None)
+    assert response.average_price == 0.0
+    response = broker.order_place(
+        symbol="AAPL", side=1, quantity=10, price=None, trigger_price=None
+    )
+    assert response.average_price == 0.0

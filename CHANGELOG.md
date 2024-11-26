@@ -1,3 +1,6 @@
+### 0.18.2
+### Fixes
+* average_price for `FakeBroker` would take care of None values in price or trigger_price
 ### 0.18.1
 ### Fixes
 * #45 Type conversion fixed

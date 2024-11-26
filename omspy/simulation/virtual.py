@@ -346,7 +346,12 @@ class FakeBroker(BaseModel):
         if "average_price" not in kwargs:
             price = kwargs.get("price", 0)
             trigger_price = kwargs.get("trigger_price", 0)
-            return max(price, trigger_price)
+            if isinstance(price, (int, float)) and isinstance(
+                trigger_price, (int, float)
+            ):
+                return max(price, trigger_price)
+            else:
+                return price or trigger_price
         else:
             return kwargs["average_price"]
 
