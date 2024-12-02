@@ -39,3 +39,19 @@ def test_trailing_with_order():
     assert trailing.order == co
     assert id(co.orders[0]) == id(order1) == id(trailing.order.orders[0])
     assert id(co.orders[1]) == id(order2) == id(trailing.order.orders[1])
+
+
+@pytest.mark.parametrize(
+    "test_input, expected",
+    [
+        ((1344, 1400, 1200), (None, None)),
+        ((1178, 1200, 1100, 1300), (None, 1300)),
+        ((1178, 1200, 1100, 1150), (None, 1150)),
+        ((100, 130, 120, None, 140), (140, None)),
+        ((100, 129, 120, 150, 110), (110, 150)),
+    ],
+)
+def test_get_trailing_stop_and_target(test_input, expected):
+    assert get_trailing_stop_and_target(*test_input) == trailing_values(
+        stop=expected[0], target=expected[1]
+    )
