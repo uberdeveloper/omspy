@@ -8,6 +8,23 @@ from collections import namedtuple
 trailing_values = namedtuple("trailing", ["stop", "target"], defaults=[None, None])
 
 
+def _get_trailing_stop_by_percent(
+    max_mtm: float, trailing_percent: float, trailing_step: Optional[float] = None
+) -> float:
+    """
+    max_mtm
+        max_mtm hit
+    trailing_percent
+        trailing_percentage, pass 10 percent as 10
+    """
+    if trailing_step:
+        m = (max_mtm // trailing_step) * trailing_step
+        print(m)
+        return m * (1 - (trailing_percent / 100))
+    else:
+        return max_mtm * (1 - (trailing_percent / 100))
+
+
 def get_trailing_stop_and_target(
     last_price: float,
     max_mtm: float,
@@ -16,6 +33,7 @@ def get_trailing_stop_and_target(
     trailing_stop: Optional[float] = None,
     trailing_percent: Optional[float] = None,
     trailing_mtm: Optional[float] = None,
+    trailing_step: Optional[float] = None,
     start_trailing_at: Optional[float] = None,
 ) -> trailing_values:
     """
@@ -35,6 +53,8 @@ def get_trailing_stop_and_target(
         this is the value at which the next trailing is done, in percentage
     trailing_mtm
         trailing mtm value, this is the value at which the next trailing is done, in absolute mtm
+    trailing_step
+        trailing step value, this is the value at which the next trailing is done, in absolute mtm
     start_trailing_at
         start trailing at this value, this is an absolute number
     returns

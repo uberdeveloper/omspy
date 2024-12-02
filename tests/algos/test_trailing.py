@@ -1,4 +1,5 @@
 from omspy.algos.trailing import *
+import omspy.algos.trailing as tl
 import pytest
 import pendulum
 from omspy.order import CompoundOrder, Order
@@ -39,6 +40,17 @@ def test_trailing_with_order():
     assert trailing.order == co
     assert id(co.orders[0]) == id(order1) == id(trailing.order.orders[0])
     assert id(co.orders[1]) == id(order2) == id(trailing.order.orders[1])
+
+
+def test_get_trailing_stop_by_percent():
+    assert tl._get_trailing_stop_by_percent(1000, 50) == 500
+    assert tl._get_trailing_stop_by_percent(1000, 0.5) == 995
+    assert tl._get_trailing_stop_by_percent(1000, 30) == 700
+
+
+def test_get_trailing_stop_by_percent_trailing_step():
+    assert tl._get_trailing_stop_by_percent(1174, 50, 100) == 550
+    assert tl._get_trailing_stop_by_percent(1174, 50, 30) == 585
 
 
 @pytest.mark.parametrize(
