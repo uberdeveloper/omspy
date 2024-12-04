@@ -1,0 +1,47 @@
+order_place:
+  side: buy_or_sell
+  product: product_type
+  symbol: tradingsymbol
+  disclosed_quantity: discloseqty
+  order_type: price_type
+  validity: retention
+  tag: remarks
+order_modify:
+  order_id: orderno
+  symbol: tradingsymbol
+  quantity: newquantity
+  price: newprice
+  trigger_price: newtrigger_price
+  validity: retention
+  disclosed_quantity: discloseqty
+positions:
+  tsym: symbol
+  netqty: quantity
+  lp: last_price
+  exch: exchange
+  daybuyamt: day_buy_value
+  daysellamt: day_sell_value
+orders:
+  tsym: symbol
+  qty: quantity
+  trantype: side
+  ret: validity
+  prc: price
+  trgprc: trigger_price
+  avgprc: average_price
+  fillshares: filled_quantity
+  norenordno: order_id
+  exch: exchange
+  exchordid: exchange_order_id
+  dscqty: disclosed_quantity
+  exch_tm: exchange_timestamp
+  norentm: broker_timestamp
+trades:
+  norenordno: order_id
+  exch: exchange
+  fltm: filled_timestamp
+  flqty: filled_quantity
+  exchordid: exchange_order_id
+  exch_tm: exchange_timestamp
+  norentm: broker_timestamp
+  flprc: price
