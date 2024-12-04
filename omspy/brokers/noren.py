@@ -137,3 +137,96 @@ class Noren(Broker):
         Cancel an existing order
         """
         return self.noren.cancel_order(orderno=order_id)
+
+    @property
+    @post
+    def orders(self) -> List[Dict]:
+        orderbook = self.noren.get_order_book()
+        if not orderbook:
+            return []
+
+        order_list = []
+        float_cols = ["avgprc", "prc", "rprc", "trgprc"]
+        int_cols = ["fillshares", "qty"]
+        for order in orderbook:
+            try:
+                for int_col in int_cols:
+                    order[int_col] = int(order.get(int_col, 0))
+                for float_col in float_cols:
+                    order[float_col] = float(order.get(float_col, 0))
+                ts = order["exch_tm"]
+                # Timestamp converted to str to facilitate loading into pandas dataframe
+                order["exchange_timestamp"] = str(
+                    pendulum.from_format(
+                        ts, fmt="DD-MM-YYYY HH:mm:ss", tz="Asia/Kolkata"
+                    )
+                )
+                ts2 = order["norentm"]
+                order["broker_timestamp"] = str(
+                    pendulum.from_format(
+                        ts2, fmt="HH:mm:ss DD-MM-YYYY", tz="Asia/Kolkata"
+                    )
+                )
+            except Exception as e:
+                logging.error(e)
+            order_list.append(order)
+        return order_list
+
+    @property
+    @post
+    def positions(self) -> List[Dict]:
+        positionbook = self.noren.get_positions()
+        if len(positionbook) == 0:
+            return positionbook
+
+        position_list = []
+        int_cols = [
+            "netqty",
+            "daybuyqty",
+            "daysellqty",
+            "cfbuyqty",
+            "cfsellqty",
+            "openbuyqty",
+            "opensellqty",
+        ]
+        float_cols = [
+            "daybuyamt",
+            "daysellamt",
+            "lp",
+            "rpnl",
+            "dayavgprc",
+            "daybuyavgprc",
+            "daysellavgprc",
+            "urmtom",
+        ]
+        for position in positionbook:
+            try:
+                for int_col in int_cols:
+                    position[int_col] = int(position.get(int_col, 0))
+                for float_col in float_cols:
+                    position[float_col] = float(position.get(float_col, 0))
+            except Exception as e:
+                logging.error(e)
+            position_list.append(position)
+        return position_list
+
+    @property
+    @post
+    def trades(self) -> List[Dict]:
+        tradebook = self.noren.get_trade_book()
+        if len(tradebook) == 0:
+            return tradebook
+
+        trade_list = []
+        int_cols = ["flqty", "qty", "fillshares"]
+        float_cols = ["prc", "flprc"]
+        for trade in tradebook:
+            try:
+                for int_col in int_cols:
+                    trade[int_col] = int(trade.get(int_col, 0))
+                for float_col in float_cols:
+                    trade[float_col] = float(trade.get(float_col, 0))
+            except Exception as e:
+                logging.error(e)
+            trade_list.append(trade)
+        return trade_list
