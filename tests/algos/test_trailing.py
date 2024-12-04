@@ -53,6 +53,23 @@ def test_get_trailing_stop_by_percent_trailing_step():
     assert tl._get_trailing_stop_by_percent(1174, 50, 30) == 585
 
 
+def test_get_trailing_stop_by_mtm():
+    assert tl._get_trailing_stop_by_mtm(1250, 300) == 950
+    assert tl._get_trailing_stop_by_mtm(1312, 117) == 1312 - 117
+
+
+def test_get_trailing_stop_by_mtm_trailing_step():
+    assert tl._get_trailing_stop_by_mtm(1154, 100) == 1054
+    assert tl._get_trailing_stop_by_mtm(1154, 100, 100) == 1000
+    assert tl._get_trailing_stop_by_mtm(1154, 100, 300) == 800
+    assert tl._get_trailing_stop_by_mtm(1154, 250, 300) == 650
+    assert tl._get_trailing_stop_by_mtm(380, 100, 500) == 500
+    for a, b in zip(
+        (214, 314, 514, 628, 1324, 1500, 1800), (600, 600, 600, 600, 1100, 1100, 1700)
+    ):
+        assert tl._get_trailing_stop_by_mtm(a, 100, 600) == b
+
+
 @pytest.mark.parametrize(
     "test_input, expected",
     [

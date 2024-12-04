@@ -16,13 +16,36 @@ def _get_trailing_stop_by_percent(
         max_mtm hit
     trailing_percent
         trailing_percentage, pass 10 percent as 10
+    trailing_step
+        optional trailing step
     """
     if trailing_step:
         m = (max_mtm // trailing_step) * trailing_step
-        print(m)
         return m * (1 - (trailing_percent / 100))
     else:
         return max_mtm * (1 - (trailing_percent / 100))
+
+
+def _get_trailing_stop_by_mtm(
+    max_mtm: float, trailing_mtm: float, trailing_step: Optional[float] = None
+) -> float:
+    """
+    get the trailing stop by mtm value
+    max_mtm
+        max mtm hit
+    trailing_mtm
+        trailing value of mtm, this is the mtm at which trailing is reset
+    trailing_step
+        optional trailing step, this is the distance to be maintained between max_mtm and trailing stop
+    Note
+    -----
+    1) If trailing_step is not given, trailing_stop will be max_mtm - trailing_mtm
+    2) If trailing_step is greater than trailing mtm, then trailing_stop will be trailing_step
+    """
+    if trailing_step:
+        m = (max_mtm // trailing_step) * trailing_step
+        return max(m - trailing_mtm, trailing_step)
+    return max_mtm - trailing_mtm
 
 
 def get_trailing_stop_and_target(
