@@ -165,6 +165,7 @@ class Trailing(BaseModel):
     connection: Optional[Database] = None
     order: Optional[CompoundOrder] = None
     ltp: dict[str, float] = Field(default_factory=dict)
+    _can_start_mtm_trailing: bool = False
 
     class Config:
         underscore_attrs_are_private = True
@@ -174,3 +175,21 @@ class Trailing(BaseModel):
         super().__init__(**data)
         if self.order is None:
             self.order = CompoundOrder(broker=self.broker, connection=self.connection)
+
+    @property
+    def can_start_mtm_trailing(self) -> bool:
+        return self._can_start_mtm_trailing
+
+    @property
+    def mtm(self) -> float:
+        return self.order.total_mtm
+
+    @property
+    def can_trail(self) -> bool:
+        time_trail = self.start_time <= pendulum.now(tz="local") <= self.end_time
+        if self.start_trailing_at:
+            if not self._can_start_mtm_trailing:
+                self._can_start_mtm_trailing = self.mtm >= self.start_trailing_at
+            return time_trail and self.can_start_mtm_trailing
+        else:
+            return time_trail

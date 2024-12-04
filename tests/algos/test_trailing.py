@@ -3,6 +3,7 @@ import omspy.algos.trailing as tl
 import pytest
 import pendulum
 from omspy.order import CompoundOrder, Order
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -120,3 +121,36 @@ def test_get_trailing_stop_and_target(test_input, expected):
     assert get_trailing_stop_and_target(*test_input) == trailing_values(
         stop=expected[0], target=expected[1]
     )
+
+
+def test_can_start_trail_time(simple):
+    s = simple
+    s.start_trailing_at = None
+    known = pendulum.datetime(2025, 1, 1, tz="local")
+    with pendulum.travel_to(known):
+        pendulum.travel(hours=8, minutes=59)
+        assert s.can_trail is False
+        pendulum.travel(minutes=1)
+        assert s.can_trail is True
+        pendulum.travel(hours=3)
+        assert s.can_trail is True
+        pendulum.travel(hours=3, minutes=21)
+        assert s.can_trail is False
+        # Change time
+        s.end_time = pendulum.datetime(2025, 1, 1, 16, tz="local")
+        assert s.can_trail is True
+
+
+def test_can_start_trail_start_trailing_at(simple):
+    s = simple
+    assert s.mtm == 0
+    assert s.order.count == 0
+    known = pendulum.datetime(2025, 1, 1, 9, 15, tz="local")
+    with pendulum.travel_to(known):
+        assert s.can_trail is False
+        values = (900, 1000, 1100, 950)
+        expected = (False, True, True, True)
+        # Once mtm is greater than start_trailing_at, trailing must start even if it comes down afterwards
+        for v, e in zip(values, expected):
+            with patch("omspy.algos.trailing.Trailing.mtm", v):
+                assert s.can_trail is e
