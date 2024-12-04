@@ -8,6 +8,13 @@ from collections import namedtuple
 trailing_values = namedtuple("trailing", ["stop", "target"], defaults=[None, None])
 
 
+class TrailingResult(NamedTuple):
+    done: bool
+    stop: Optional[float] = None
+    target: Optional[float] = None
+    next_trail_at: Optional[float] = None
+
+
 def _get_trailing_stop_by_percent(
     max_mtm: float, trailing_percent: float, trailing_step: Optional[float] = None
 ) -> float:
@@ -164,8 +171,10 @@ class Trailing(BaseModel):
     broker: Optional[Any] = None
     connection: Optional[Database] = None
     order: Optional[CompoundOrder] = None
-    ltp: dict[str, float] = Field(default_factory=dict)
+    ltps: dict[str, float] = Field(default_factory=dict)
     _can_start_mtm_trailing: bool = False
+    _next_trail: Optional[float] = None
+    _previous_trail: Optional[float] = None
 
     class Config:
         underscore_attrs_are_private = True
@@ -181,6 +190,14 @@ class Trailing(BaseModel):
         return self._can_start_mtm_trailing
 
     @property
+    def next_trail(self) -> Optional[float]:
+        return self._next_trail
+
+    @property
+    def previous_trail(self) -> Optional[float]:
+        return self._previous_trail
+
+    @property
     def mtm(self) -> float:
         return self.order.total_mtm
 
@@ -193,3 +210,23 @@ class Trailing(BaseModel):
             return time_trail and self.can_start_mtm_trailing
         else:
             return time_trail
+
+    def add(self, order: Order) -> None:
+        """
+        Add an order to the existing compound order
+        """
+        self.order.add(order)
+
+    def trailing(self) -> TrailingResult:
+        """
+        return the trailing result
+        """
+        pass
+
+    def run(self, data: dict[str, float]) -> None:
+        """
+        run the trailing logic with ltp data
+        data
+            ltp data as dictionary
+        """
+        self.ltp.update(data)

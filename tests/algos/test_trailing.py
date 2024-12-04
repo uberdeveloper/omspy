@@ -154,3 +154,10 @@ def test_can_start_trail_start_trailing_at(simple):
         for v, e in zip(values, expected):
             with patch("omspy.algos.trailing.Trailing.mtm", v):
                 assert s.can_trail is e
+
+
+def test_add(simple):
+    s = simple
+    assert s.order.count == 0
+    s.add(Order(symbol="AAPL", side="BUY", quantity=100))
+    assert s.order.count == 1
