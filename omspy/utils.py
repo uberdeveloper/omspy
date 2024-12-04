@@ -189,18 +189,24 @@ def load_broker(
     from omspy.brokers.finvasia import Finvasia
     from omspy.brokers.icici import Icici
     from omspy.brokers.neo import Neo
+    from omspy.brokers.noren import Noren
 
     broker_mapping = {
         "zerodha": Zerodha,
         "finvasia": Finvasia,
         "icici": Icici,
         "neo": Neo,
+        "noren": Noren,
     }
+    print(broker_mapping)
+    print(credentials)
 
     def _load_instance(creds):
         try:
             name = creds["name"].lower()
+            print(name)
             broker_module = broker_mapping[name]
+            print(name, broker_module)
             if broker_module:
                 try:
                     broker = broker_module(**creds["config"])

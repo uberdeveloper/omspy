@@ -17,11 +17,16 @@ def _get_trailing_stop_by_percent(
     trailing_percent
         trailing_percentage, pass 10 percent as 10
     trailing_step
-        optional trailing step
+        optional trailing step as absolute value
     """
+    # TODO: Handle percentages greater than 100
     if trailing_step:
         m = (max_mtm // trailing_step) * trailing_step
-        return m * (1 - (trailing_percent / 100))
+        calc = m * (1 - (trailing_percent / 100))
+        if calc >= 0:
+            return max(calc, trailing_step)
+        else:
+            return calc + trailing_step * 0.5
     else:
         return max_mtm * (1 - (trailing_percent / 100))
 
@@ -44,8 +49,11 @@ def _get_trailing_stop_by_mtm(
     """
     if trailing_step:
         m = (max_mtm // trailing_step) * trailing_step
-        return max(m - trailing_mtm, trailing_step)
-    return max_mtm - trailing_mtm
+        if max_mtm >= 0:
+            return max(m - trailing_mtm, trailing_step)
+        else:
+            return m + trailing_mtm + trailing_step
+    return max_mtm - trailing_mtm if max_mtm >= 0 else max_mtm + trailing_mtm
 
 
 def get_trailing_stop_and_target(

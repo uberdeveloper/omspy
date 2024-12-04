@@ -51,6 +51,22 @@ def test_get_trailing_stop_by_percent():
 def test_get_trailing_stop_by_percent_trailing_step():
     assert tl._get_trailing_stop_by_percent(1174, 50, 100) == 550
     assert tl._get_trailing_stop_by_percent(1174, 50, 30) == 585
+    assert tl._get_trailing_stop_by_percent(412, 50, 500) == 500
+
+
+def test_get_trailing_stop_by_percent_negative():
+    assert tl._get_trailing_stop_by_percent(-1000, 50) == -500
+    assert round(tl._get_trailing_stop_by_percent(-1364, 19), 2) == -1104.84
+    assert tl._get_trailing_stop_by_percent(-1034, 50, 300) == -450
+
+
+def test_get_trailing_stop_by_percent_symmetry():
+    assert tl._get_trailing_stop_by_percent(
+        1000, 50
+    ) == -tl._get_trailing_stop_by_percent(-1000, 50)
+    assert tl._get_trailing_stop_by_percent(
+        1150, 50, 300
+    ) == -tl._get_trailing_stop_by_percent(-1150, 50, 300)
 
 
 def test_get_trailing_stop_by_mtm():
@@ -68,6 +84,26 @@ def test_get_trailing_stop_by_mtm_trailing_step():
         (214, 314, 514, 628, 1324, 1500, 1800), (600, 600, 600, 600, 1100, 1100, 1700)
     ):
         assert tl._get_trailing_stop_by_mtm(a, 100, 600) == b
+
+
+def test_get_trailing_stop_by_mtm_negative():
+    assert tl._get_trailing_stop_by_mtm(-1250, 300) == -950
+    assert tl._get_trailing_stop_by_mtm(-1312, 117) == -1195
+    assert tl._get_trailing_stop_by_mtm(-1273, 100, 200) == -1100
+    assert tl._get_trailing_stop_by_mtm(-3274, 380, 500) == -2620
+    assert tl._get_trailing_stop_by_mtm(-3274, 500, 380) == -2540
+
+
+def test_get_trailing_stop_by_mtm_symmetry():
+    assert tl._get_trailing_stop_by_mtm(1000, 50) == -tl._get_trailing_stop_by_mtm(
+        -1000, 50
+    )
+    assert tl._get_trailing_stop_by_mtm(
+        1150, 220, 300
+    ) == -tl._get_trailing_stop_by_mtm(-1150, 220, 300)
+    assert tl._get_trailing_stop_by_mtm(
+        1150, 300, 220
+    ) == -tl._get_trailing_stop_by_mtm(-1150, 300, 220)
 
 
 @pytest.mark.parametrize(
