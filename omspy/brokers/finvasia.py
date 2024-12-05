@@ -86,13 +86,16 @@ class Finvasia(Broker):
                     order[int_col] = int(order.get(int_col, 0))
                 for float_col in float_cols:
                     order[float_col] = float(order.get(float_col, 0))
-                ts = order["exch_tm"]
-                # Timestamp converted to str to facilitate loading into pandas dataframe
-                order["exchange_timestamp"] = str(
-                    pendulum.from_format(
-                        ts, fmt="DD-MM-YYYY HH:mm:ss", tz="Asia/Kolkata"
+                ts = order.get("exch_tm")
+                if ts:
+                    # Timestamp converted to str to facilitate loading into pandas dataframe
+                    order["exchange_timestamp"] = str(
+                        pendulum.from_format(
+                            ts, fmt="DD-MM-YYYY HH:mm:ss", tz="Asia/Kolkata"
+                        )
                     )
-                )
+                else:
+                    order["exchange_timestamp"] = None
                 ts2 = order["norentm"]
                 order["broker_timestamp"] = str(
                     pendulum.from_format(

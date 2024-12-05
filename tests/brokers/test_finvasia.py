@@ -407,5 +407,14 @@ def test_order_modify_from_order_attribs_to_copy_from_broker(simple, broker):
         newtrigger_price=0,
         exchange="NSE",
     )
-    print(broker.finvasia.modify_order.call_args)
     assert broker.finvasia.modify_order.call_args.kwargs == order_args
+
+
+def test_orders_invalid_broker_timestamp(broker):
+    with open(DATA_ROOT / "finvasia" / "orders.json", "r") as f:
+        orders = json.load(f)
+        broker.finvasia.get_order_book.return_value = orders
+        orders[0].pop("exch_tm", None)
+    fetched = broker.orders
+    assert len(fetched) == 9
+    fetched[0]["broker_timestamp"] = None
