@@ -100,7 +100,8 @@ def get_trailing_stop_and_target(
         None if only last price is given
     Note
     ----
-    1) provide either trailing_percent or trailing_mtm, if both are given, trailing_percent takes precedence
+    1) provide either trailing_percent or trailing_mtm, if both are given,
+    trailing_percent takes precedence
     """
 
     def all_none() -> bool:
@@ -127,6 +128,15 @@ def get_trailing_stop_and_target(
         return trailing_values(stop=trailing_stop)
     if target and trailing_stop and trailing_none():
         return trailing_values(target=target, stop=trailing_stop)
+    if trailing_percent:
+        stop = _get_trailing_stop_by_percent(max_mtm, trailing_percent, trailing_step)
+        if start_trailing_at:
+            if max_mtm >= start_trailing_at:
+                return trailing_values(stop=stop, target=target)
+            else:
+                return trailing_values(stop=trailing_stop, target=target)
+
+        return trailing_values(stop=stop, target=target)
 
 
 class Trailing(BaseModel):
