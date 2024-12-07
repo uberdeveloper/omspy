@@ -137,6 +137,15 @@ def get_trailing_stop_and_target(
                 return trailing_values(stop=trailing_stop, target=target)
 
         return trailing_values(stop=stop, target=target)
+    if trailing_mtm:
+        # TODO: Check for max trailing stop if mtm greater than trailing stop
+        stop = _get_trailing_stop_by_mtm(max_mtm, trailing_mtm, trailing_step)
+        if start_trailing_at:
+            if max_mtm >= start_trailing_at:
+                return trailing_values(stop=stop, target=target)
+            else:
+                return trailing_values(stop=trailing_stop, target=target)
+        return trailing_values(stop=stop, target=target)
 
 
 class Trailing(BaseModel):
