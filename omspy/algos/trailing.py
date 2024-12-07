@@ -64,9 +64,7 @@ def _get_trailing_stop_by_mtm(
 
 
 def get_trailing_stop_and_target(
-    last_price: float,
     max_mtm: float,
-    min_mtm: float,
     target: Optional[float] = None,
     trailing_stop: Optional[float] = None,
     trailing_percent: Optional[float] = None,
@@ -236,11 +234,25 @@ class Trailing(BaseModel):
         """
         self.order.add(order)
 
-    def trailing(self) -> TrailingResult:
+    def get_trailing(self) -> TrailingResult:
         """
         return the trailing result
         """
-        pass
+        if self.can_trail:
+            mtm = self.mtm
+            result = get_trailing_stop_and_target(
+                max_mtm=mtm,
+                target=self.target,
+                trailing_stop=self.trailing_stop,
+                trailing_percent=self.trailing_percent,
+                trailing_mtm=self.trailing_mtm,
+                trailing_step=self.trailing_step,
+                start_trailing_at=self.start_trailing_at,
+            )
+            return TrailingResult(
+                stop=result.stop,
+                target=result.target,
+            )
 
     def run(self, data: dict[str, float]) -> None:
         """
