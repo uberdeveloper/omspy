@@ -760,13 +760,21 @@ class ReplicaBroker(BaseModel):
         order = VOrder(order_id=order_id, **kwargs)
         self._user_orders[user].append(order)
         self.orders[order_id] = order
-        self.pending.append(order)
 
         symbol = order.symbol
-        last_price = self.instruments[symbol].last_price
-        fill = OrderFill(order=order, last_price=last_price)
-        self.fills.append(fill)
-        return order
+        if symbol not in self.instruments:
+            logging.warning(f"Symbol {symbol} not found on the system")
+            order.status_message = f"REJECTED: Symbol {symbol} not found on the system"
+            order.canceled_quantity = order.quantity
+            order.pending_quantity = 0
+            self.completed.append(order)
+            return order
+        else:
+            last_price = self.instruments[symbol].last_price
+            fill = OrderFill(order=order, last_price=last_price)
+            self.pending.append(order)
+            self.fills.append(fill)
+            return order
 
     def order_modify(self, order_id: str, **kwargs) -> VOrder:
         """

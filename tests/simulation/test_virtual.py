@@ -1041,3 +1041,23 @@ def test_fake_broker_average_price_fill_none():
         symbol="AAPL", side=1, quantity=10, price=None, trigger_price=None
     )
     assert response.average_price == 0.0
+
+
+def test_replica_broker_no_symbol(replica_with_instruments):
+    broker = replica_with_instruments
+    order1 = broker.order_place(symbol="AAPL", side=1, quantity=10)
+    assert len(broker.fills) == 1
+    assert order1.pending_quantity == 10
+    assert order1.quantity == order1.pending_quantity
+    assert order1.status == Status.OPEN
+    assert order1.is_done is False
+    order2 = broker.order_place(symbol="yinyang", side=1, quantity=10)
+    assert len(broker.fills) == 1
+    assert len(broker.pending) == 1
+    assert len(broker.completed) == 1
+    assert order2.is_complete is False
+    assert order2.is_done is True
+    assert order2.filled_quantity == 0
+    assert order2.pending_quantity == 0
+    assert order2.canceled_quantity == 10
+    assert order2.status == Status.REJECTED
