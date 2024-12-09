@@ -1,3 +1,16 @@
+### 0.19.0
+### Breaking Changes
+* **Kotak** broker removed. Deprecated code available at [omspy-brokers](https://github.com/uberdeveloper/omspy-brokers)
+### Features
+* New algo for trailing added in `algos/trailing`
+* New broker `Noren` added
+### Improvements
+* `FakeBroker` return formats improved. See #42
+* All brokers must return orders as empty list if no orders are found (instead of a dictionary inside list or other format)
+### Fixes
+* exch_tm error fixed for `Finvasia` broker #46.
+* `ReplicaBroker` not to raise error if instruments not available #41.
+
 ### 0.18.2
 ### Fixes
 * average_price for `FakeBroker` would take care of None values in price or trigger_price
