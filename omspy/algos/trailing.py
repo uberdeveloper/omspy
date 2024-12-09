@@ -184,7 +184,6 @@ class Trailing(BaseModel):
     trailing_percent: Optional[float] = None
     trailing_mtm: Optional[float] = None
     cycle: int = 0
-    done: bool = False
     broker: Optional[Any] = None
     connection: Optional[Database] = None
     order: Optional[CompoundOrder] = None
@@ -201,6 +200,16 @@ class Trailing(BaseModel):
         super().__init__(**data)
         if self.order is None:
             self.order = CompoundOrder(broker=self.broker, connection=self.connection)
+
+    @property
+    def done(self) -> bool:
+        if self.mtm:
+            # Force extreme values in case of None
+            target = self.target or 1e100
+            stop = -(self.trailing_stop or 1e100)
+            return self.mtm >= target or self.mtm <= stop
+        else:
+            return False
 
     @property
     def can_start_mtm_trailing(self) -> bool:
@@ -260,4 +269,4 @@ class Trailing(BaseModel):
         data
             ltp data as dictionary
         """
-        self.ltp.update(data)
+        self.order.ltp.update(data)

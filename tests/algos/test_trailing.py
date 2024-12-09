@@ -27,6 +27,7 @@ def test_defaults(simple):
     assert s.trailing_stop == 500
     assert s.trailing_step == 300
     assert isinstance(s.order, CompoundOrder)
+    assert s.done is False
 
 
 def test_trailing_with_order():
@@ -207,8 +208,37 @@ def test_can_start_trail_start_trailing_at(simple):
                 assert s.can_trail is e
 
 
-def test_add(simple):
+def test_trailing_add(simple):
     s = simple
     assert s.order.count == 0
     s.add(Order(symbol="AAPL", side="BUY", quantity=100))
     assert s.order.count == 1
+
+
+def test_trailing_done(simple):
+    s = simple
+    assert s.done is False
+    s.add(
+        Order(
+            symbol="AAPL",
+            side="BUY",
+            quantity=100,
+            filled_quantity=100,
+            average_price=100,
+        )
+    )
+    s.run({"AAPL": 100})
+    assert s.done is False
+    s.target = 2000
+    values = (94.8, 102, 107, 128)
+    expected = (True, False, False, True)
+    for v, e in zip(values, expected):
+        s.run({"AAPL": v})
+        assert s.done is e
+    # set stop and target to none and check
+    s.trailing_stop = None
+    s.target = None
+    s.run({"AAPL": 1e50})
+    assert s.done is False
+    s.run({"AAPL": 0})
+    assert s.done is False
