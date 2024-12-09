@@ -68,7 +68,7 @@ def test_orders_empty_orderbook(mock_kite):
     broker = mock_kite
     broker.kite.orders.return_value = {}
     orders = broker.orders
-    assert orders == [{}]
+    assert orders == []
 
 
 def test_trades(mock_kite):

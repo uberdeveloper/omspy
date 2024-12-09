@@ -189,7 +189,7 @@ def test_orders_no_data(mock_neo, mock_data):
     )
     broker = mock_neo
     orders = broker.orders
-    assert orders == [{}]
+    assert orders == []
 
 
 def test_orders_positions_quantity(mock_neo, mock_data):
