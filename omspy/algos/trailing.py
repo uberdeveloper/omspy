@@ -190,7 +190,6 @@ class Trailing(BaseModel):
     ltps: dict[str, float] = Field(default_factory=dict)
     _can_start_mtm_trailing: bool = False
     _next_trail: Optional[float] = None
-    _previous_trail: Optional[float] = None
 
     class Config:
         underscore_attrs_are_private = True
@@ -220,10 +219,6 @@ class Trailing(BaseModel):
         return self._next_trail
 
     @property
-    def previous_trail(self) -> Optional[float]:
-        return self._previous_trail
-
-    @property
     def mtm(self) -> float:
         return self.order.total_mtm
 
@@ -243,10 +238,12 @@ class Trailing(BaseModel):
         """
         self.order.add(order)
 
-    def get_trailing(self) -> TrailingResult:
+    def update(self, data: dict[str, float]) -> TrailingResult:
         """
         return the trailing result
         """
+        self.ltps.update(data)
+        self.order.ltp.update(data)
         if self.can_trail:
             mtm = self.mtm
             result = get_trailing_stop_and_target(
@@ -258,10 +255,27 @@ class Trailing(BaseModel):
                 trailing_step=self.trailing_step,
                 start_trailing_at=self.start_trailing_at,
             )
-            return TrailingResult(
-                stop=result.stop,
-                target=result.target,
-            )
+            tstop = result.stop
+            if tstop:
+                if tstop != self.trailing_stop:
+                    # Trailing stop must always be an increasing value
+                    # Do not revert back trailing stop to a lower value
+                    self.trailing_stop = max(self.trailing_stop, tstop)
+                    if self.trailing_step:
+                        nt = (
+                            mtm // self.trailing_step
+                        ) * self.trailing_step + self.trailing_step
+                        if self.next_trail:
+                            self._next_trail = max(nt, self.next_trail)
+                        else:
+                            self._next_trail = nt
+
+        return TrailingResult(
+            done=self.done,
+            stop=self.trailing_stop,
+            target=self.target,
+            next_trail_at=self.next_trail,
+        )
 
     def run(self, data: dict[str, float]) -> None:
         """

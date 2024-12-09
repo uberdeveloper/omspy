@@ -19,6 +19,24 @@ def simple():
         )
 
 
+@pytest.fixture
+def simple_with_orders(simple):
+    s = simple
+    s.trailing_mtm = 400
+    s.target = 2500
+    order1 = Order(
+        symbol="AAPL", side="BUY", quantity=750, filled_quantity=100, average_price=750
+    )
+    order2 = Order(
+        symbol="MSFT", side="BUY", quantity=200, filled_quantity=200, average_price=400
+    )
+    s.add(order1)
+    s.add(order2)
+    s.ltps = dict(AAPL=750, MSFT=400)
+    s.order.ltp.update(s.ltps)
+    return s
+
+
 def test_defaults(simple):
     s = simple
     assert s.start_time == pendulum.datetime(2025, 1, 1, 9, tz="local")
@@ -112,6 +130,7 @@ def test_get_trailing_stop_by_mtm_symmetry():
     "test_input, expected",
     [
         ((1400,), (None, None)),
+        ((-300, 600, 200), (200, 600)),
         ((1200, 1300), (None, 1300)),
         ((1178, 1150), (None, 1150)),
         ((130, None, 140), (140, None)),
@@ -141,6 +160,7 @@ def test_get_trailing_stop_by_mtm_symmetry():
     ],
     ids=[
         "no_tgt_no_stop",
+        "mtm_lt_stop",
         "tgt_no_stop",
         "tgt_no_stop2",
         "no_tgt_stop",
@@ -242,3 +262,41 @@ def test_trailing_done(simple):
     assert s.done is False
     s.run({"AAPL": 0})
     assert s.done is False
+
+
+def test_trailing_update(simple_with_orders):
+    s = simple_with_orders
+    assert s.mtm == 0
+    known = pendulum.datetime(2025, 1, 1, tz="local")
+    with pendulum.travel_to(known.add(hours=10)):
+        result = s.update(dict())
+        expected = TrailingResult(
+            done=False,
+            stop=500,
+            target=2500,
+            next_trail_at=None,
+        )
+        assert result == expected
+        result = s.update({"AAPL": 770})
+        expected = TrailingResult(
+            done=False,
+            stop=1400,
+            target=2500,
+            next_trail_at=2100,
+        )
+        assert result == expected
+        assert s.trailing_stop == 1400
+        assert s.next_trail == 2100
+        assert s.done is False
+        # Do not update trailing stop if price goes down
+        result = s.update({"AAPL": 760})
+        assert result == expected
+        assert s.done is False
+        # test target
+        result = s.update({"MSFT": 490})
+        expected = TrailingResult(
+            done=True, stop=18500, target=2500, next_trail_at=19200
+        )
+        assert s.done is True
+        assert s.trailing_stop == 18500
+        assert result == expected
