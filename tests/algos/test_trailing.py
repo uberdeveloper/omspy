@@ -5,6 +5,8 @@ import pendulum
 from omspy.order import CompoundOrder, Order
 from unittest.mock import patch
 
+# TODO: Add an integrated unit test
+
 
 @pytest.fixture
 def simple():
@@ -48,7 +50,7 @@ def test_defaults(simple):
     assert s.done is False
 
 
-def test_trailing_with_order():
+def test_trailing_with_order_same_memory_id():
     co = CompoundOrder()
     order1 = Order(symbol="AAPL", side="BUY", quantity=100)
     co.add(order1)
@@ -60,6 +62,19 @@ def test_trailing_with_order():
     assert trailing.order == co
     assert id(co.orders[0]) == id(order1) == id(trailing.order.orders[0])
     assert id(co.orders[1]) == id(order2) == id(trailing.order.orders[1])
+
+
+def test_trailing_with_order_same_memory_id2():
+    # Testing orders individually
+    order1 = Order(symbol="AAPL", side="BUY", quantity=100)
+    order2 = Order(symbol="AAPL", side="SELL", quantity=100)
+    trailing = Trailing(
+        start_time=pendulum.now(), end_time=pendulum.now().add(hours=15)
+    )
+    trailing.add(order1)
+    trailing.add(order2)
+    assert id(order1) == id(trailing.order.orders[0])
+    assert id(order2) == id(trailing.order.orders[1])
 
 
 def test_get_trailing_stop_by_percent():
@@ -300,3 +315,18 @@ def test_trailing_update(simple_with_orders):
         assert s.done is True
         assert s.trailing_stop == 18500
         assert result == expected
+
+
+def test_trailing_update_stop(simple_with_orders):
+    s = simple_with_orders
+    assert s.mtm == 0
+    known = pendulum.datetime(2025, 1, 1, tz="local")
+    with pendulum.travel_to(known.add(hours=10)):
+        result = s.update({"AAPL": 748})
+        expected = TrailingResult(done=False, stop=500, target=2500, next_trail_at=None)
+        assert result == expected
+        assert s.done is False
+        result = s.update({"AAPL": 744.5})
+        expected = TrailingResult(done=True, stop=500, target=2500, next_trail_at=None)
+        assert result == expected
+        assert s.done is True
