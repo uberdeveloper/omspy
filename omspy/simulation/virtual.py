@@ -356,7 +356,7 @@ class FakeBroker(BaseModel):
             return kwargs["average_price"]
 
     @user_response
-    def order_place(self, **kwargs) -> Union[VOrder, str]:
+    def order_place(self, **kwargs) -> Union[VOrder, str, dict]:
         """
         Place an order with the broker
         """
@@ -383,6 +383,11 @@ class FakeBroker(BaseModel):
         order_args.update(kwargs)
         if self.return_order_id_only:
             return order_id
+        if kwargs.pop("asdict", None):
+            order = VOrder(order_id=order_id, **order_args)
+            dct = order.dict()
+            dct["status"] = order.status
+            return dct
         return VOrder(order_id=order_id, **order_args)
 
     @user_response
@@ -398,6 +403,11 @@ class FakeBroker(BaseModel):
         modify_args["average_price"] = self._avg_fill_price(**kwargs)
         if self.return_order_id_only:
             return order_id
+        if kwargs.pop("asdict", None):
+            order = VOrder(order_id=order_id, **modify_args)
+            dct = order.dict()
+            dct["status"] = order.status
+            return dct
         return VOrder(order_id=order_id, **modify_args)
 
     @user_response
@@ -414,6 +424,11 @@ class FakeBroker(BaseModel):
         cancel_args["average_price"] = self._avg_fill_price(**kwargs)
         if self.return_order_id_only:
             return order_id
+        if kwargs.pop("asdict", None):
+            order = VOrder(order_id=order_id, **cancel_args)
+            dct = order.dict()
+            dct["status"] = order.status
+            return dct
         return VOrder(order_id=order_id, **cancel_args)
 
     @user_response

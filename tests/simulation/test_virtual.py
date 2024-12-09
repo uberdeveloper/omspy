@@ -429,6 +429,23 @@ def test_fake_broker_order_place_kwargs():
     assert order.canceled_quantity == 0
 
 
+def test_fake_broker_order_place_dict():
+    b = FakeBroker()
+    random.seed(1000)
+    order = b.order_place(
+        symbol="aapl", price=360, trigger_price=320, side=1, asdict=True
+    )
+    assert "status" in order
+    assert order["symbol"] == "aapl"
+    assert order["quantity"] == 7038
+    assert order["side"] == Side.BUY
+    assert order["price"] == 360
+    assert order["trigger_price"] == 320
+    assert order["filled_quantity"] == 7038
+    assert order["pending_quantity"] == 0
+    assert order["canceled_quantity"] == 0
+
+
 def test_fake_broker_quote():
     b = FakeBroker()
     random.seed(1200)
@@ -621,6 +638,15 @@ def test_fake_broker_order_modify_kwargs():
     assert order.side == Side.SELL
 
 
+def test_fake_broker_order_modify_dict():
+    b = FakeBroker()
+    order = b.order_modify(quantity=100, side=-1, order_id="abcd", asdict=True)
+    assert order["status"] == Status.OPEN
+    assert order["quantity"] == 100
+    assert order["order_id"] == "abcd"
+    assert order["side"] == Side.SELL
+
+
 def test_fake_broker_order_cancel():
     b = FakeBroker()
     order = b.order_cancel()
@@ -635,6 +661,14 @@ def test_fake_broker_order_cancel_kwargs():
     assert order.status == Status.CANCELED
     assert order.symbol == "amzn"
     assert order.price == 188.4
+
+
+def test_fake_broker_order_cancel_dict():
+    b = FakeBroker()
+    order = b.order_cancel(symbol="amzn", price=188.4, asdict=True)
+    assert order["status"] == Status.CANCELED
+    assert order["symbol"] == "amzn"
+    assert order["price"] == 188.4
 
 
 def test_fake_broker_positions():
