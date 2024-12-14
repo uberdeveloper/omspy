@@ -104,6 +104,7 @@ class PegExisting(BaseModel):
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
+        self.order = data["order"]
         self._max_pegs = int(self.duration / self.peg_every)
         self._num_pegs = 0
         self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
@@ -198,6 +199,7 @@ class PegSequential(BaseModel):
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
+        self.orders = data["orders"]
         if self.order_args is None:
             self.order_args = {}
         if self.modify_args is None:

@@ -7,6 +7,7 @@ from unittest.mock import patch, call
 from omspy.brokers.zerodha import Zerodha
 from pydantic import ValidationError
 from copy import deepcopy
+from omspy.simulation.virtual import FakeBroker
 
 
 @pytest.fixture
@@ -214,6 +215,14 @@ def test_existing_peg_defaults():
         assert peg._max_pegs == 3
 
 
+def test_existing_peg_same_memory():
+    order = Order(symbol="amzn", quantity=20, side="buy")
+    peg = PegExisting(order=order, broker=FakeBroker())
+    peg.execute()
+    assert peg.order.order_id == order.order_id
+    assert id(peg.order) == id(order)
+
+
 def test_existing_peg_order_place(existing_peg):
     peg = existing_peg
     peg.execute()
@@ -419,6 +428,9 @@ def test_peg_sequential_defaults(order_list):
         assert peg.peg_every == 4
         assert peg.done is False
         assert peg._start_time == known
+    assert id(orders[0]) == id(peg.get_current_order().order)
+    for o, p in zip(orders, peg.orders):
+        assert id(o) == id(p)
 
 
 def test_peg_sequential_valid_orders():
@@ -593,9 +605,6 @@ def test_peg_sequential_cancel_all(sequential_peg):
 
 def test_peg_sequential_dont_execute_after_time(sequential_peg):
     peg = sequential_peg
-    print(peg.duration, peg.peg_every)
-    print([o.symbol for o in peg.orders])
-    print([o.convert_to_market_after_expiry for o in peg.orders])
     known = pendulum.datetime(2022, 1, 1, 10, tz="local")
     ltp1 = dict(aapl=100, goog=200, amzn=300, dow=400)
     for i in (5, 10, 30, 50, 60):
