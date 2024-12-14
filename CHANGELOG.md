@@ -1,3 +1,7 @@
+### 0.19.1
+### Fixes
+* Same memory id for `PegExisting` order. See #21
+* Negative mtm for trailing algo fixed #49
 ### 0.19.0
 ### Breaking Changes
 * **Kotak** broker removed. Deprecated code available at [omspy-brokers](https://github.com/uberdeveloper/omspy-brokers)
