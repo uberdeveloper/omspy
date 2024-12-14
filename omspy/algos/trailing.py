@@ -205,7 +205,7 @@ class Trailing(BaseModel):
         if self.mtm:
             # Force extreme values in case of None
             target = self.target or 1e100
-            stop = -(self.trailing_stop or 1e100)
+            stop = self.trailing_stop or -1e100
             return self.mtm >= target or self.mtm <= stop
         else:
             return False

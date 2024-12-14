@@ -16,7 +16,7 @@ def simple():
             start_time=known.add(hours=9),
             end_time=known.now().add(hours=15),
             start_trailing_at=1000,
-            trailing_stop=500,
+            trailing_stop=-500,
             trailing_step=300,
         )
 
@@ -44,7 +44,7 @@ def test_defaults(simple):
     assert s.start_time == pendulum.datetime(2025, 1, 1, 9, tz="local")
     assert s.end_time == pendulum.datetime(2025, 1, 1, 15, tz="local")
     assert s.start_trailing_at == 1000
-    assert s.trailing_stop == 500
+    assert s.trailing_stop == -500
     assert s.trailing_step == 300
     assert isinstance(s.order, CompoundOrder)
     assert s.done is False
@@ -269,6 +269,7 @@ def test_trailing_done(simple):
     expected = (True, False, False, True)
     for v, e in zip(values, expected):
         s.run({"AAPL": v})
+        print(v, e, s.done)
         assert s.done is e
     # set stop and target to none and check
     s.trailing_stop = None
@@ -281,13 +282,14 @@ def test_trailing_done(simple):
 
 def test_trailing_update(simple_with_orders):
     s = simple_with_orders
+    s.trailing_stop = -1000
     assert s.mtm == 0
     known = pendulum.datetime(2025, 1, 1, tz="local")
     with pendulum.travel_to(known.add(hours=10)):
         result = s.update(dict())
         expected = TrailingResult(
             done=False,
-            stop=500,
+            stop=-1000,
             target=2500,
             next_trail_at=None,
         )
@@ -304,11 +306,12 @@ def test_trailing_update(simple_with_orders):
         assert s.next_trail == 2100
         assert s.done is False
         # Do not update trailing stop if price goes down
-        result = s.update({"AAPL": 760})
+        result = s.update({"AAPL": 767})
         assert result == expected
         assert s.done is False
         # test target
         result = s.update({"MSFT": 490})
+        print(result)
         expected = TrailingResult(
             done=True, stop=18500, target=2500, next_trail_at=19200
         )
@@ -319,14 +322,15 @@ def test_trailing_update(simple_with_orders):
 
 def test_trailing_update_stop(simple_with_orders):
     s = simple_with_orders
+    s.trailing_stop = 500
     assert s.mtm == 0
     known = pendulum.datetime(2025, 1, 1, tz="local")
     with pendulum.travel_to(known.add(hours=10)):
-        result = s.update({"AAPL": 748})
+        result = s.update({"AAPL": 755.1})
         expected = TrailingResult(done=False, stop=500, target=2500, next_trail_at=None)
         assert result == expected
         assert s.done is False
-        result = s.update({"AAPL": 744.5})
+        result = s.update({"AAPL": 754.99})
         expected = TrailingResult(done=True, stop=500, target=2500, next_trail_at=None)
         assert result == expected
         assert s.done is True
