@@ -35,6 +35,13 @@ pandas = "^2.2.3"
 numpy = "<2.0.0"
 breeze-connect = "^1.0.58"
 
+
+[tool.poetry.group.dev.dependencies]
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.6.15"
+mkdocstrings = "^0.29.1"
+mkdocstrings-python = "^1.16.12"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
