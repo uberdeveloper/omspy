@@ -3,13 +3,38 @@ theme:
   name: material
 nav:
   - Home: index.md
-  - API Reference: api.md
+  - API Reference:
+    - Omspy: reference/omspy.md
+    - Base: reference/base.md
+    - Models: reference/models.md
+    - Multi: reference/multi.md
+    - Order: reference/order.md
+    - Utils: reference/utils.md
+    - Algos:
+      - Trailing: reference/algos/trailing.md
+    - Brokers:
+      - API Helper: reference/brokers/api_helper.md
+      - Finvasia: reference/brokers/finvasia.md
+      - ICICI: reference/brokers/icici.md
+      - Neo: reference/brokers/neo.md
+      - Noren: reference/brokers/noren.md
+      - Paper: reference/brokers/paper.md
+      - Zerodha: reference/brokers/zerodha.md
+    - Orders:
+      - Depth: reference/orders/depth.md
+      - Peg: reference/orders/peg.md
+      - Stop: reference/orders/stop.md
+    - Simulation:
+      - Models: reference/simulation/models.md
+      - Server: reference/simulation/server.md
+      - Virtual: reference/simulation/virtual.md
 plugins:
   - search
+  - autorefs
   - mkdocstrings:
       handlers:
         python:
-          paths: ["."] # Explicitly set search path to current directory (project root)
+          paths: ["omspy"] # Target the omspy package
           options:
             show_root_heading: true
             show_source: true
