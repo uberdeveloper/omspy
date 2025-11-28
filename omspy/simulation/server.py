@@ -50,26 +50,26 @@ FAILURE = ResponseStatus.FAILURE
 
 
 class OrderArgs(BaseModel):
-    symbol: Optional[str]
-    side: Optional[Side]
-    quantity: Optional[int]
-    price: Optional[float]
-    trigger_price: Optional[float]
-    s: Optional[Status]
+    symbol: Optional[str] = None
+    side: Optional[Side] = None
+    quantity: Optional[int] = None
+    price: Optional[float] = None
+    trigger_price: Optional[float] = None
+    s: Optional[Status] = None
 
 
 class CreateArgs(BaseModel):
     symbol: str
     side: Side
-    quantity: Optional[int]
-    price: Optional[float]
-    trigger_price: Optional[float]
+    quantity: Optional[int] = None
+    price: Optional[float] = None
+    trigger_price: Optional[float] = None
 
 
 class ModifyArgs(BaseModel):
-    quantity: Optional[float]
-    price: Optional[float]
-    trigger_price: Optional[float]
+    quantity: Optional[float] = None
+    price: Optional[float] = None
+    trigger_price: Optional[float] = None
 
 
 @app.get("/", summary="Fake Stock Data")
@@ -95,7 +95,7 @@ async def auth(user_id: str) -> AuthResponse:
 )
 async def create_order(order: OrderArgs) -> OrderResponse:
     if app._type == FakeBroker:
-        response = app.broker.order_place(**order.dict(exclude_none=True))
+        response = app.broker.order_place(**order.model_dump(exclude_none=True))
     return OrderResponse(status=SUCCESS, data=response)
 
 
@@ -108,7 +108,7 @@ async def create_order(order: OrderArgs) -> OrderResponse:
 async def modify_order(order_id: str, order: OrderArgs) -> OrderResponse:
     if app._type == FakeBroker:
         response = app.broker.order_modify(
-            order_id=order_id, **order.dict(exclude_none=True)
+            order_id=order_id, **order.model_dump(exclude_none=True)
         )
     return OrderResponse(status=SUCCESS, data=response)
 
@@ -122,7 +122,7 @@ async def modify_order(order_id: str, order: OrderArgs) -> OrderResponse:
 async def cancel_order(order_id: str, order: OrderArgs) -> OrderResponse:
     if app._type == FakeBroker:
         response = app.broker.order_cancel(
-            order_id=order_id, **order.dict(exclude_none=True)
+            order_id=order_id, **order.model_dump(exclude_none=True)
         )
     return OrderResponse(status=SUCCESS, data=response)
 

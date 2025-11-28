@@ -1,6 +1,6 @@
 import pendulum
 from omspy.order import Order, CompoundOrder
-from pydantic import BaseModel, PrivateAttr, Field
+from pydantic import BaseModel, PrivateAttr, Field, ConfigDict
 from sqlite_utils import Database
 from typing import Optional, Any, NamedTuple
 from collections import namedtuple
@@ -191,9 +191,9 @@ class Trailing(BaseModel):
     _can_start_mtm_trailing: bool = False
     _next_trail: Optional[float] = None
 
-    class Config:
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True
+    )
 
     def __init__(self, **data):
         super().__init__(**data)

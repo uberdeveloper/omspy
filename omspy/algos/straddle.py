@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, ValidationError, field_validator, ConfigDict
 from typing import List, Optional, Type, Tuple, Union, Dict
 from omspy.base import Broker
 from omspy.order import Order, CompoundOrder
@@ -29,9 +29,9 @@ class BaseStrategy(BaseModel):
     )
     _pegs: List[Union[PegExisting, PegSequential]] = []
 
-    class Config:
-        arbitrary_types_allowed = True
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True
+    )
 
     def __init__(self, **data):
         super().__init__(**data)

@@ -4,7 +4,7 @@ import logging
 from functools import wraps
 from typing import Optional, Dict, Set, List, Union, Any, Callable
 from omspy.models import OrderBook, Quote
-from pydantic import BaseModel, PrivateAttr, confloat, ValidationError, Field
+from pydantic import BaseModel, PrivateAttr, confloat, ValidationError, Field, ConfigDict
 from enum import Enum
 from collections import defaultdict
 from collections.abc import Iterable
@@ -311,7 +311,7 @@ class FakeBroker(BaseModel):
         orderbook = generate_orderbook(
             ask=ask, bid=bid, depth=depth, tick=tick, quantity=quantity
         )
-        quote = VQuote(orderbook=orderbook, **ohlc.dict())
+        quote = VQuote(orderbook=orderbook, **ohlc.model_dump())
         return {symbol: quote}
 
     @user_response
@@ -385,7 +385,7 @@ class FakeBroker(BaseModel):
             return order_id
         if kwargs.pop("asdict", None):
             order = VOrder(order_id=order_id, **order_args)
-            dct = order.dict()
+            dct = order.model_dump()
             dct["status"] = order.status
             return dct
         return VOrder(order_id=order_id, **order_args)
@@ -405,7 +405,7 @@ class FakeBroker(BaseModel):
             return order_id
         if kwargs.pop("asdict", None):
             order = VOrder(order_id=order_id, **modify_args)
-            dct = order.dict()
+            dct = order.model_dump()
             dct["status"] = order.status
             return dct
         return VOrder(order_id=order_id, **modify_args)
@@ -426,7 +426,7 @@ class FakeBroker(BaseModel):
             return order_id
         if kwargs.pop("asdict", None):
             order = VOrder(order_id=order_id, **cancel_args)
-            dct = order.dict()
+            dct = order.model_dump()
             dct["status"] = order.status
             return dct
         return VOrder(order_id=order_id, **cancel_args)
@@ -533,8 +533,7 @@ class VirtualBroker(BaseModel):
     _clients: Set[str] = PrivateAttr()
     _delay: int = PrivateAttr()  # delay in microseconds for updating orders
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True)
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -593,7 +592,7 @@ class VirtualBroker(BaseModel):
             return OrderResponse(status=FAILURE, error_msg="Unexpected error")
         else:
             order_id = uuid.uuid4().hex
-            keys = VOrder.__fields__.keys()
+            keys = VOrder.model_fields.keys()
             order_args = dict(order_id=order_id)
             is_user: bool = False
             userid: Optional[str] = None
@@ -721,7 +720,7 @@ class VirtualBroker(BaseModel):
         ticker = self.tickers.get(symbol)
         if ticker:
             if ticker.orderbook:
-                quote = VQuote(orderbook=ticker.orderbook, **ticker.ohlc().dict())
+                quote = VQuote(orderbook=ticker.orderbook, **ticker.ohlc().model_dump())
                 return {symbol: quote}
             else:
                 return None

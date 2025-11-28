@@ -3,7 +3,7 @@ This module contains all the models for running the simulation
 All the models start with **V** to indicate virtual models
 """
 
-from pydantic import BaseModel, Field, validator, PrivateAttr
+from pydantic import BaseModel, Field, validator, field_validator, PrivateAttr, ConfigDict
 from typing import Optional, Union, Any, Dict, List
 from enum import Enum
 import random
@@ -80,8 +80,8 @@ class Ticker(BaseModel):
     token: Optional[int] = None
     initial_price: float = 100
     mode: TickerMode = TickerMode.RANDOM
-    orderbook: Optional[OrderBook]
-    volume: Optional[int]
+    orderbook: Optional[OrderBook] = None
+    volume: Optional[int] = None
     _high: float = PrivateAttr()
     _low: float = PrivateAttr()
     _ltp: float = PrivateAttr()
@@ -147,10 +147,9 @@ class VTrade(BaseModel):
     quantity: int
     price: float
     side: Side
-    timestamp: Optional[pendulum.DateTime]
+    timestamp: Optional[pendulum.DateTime] = None
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @property
     def value(self) -> float:
@@ -162,23 +161,23 @@ class VOrder(BaseModel):
     symbol: str
     quantity: float
     side: Side
-    price: Optional[float]
-    average_price: Optional[float]
-    trigger_price: Optional[float]
+    price: Optional[float] = None
+    average_price: Optional[float] = None
+    trigger_price: Optional[float] = None
     timestamp: Optional[pendulum.DateTime] = None
-    exchange_order_id: Optional[str]
-    exchange_timestamp: Optional[pendulum.DateTime]
-    status_message: Optional[str]
+    exchange_order_id: Optional[str] = None
+    exchange_timestamp: Optional[pendulum.DateTime] = None
+    status_message: Optional[str] = None
     order_type: OrderType = OrderType.MARKET
     filled_quantity: float = 0
     pending_quantity: float = 0
     canceled_quantity: float = 0
     _delay: int = PrivateAttr()
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
-    @validator("side", pre=True, always=True)
+    @field_validator("side", mode="before")
+    @classmethod
     def accept_buy_sell_as_side(cls, v):
         if isinstance(v, str):
             if v.lower()[0] == "b":
@@ -186,11 +185,12 @@ class VOrder(BaseModel):
             elif v.lower()[0] == "s":
                 return Side.SELL
             else:
-                raise TypeError(f"{v} is not a valid side, should be buy or sell")
+                raise ValueError(f"{v} is not a valid side, should be buy or sell")
         else:
             return v
 
-    @validator("order_type", pre=True, always=True)
+    @field_validator("order_type", mode="before")
+    @classmethod
     def accept_order_type_as_str(cls, v):
         """
         accept order type as string also and convert it to enum
@@ -202,7 +202,7 @@ class VOrder(BaseModel):
             elif v.upper() == "MARKET":
                 return OrderType.MARKET
             else:
-                raise TypeError(
+                raise ValueError(
                     f"{v} is not a valid  order type, should be one of LIMIT/MARKET"
                 )
         else:
@@ -365,13 +365,12 @@ class VOrder(BaseModel):
 
 class VPosition(BaseModel):
     symbol: str
-    buy_quantity: Optional[Union[int, float]]
-    sell_quantity: Optional[Union[int, float]]
-    buy_value: Optional[float]
-    sell_value: Optional[float]
+    buy_quantity: Optional[Union[int, float]] = None
+    sell_quantity: Optional[Union[int, float]] = None
+    buy_value: Optional[float] = None
+    sell_value: Optional[float] = None
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     @property
     def average_buy_price(self) -> float:
@@ -418,10 +417,11 @@ class VPosition(BaseModel):
 
 class VUser(BaseModel):
     userid: str
-    name: Optional[str]
+    name: Optional[str] = None
     orders: List[VOrder] = Field(default_factory=list)
 
-    @validator("userid")
+    @field_validator("userid")
+    @classmethod
     def userid_should_be_upper(cls, v):
         return str(v).upper()
 
@@ -436,8 +436,7 @@ class Response(BaseModel):
     status: ResponseStatus
     timestamp: Optional[pendulum.DateTime] = None
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -449,8 +448,7 @@ class OrderResponse(Response):
     error_msg: Optional[str] = None
     data: Optional[VOrder] = None
 
-    class Config:
-        validate_assignment = True
+    model_config = ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
 
 
 class AuthResponse(Response):
@@ -459,7 +457,7 @@ class AuthResponse(Response):
 
 
 class GenericResponse(OrderResponse):
-    data: Optional[Any]
+    data: Optional[Any] = None
 
 
 class LTPResponse(GenericResponse):
@@ -494,12 +492,14 @@ class Instrument(BaseModel):
     high: float
     low: float
     close: float
-    volume: Optional[float]
-    open_interest: Optional[float]
-    strike: Optional[float]
-    expiry: Optional[pendulum.Date]
-    orderbook: Optional[OrderBook]
-    last_update_time: Optional[pendulum.DateTime]
+    volume: Optional[float] = None
+    open_interest: Optional[float] = None
+    strike: Optional[float] = None
+    expiry: Optional[pendulum.Date] = None
+    orderbook: Optional[OrderBook] = None
+    last_update_time: Optional[pendulum.DateTime] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class OrderFill(BaseModel):
