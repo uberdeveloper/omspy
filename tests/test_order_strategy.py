@@ -7,7 +7,7 @@ from omspy.brokers.zerodha import Zerodha
 
 
 class CompoundOrderNoRun(CompoundOrder):
-    d = 0
+    d: int = 0
 
     # This should not be called by order strategy run
     @property
@@ -16,7 +16,7 @@ class CompoundOrderNoRun(CompoundOrder):
 
 
 class CompoundOrderRun(CompoundOrder):
-    d = 0
+    d: int = 0
 
     def run(self, data):
         self.d = data.get("xom")

@@ -3,7 +3,7 @@ from omspy.base import Broker
 from omspy.order import Order, CompoundOrder
 from omspy.models import OrderLock
 import pendulum
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, ValidationError, field_validator, ConfigDict
 import logging
 
 
@@ -41,7 +41,7 @@ class BasicPeg(CompoundOrder):
 class PegMarket(BasicPeg):
     duration: int = 60
     peg_every: int = 10
-    convert_to_market_after_expiry = True
+    convert_to_market_after_expiry: bool = True
     _next_peg: Optional[pendulum.DateTime]
     _num_pegs: int = 0
     _max_pegs: int = 0
@@ -99,8 +99,7 @@ class PegExisting(BaseModel):
     _max_pegs: int = 0
     _expire_at: Optional[pendulum.DateTime]
 
-    class Config:
-        underscore_attrs_are_private = True
+    model_config = ConfigDict()
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
@@ -116,7 +115,8 @@ class PegExisting(BaseModel):
         if self.modify_args is None:
             self.modify_args = {}
 
-    @validator("order")
+    @field_validator("order")
+    @classmethod
     def order_should_be_pending(cls, v):
         """
         Only accept a pending order
@@ -189,13 +189,12 @@ class PegSequential(BaseModel):
     modify_args: Optional[Dict[str, str]] = None
     done: bool = False
     modify_args: Optional[Dict[str, str]] = None
-    skip_subsequent_if_failed = False
-    force_order_type = True
+    skip_subsequent_if_failed: bool = False
+    force_order_type: bool = True
     _order: Optional[Union[Order, PegExisting]] = None
     _start_time: Optional[pendulum.DateTime] = None
 
-    class Config:
-        underscore_attrs_are_private = True
+    model_config = ConfigDict()
 
     def __init__(self, **data) -> None:
         super().__init__(**data)

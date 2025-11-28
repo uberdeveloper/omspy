@@ -1,17 +1,7 @@
-from pydantic import BaseModel, validator, Field, PrivateAttr, Json
+from pydantic import BaseModel, field_validator, Field, PrivateAttr, ConfigDict
+from typing import Dict, Any, Optional, List, Type, Union, Tuple, Callable, Set, Hashable
+from collections import defaultdict
 from datetime import timezone
-from typing import (
-    Optional,
-    Dict,
-    List,
-    Type,
-    Any,
-    Union,
-    Tuple,
-    Callable,
-    Set,
-    Hashable,
-)
 import uuid
 import pendulum
 import sqlite3
@@ -177,7 +167,7 @@ class Order(BaseModel):
     pseudo_id: Optional[str] = None
     strategy_id: Optional[str] = None
     portfolio_id: Optional[str] = None
-    JSON: Optional[Json] = None
+    JSON: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     is_multi: bool = False
     last_updated_at: Optional[pendulum.DateTime] = None
@@ -195,10 +185,10 @@ class Order(BaseModel):
     _lock: Optional[OrderLock] = None
     _frozen_attrs: Set[str] = {"symbol", "side"}
 
-    class Config:
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
-        validate_assignment = True  # Added for pydantic to validate on assignment
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+    )
 
     def __init__(self, **data) -> None:
         """
@@ -226,9 +216,10 @@ class Order(BaseModel):
         else:
             self.expires_in = abs(self.expires_in)
         if self._lock is None:
-            self._lock = OrderLock()
+            self._lock = OrderLock(timezone=self.timezone)
 
-    @validator("quantity", always=True, allow_reuse=True)
+    @field_validator("quantity", mode="before")
+    @classmethod
     def quantity_not_negative(cls, v):
         if v < 0:
             raise ValueError("quantity must be positive")
@@ -338,7 +329,7 @@ class Order(BaseModel):
             The `OrderLock` instance associated with this order.
         """
         if self._lock is None:
-            self._lock = OrderLock()
+            self._lock = OrderLock(timezone=self.timezone)
         return self._lock
 
     def _get_other_args_from_attribs(
@@ -474,7 +465,11 @@ class Order(BaseModel):
                  return None
 
             order_id = broker.order_place(**order_args)
-            self.order_id = order_id
+            # Convert order_id to string to handle both int and str types
+            if order_id is not None:
+                self.order_id = str(order_id)
+            else:
+                self.order_id = order_id
             if self.connection:
                 self.save_to_db()
             return order_id
@@ -609,7 +604,7 @@ class Order(BaseModel):
         """
         if self.connection:
             # Ensure pendulum.DateTime objects are converted to strings if DB requires
-            values = self.dict(exclude=self._exclude_fields)
+            values = self.model_dump(exclude=self._exclude_fields)
             for key, value in values.items():
                 if isinstance(value, pendulum.DateTime):
                     values[key] = value.isoformat()
@@ -631,7 +626,7 @@ class Order(BaseModel):
             A new `Order` instance that is a clone of the current order but with
             a new `id` and fresh `timestamp`.
         """
-        dct = self.dict(exclude={"id", "parent_id", "timestamp", "_lock"}) # Exclude lock too
+        dct = self.model_dump(exclude={"id", "parent_id", "timestamp", "_lock"}) # Exclude lock too
         # Potentially exclude other stateful private attributes like _num_modifications
         order = Order(**dct)
         return order
@@ -672,19 +667,19 @@ class CompoundOrder(BaseModel):
             when creating or executing orders within this compound order.
     """
 
-    broker: Any
+    broker: Any = None
     id: Optional[str] = None
-    ltp: defaultdict = Field(default_factory=defaultdict)
+    ltp: Dict[str, float] = Field(default_factory=dict)
     orders: List[Order] = Field(default_factory=list)
     connection: Optional[Database] = None
     order_args: Optional[Dict] = None
-    _index: Dict[int, Order] = PrivateAttr(default_factory=defaultdict)
-    _keys: Dict[Hashable, Order] = PrivateAttr(default_factory=defaultdict)
+    _index: Dict[int, Order] = PrivateAttr(default_factory=dict)
+    _keys: Dict[Hashable, Order] = PrivateAttr(default_factory=dict)
 
-    class Config:
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+    )
 
 
     def __init__(self, **data) -> None:
@@ -1210,16 +1205,16 @@ class OrderStrategy(BaseModel):
         orders: A list of `CompoundOrder` objects that make up this strategy.
     """
 
-    broker: Any # Should ideally be a specific Broker type
+    broker: Any = None # Should ideally be a specific Broker type
     id: Optional[str] = None
-    ltp: defaultdict = Field(default_factory=defaultdict)
+    ltp: Dict[str, float] = Field(default_factory=dict)
     orders: List[CompoundOrder] = Field(default_factory=list)
     # connection: Optional[Database] = None # Consider if strategy needs its own DB connection management
 
-    class Config:
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+    )
 
 
     def __init__(self, **data) -> None:

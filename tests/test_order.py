@@ -153,7 +153,7 @@ def test_order_simple():
     assert order.timestamp is not None
     assert order.id is not None
     assert order.timezone == "Europe/Paris"
-    assert order.lock == OrderLock()
+    assert order.lock.timezone == order.timezone
     assert order._frozen_attrs == {"symbol", "side"}
 
 

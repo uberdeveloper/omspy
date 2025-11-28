@@ -2,7 +2,7 @@
 This module contains the list of basic models
 """
 
-from pydantic import BaseModel, validator, PrivateAttr
+from pydantic import BaseModel, field_validator, PrivateAttr, ConfigDict
 from typing import Optional, List, Union
 from copy import deepcopy
 import pendulum
@@ -127,14 +127,17 @@ class Timer(BaseModel):
     end_time: pendulum.DateTime
     timezone: Optional[str] = None
 
-    @validator("end_time")
-    def validate_times(cls, v, values):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("end_time")
+    @classmethod
+    def validate_times(cls, v, info):
         """
         Validate end_time greater than start_time
         and start_time greater than current time
         """
-        start = values.get("start_time")
-        tz = values.get("timezone")
+        start = info.data.get("start_time")
+        tz = info.data.get("timezone")
         if v < start:
             raise ValueError("end time greater than start time")
         if start < pendulum.now(tz=tz):
@@ -182,9 +185,9 @@ class OrderLock(BaseModel):
     max_order_modification_lock_time: float = 60
     max_order_cancellation_lock_time: float = 60
     timezone: Optional[str] = None
-    _creation_lock_till: pendulum.DateTime = PrivateAttr()
-    _modification_lock_till: pendulum.DateTime = PrivateAttr()
-    _cancellation_lock_till: pendulum.DateTime = PrivateAttr()
+    _creation_lock_till: pendulum.DateTime = PrivateAttr(default=None)
+    _modification_lock_till: pendulum.DateTime = PrivateAttr(default=None)
+    _cancellation_lock_till: pendulum.DateTime = PrivateAttr(default=None)
 
     def __init__(self, **data):
         super().__init__(**data)
@@ -279,6 +282,8 @@ class Candle(BaseModel):
     volume: Optional[float] = None
     info: Optional[str] = None
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
 
 class CandleStick(BaseModel):
     """
@@ -301,8 +306,7 @@ class CandleStick(BaseModel):
     periods: List[pendulum.DateTime] = []
     _last_ltp: float = PrivateAttr()  # to track bar close price
 
-    class Config:
-        underscore_attribs_are_private = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
