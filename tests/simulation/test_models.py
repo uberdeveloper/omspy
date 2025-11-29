@@ -484,7 +484,7 @@ def test_ticker_update(basic_ticker):
     ticker = basic_ticker
     for ltp in (128, 123, 124, 126):
         ticker.update(ltp)
-    assert ticker.ohlc().dict() == dict(
+    assert ticker.ohlc().model_dump() == dict(
         open=125, high=128, low=123, close=126, last_price=126
     )
 

@@ -770,7 +770,7 @@ def test_virtual_broker_update_ticker(basic_broker_with_prices):
     assert b.tickers["aapl"].ohlc().high == 106
     assert b.tickers["goog"].ohlc().low == 120
     assert b.tickers["amzn"].ohlc().close == 261
-    assert b.tickers["aapl"].ohlc().dict() == dict(
+    assert b.tickers["aapl"].ohlc().model_dump() == dict(
         open=100, high=106, low=99, close=103, last_price=103
     )
 
