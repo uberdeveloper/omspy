@@ -2,7 +2,7 @@
 Module for multi-user multi-broker implementation
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from omspy.base import Broker
 from omspy.order import Order
 from typing import Dict, List, Optional, Type
@@ -18,21 +18,20 @@ class User(BaseModel):
 
     broker: Broker
     scale: float = 1.0
-    name: Optional[str]
-    client_id: Optional[str]
-    exclude: Optional[Dict]
+    name: Optional[str] = None
+    client_id: Optional[str] = None
+    exclude: Optional[Dict] = None
 
-    class Config:
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
 
 
 class UserOrder(BaseModel):
     order: Order
     user: User
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class MultiUser:
@@ -61,6 +60,24 @@ class MultiUser:
     @property
     def count(self) -> int:
         return len(self.users)
+
+    def order_place(self, order: Order) -> None:
+        """
+        Place an order for all users
+        """
+        from omspy.order import Order
+
+        for user in self.users:
+            # Clone the order for each user
+            user_order = order.clone()
+            user_order.quantity = int(user.scale * order.quantity)
+            user_order.parent_id = order.id
+            # Actually place the order through the user's broker
+            user_order.execute(broker=user.broker)
+            # Store the order in the orders dictionary
+            if order.id not in self._orders:
+                self._orders[order.id] = []
+            self._orders[order.id].append(user_order)
 
 
 class MultiOrder(Order):
@@ -100,9 +117,9 @@ class MultiOrder(Order):
         save or update the order to db
         """
         if self.connection:
-            values = [self.dict(exclude=self._exclude_fields)]
+            values = [self.model_dump(exclude=self._exclude_fields)]
             for order in self.orders:
-                values.append(order.order.dict(exclude=self._exclude_fields))
+                values.append(order.order.model_dump(exclude=self._exclude_fields))
             self.connection["orders"].upsert_all(values, pk="id")
             return True
         else:

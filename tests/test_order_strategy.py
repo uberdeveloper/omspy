@@ -83,10 +83,13 @@ def test_order_strategy_update_orders(strategy):
     s = strategy
     assert s.orders[0].orders[0].exchange_order_id is None
     s.update_orders(
-        {"100000": {"exchange_order_id": 11111}, "100003": {"exchange_order_id": 11112}}
+        {
+            "100000": {"exchange_order_id": "11111"},
+            "100003": {"exchange_order_id": "11112"},
+        }
     )
-    assert s.orders[0].orders[0].exchange_order_id == 11111
-    assert s.orders[1].orders[1].exchange_order_id == 11112
+    assert s.orders[0].orders[0].exchange_order_id == "11111"
+    assert s.orders[1].orders[1].exchange_order_id == "11112"
 
 
 def test_order_strategy_mtm(strategy):

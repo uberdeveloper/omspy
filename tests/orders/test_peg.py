@@ -270,7 +270,7 @@ def test_existing_peg_order_modify_args(existing_peg):
         peg.broker.order_modify.assert_called_once()
     call_args = peg.broker.order_modify.call_args_list
     assert call_args[0].kwargs == dict(
-        order_id=10000,
+        order_id="10000",
         quantity=200,
         price=120,
         trigger_price=0.0,
@@ -339,7 +339,7 @@ def test_existing_peg_full_run(existing_peg):
         assert broker.order_modify.call_count == 2
         call_args = broker.order_modify.call_args_list
         expected_kwargs = dict(
-            order_id=10000,
+            order_id="10000",
             quantity=200,
             price=252,
             trigger_price=0,
@@ -598,7 +598,7 @@ def test_peg_sequential_cancel_all(sequential_peg):
     peg.cancel_all()
     peg.broker.order_cancel.assert_not_called()
     for order, num in zip(peg.orders, range(10000, 10009)):
-        order.order_id = num
+        order.order_id = str(num)
     peg.cancel_all()
     assert peg.broker.order_cancel.call_count == 4
 

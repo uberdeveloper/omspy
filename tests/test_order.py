@@ -945,7 +945,7 @@ def test_order_clone():
     assert order.id != clone.id
     assert order.parent_id != clone.parent_id
     exclude_keys = ["id", "parent_id", "timestamp"]
-    for k, v in order.dict().items():
+    for k, v in order.model_dump().items():
         if k not in exclude_keys:
             assert getattr(clone, k) == v
 
@@ -979,7 +979,7 @@ def test_new_db_with_values():
         side="sell",
         quantity=10,
         connection=con,
-        JSON=json.dumps({"a": 10, "b": [4, 5, 6]}),
+        JSON={"a": 10, "b": [4, 5, 6]},
         pseudo_id="hex_pseudo_id",
         error="some_error_message",
         tag="this is a tag",
@@ -1006,7 +1006,7 @@ def test_new_db_all_values():
         side="sell",
         quantity=10,
         connection=con,
-        JSON=json.dumps({"a": 10, "b": [4, 5, 6]}),
+        JSON={"a": 10, "b": [4, 5, 6]},
         pseudo_id="hex_pseudo_id",
         error="some_error_message",
         timezone="Asia/Kolkata",
@@ -1017,9 +1017,9 @@ def test_new_db_all_values():
     for row in con.query("select * from orders"):
         retrieved_order = Order(**row)
 
-    expected = retrieved_order.dict()
+    expected = retrieved_order.model_dump()
     exclude_keys = ["connection"]
-    for k, v in order.dict().items():
+    for k, v in order.model_dump().items():
         if k not in exclude_keys:
             assert expected[k] == v
 

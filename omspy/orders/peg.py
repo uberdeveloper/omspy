@@ -13,6 +13,11 @@ class BasicPeg(CompoundOrder):
     quantity: int
     timezone: str = "local"
 
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+    )
+
     def __init__(self, **data) -> None:
         super().__init__(**data)
         pop_attribs = [
@@ -42,13 +47,21 @@ class PegMarket(BasicPeg):
     duration: int = 60
     peg_every: int = 10
     convert_to_market_after_expiry: bool = True
+    order_args: Optional[Dict[str, str]] = None
     _next_peg: Optional[pendulum.DateTime]
     _num_pegs: int = 0
     _max_pegs: int = 0
     _expire_at: Optional[pendulum.DateTime]
 
+    model_config = ConfigDict(
+        validate_assignment=True,
+        arbitrary_types_allowed=True,
+    )
+
     def __init__(self, **data) -> None:
         super().__init__(**data)
+        if self.order_args is None:
+            self.order_args = {}
         self._max_pegs = int(self.duration / self.peg_every)
         self._num_pegs = 0
         self._expire_at = pendulum.now(tz=self.timezone).add(seconds=self.duration)
@@ -74,6 +87,9 @@ class PegMarket(BasicPeg):
         order = self.orders[0]
         now = pendulum.now(self.timezone)
         if order.is_pending:
+            # Execute order first if it doesn't have an order_id
+            if not order.order_id:
+                order.execute(broker=self.broker, **self.order_args)
             if now > self.next_peg:
                 self._next_peg = now.add(seconds=self.peg_every)
                 order.modify(broker=self.broker, price=self.ref_price)
@@ -86,7 +102,7 @@ class PegMarket(BasicPeg):
 
 class PegExisting(BaseModel):
     order: Order
-    broker: Any
+    broker: Any = None
     timezone: Optional[str] = None
     duration: int = 60
     peg_every: int = 10
@@ -99,7 +115,7 @@ class PegExisting(BaseModel):
     _max_pegs: int = 0
     _expire_at: Optional[pendulum.DateTime]
 
-    model_config = ConfigDict()
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init__(self, **data) -> None:
         super().__init__(**data)
@@ -180,7 +196,7 @@ class PegSequential(BaseModel):
     """
 
     orders: List[Order]
-    broker: Any
+    broker: Any = None
     timezone: Optional[str] = None
     duration: int = 12
     peg_every: int = 4
@@ -188,13 +204,12 @@ class PegSequential(BaseModel):
     order_args: Optional[Dict[str, str]] = None
     modify_args: Optional[Dict[str, str]] = None
     done: bool = False
-    modify_args: Optional[Dict[str, str]] = None
     skip_subsequent_if_failed: bool = False
     force_order_type: bool = True
     _order: Optional[Union[Order, PegExisting]] = None
     _start_time: Optional[pendulum.DateTime] = None
 
-    model_config = ConfigDict()
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def __init__(self, **data) -> None:
         super().__init__(**data)

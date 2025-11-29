@@ -225,9 +225,9 @@ def test_short_straddle_update_orders(price_straddle):
     straddle = price_straddle
     straddle.create_order()
     for o, i in zip(straddle.order.orders, range(10000, 10005)):
-        o.id = i
+        o.id = str(i)
     straddle.update_orders(
-        {10000: {"filled_quantity": 50}, 10003: {"status": "COMPLETE"}}
+        {"10000": {"filled_quantity": 50}, "10003": {"status": "COMPLETE"}}
     )
     assert straddle.order.orders[0].filled_quantity == 50
     assert straddle.order.orders[-1].status == "COMPLETE"

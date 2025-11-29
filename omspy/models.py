@@ -294,7 +294,7 @@ class CandleStick(BaseModel):
     candles: List[Candle] = []
     initial_price: float = 0
     interval: int = 300  # in seconds
-    timer: Optional[Timer]
+    timer: Optional[Timer] = None
     timezone: str = "local"
     ltp: float = 0
     high: float = -1e100  # Initialize to a impossible value

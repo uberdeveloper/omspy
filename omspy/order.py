@@ -1,5 +1,16 @@
 from pydantic import BaseModel, field_validator, Field, PrivateAttr, ConfigDict
-from typing import Dict, Any, Optional, List, Type, Union, Tuple, Callable, Set, Hashable
+from typing import (
+    Dict,
+    Any,
+    Optional,
+    List,
+    Type,
+    Union,
+    Tuple,
+    Callable,
+    Set,
+    Hashable,
+)
 from collections import defaultdict
 from datetime import timezone
 import uuid
@@ -31,7 +42,9 @@ def get_option(spot: float, num: int = 0, step: float = 100.0) -> float:
         By default, the ATM option strike is fetched.
     """
     v = round(spot / step)
-    return v * (step + num)  # This calculation seems unusual. It should likely be `(v + num) * step`.
+    return v * (
+        step + num
+    )  # This calculation seems unusual. It should likely be `(v + num) * step`.
     # Consider: return (round(spot / step) + num) * step
 
 
@@ -225,6 +238,34 @@ class Order(BaseModel):
             raise ValueError("quantity must be positive")
         return v
 
+    @field_validator("JSON", mode="before")
+    @classmethod
+    def json_string_to_dict(cls, v):
+        """
+        Convert JSON string to dictionary when loading from database.
+        """
+        import json
+
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                return v
+        return v
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def timestamp_string_to_datetime(cls, v):
+        """
+        Convert timestamp string to DateTime when loading from database.
+        """
+        if isinstance(v, str):
+            try:
+                return pendulum.parse(v)
+            except Exception:
+                return v
+        return v
+
     @property
     def is_complete(self) -> bool:
         """Checks if the order is fully completed (filled).
@@ -270,7 +311,11 @@ class Order(BaseModel):
         """
         if self.is_complete:
             return True
-        elif self.status in ("CANCELLED", "CANCELED", "REJECTED"): # Added "CANCELLED" for completeness
+        elif self.status in (
+            "CANCELLED",
+            "CANCELED",
+            "REJECTED",
+        ):  # Added "CANCELLED" for completeness
             return True
         else:
             return False
@@ -284,7 +329,7 @@ class Order(BaseModel):
         """
         now = pendulum.now(tz=self.timezone)
         ts = self.timestamp
-        if ts is None: # Should not happen given __init__
+        if ts is None:  # Should not happen given __init__
             return self.expires_in
         return max(0, self.expires_in - (now - ts).seconds)
 
@@ -297,7 +342,7 @@ class Order(BaseModel):
         """
         now = pendulum.now(tz=self.timezone)
         ts = self.timestamp
-        if ts is None: # Should not happen
+        if ts is None:  # Should not happen
             return 0
         return max(0, (now - ts).seconds - self.expires_in)
 
@@ -333,7 +378,10 @@ class Order(BaseModel):
         return self._lock
 
     def _get_other_args_from_attribs(
-        self, broker: Any, attribute: str, attribs_to_copy: Optional[Iterable[str]] = None
+        self,
+        broker: Any,
+        attribute: str,
+        attribs_to_copy: Optional[Iterable[str]] = None,
     ) -> Dict[str, Any]:
         """
         Get other arguments for the order from attributes defined in the broker instance.
@@ -398,7 +446,7 @@ class Order(BaseModel):
         if not (self.is_done):
             for att in self._attrs:
                 val = data.get(att)
-                if val is not None: # Check for None explicitly
+                if val is not None:  # Check for None explicitly
                     setattr(self, att, val)
             self.last_updated_at = pendulum.now(tz=self.timezone)
             if "pending_quantity" not in data and self.quantity is not None:
@@ -438,7 +486,7 @@ class Order(BaseModel):
             potential circular dependencies if `Broker` also imports `Order`.
         """
         # Do not place a new order if this order is complete or has order_id
-        from omspy.base import Broker as base_broker # Moved import here
+        from omspy.base import Broker as base_broker  # Moved import here
 
         other_args = self._get_other_args_from_attribs(
             broker, attribute="attribs_to_copy_execute", attribs_to_copy=attribs_to_copy
@@ -461,8 +509,8 @@ class Order(BaseModel):
             order_args.update(dct)
             # Ensure required fields like quantity are present
             if order_args.get("quantity") is None:
-                 logging.error("Order quantity cannot be None for execution.")
-                 return None
+                logging.error("Order quantity cannot be None for execution.")
+                return None
 
             order_id = broker.order_place(**order_args)
             # Convert order_id to string to handle both int and str types
@@ -477,7 +525,10 @@ class Order(BaseModel):
             return self.order_id
 
     def modify(
-        self, broker: Any, attribs_to_copy: Optional[Iterable[str]] = None, **kwargs: Any
+        self,
+        broker: Any,
+        attribs_to_copy: Optional[Iterable[str]] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Modify an existing order through the specified broker.
@@ -523,10 +574,12 @@ class Order(BaseModel):
         for k, v in kwargs.items():
             if k not in self._frozen_attrs:
                 if hasattr(self, k):
-                    setattr(self, k, v) # Update local order attribute
-                    if k not in keys_for_broker_call: # If it's an extra param for broker
+                    setattr(self, k, v)  # Update local order attribute
+                    if (
+                        k not in keys_for_broker_call
+                    ):  # If it's an extra param for broker
                         args_to_add[k] = v
-                else: # If it's purely an extra param for broker not on Order model
+                else:  # If it's purely an extra param for broker not on Order model
                     other_args[k] = v
 
         order_args: Dict[str, Any] = {
@@ -538,16 +591,17 @@ class Order(BaseModel):
             "disclosed_quantity": self.disclosed_quantity,
         }
         # Filter out None values from default order_args that might not be updatable
-        order_args = {k:v for k,v in order_args.items() if v is not None}
+        order_args = {k: v for k, v in order_args.items() if v is not None}
 
-        order_args.update(other_args) # Add broker-specific copied attributes
-        order_args.update(args_to_add) # Add other kwargs not directly on Order model but for broker
+        order_args.update(other_args)  # Add broker-specific copied attributes
+        order_args.update(
+            args_to_add
+        )  # Add other kwargs not directly on Order model but for broker
 
         # Update order_args with kwargs that are part of keys_for_broker_call and were set on self
         for key_in_broker_call in keys_for_broker_call:
-            if key_in_broker_call in kwargs: # If user explicitly passed it in kwargs
-                 order_args[key_in_broker_call] = kwargs[key_in_broker_call]
-
+            if key_in_broker_call in kwargs:  # If user explicitly passed it in kwargs
+                order_args[key_in_broker_call] = kwargs[key_in_broker_call]
 
         if self._num_modifications < self.max_modifications:
             if self.order_id is None:
@@ -555,10 +609,12 @@ class Order(BaseModel):
                 return
             broker.order_modify(**order_args)
             self._num_modifications += 1
-            if self.connection: # Save changes to DB
+            if self.connection:  # Save changes to DB
                 self.save_to_db()
         else:
-            logging.info(f"Maximum number of modifications ({self.max_modifications}) exceeded for order {self.id}")
+            logging.info(
+                f"Maximum number of modifications ({self.max_modifications}) exceeded for order {self.id}"
+            )
 
     def cancel(self, broker: Any, attribs_to_copy: Optional[Set[str]] = None) -> None:
         """
@@ -588,7 +644,6 @@ class Order(BaseModel):
             # once confirmation of cancellation is received from the broker.
         else:
             logging.warning(f"Cannot cancel order {self.id}: order_id is None.")
-
 
     def save_to_db(self) -> bool:
         """
@@ -626,7 +681,9 @@ class Order(BaseModel):
             A new `Order` instance that is a clone of the current order but with
             a new `id` and fresh `timestamp`.
         """
-        dct = self.model_dump(exclude={"id", "parent_id", "timestamp", "_lock"}) # Exclude lock too
+        dct = self.model_dump(
+            exclude={"id", "parent_id", "timestamp", "_lock"}
+        )  # Exclude lock too
         # Potentially exclude other stateful private attributes like _num_modifications
         order = Order(**dct)
         return order
@@ -680,7 +737,6 @@ class CompoundOrder(BaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=True,
     )
-
 
     def __init__(self, **data) -> None:
         """
@@ -773,7 +829,7 @@ class CompoundOrder(BaseModel):
                     return self._get_by_index(int_key)
                 else:
                     return None
-            except (ValueError, TypeError): # Catch if key is not convertible to int
+            except (ValueError, TypeError):  # Catch if key is not convertible to int
                 return None
         else:
             return order
@@ -817,12 +873,11 @@ class CompoundOrder(BaseModel):
             self._index[index] = order
             if key:
                 self._keys[key] = order
-            order.save_to_db() # save_to_db handles no connection
+            order.save_to_db()  # save_to_db handles no connection
             return order.id
-        except Exception as e: # Catch Pydantic validation errors or other issues
+        except Exception as e:  # Catch Pydantic validation errors or other issues
             logging.error(f"Failed to create or add order: {e}", exc_info=True)
             return None
-
 
     def _average_price(self, side: str = "buy") -> Dict[str, float]:
         """
@@ -841,7 +896,11 @@ class CompoundOrder(BaseModel):
         quantity_counter: Counter = Counter()
         for order in self.orders:
             order_side = str(order.side).lower()
-            if side == order_side and order.filled_quantity > 0 and order.average_price is not None:
+            if (
+                side == order_side
+                and order.filled_quantity > 0
+                and order.average_price is not None
+            ):
                 symbol = order.symbol
                 price = order.average_price
                 quantity = order.filled_quantity
@@ -849,8 +908,10 @@ class CompoundOrder(BaseModel):
                 value_counter.update({symbol: value})
                 quantity_counter.update({symbol: quantity})
 
-        dct: Dict[str, float] = {} # Changed from defaultdict for clearer return type
-        for symbol_key in value_counter: # Iterate over symbols present in value_counter
+        dct: Dict[str, float] = {}  # Changed from defaultdict for clearer return type
+        for (
+            symbol_key
+        ) in value_counter:  # Iterate over symbols present in value_counter
             numerator = value_counter.get(symbol_key)
             denominator = quantity_counter.get(symbol_key)
             if numerator is not None and denominator is not None and denominator > 0:
@@ -892,16 +953,18 @@ class CompoundOrder(BaseModel):
             if the update was successful for that specific order.
         """
         dct: Dict[str, bool] = {}
-        for order in self.pending_orders: # Iterate only over pending orders
-            order_id = str(order.order_id) # Ensure order_id is a string for dict key
+        for order in self.pending_orders:  # Iterate only over pending orders
+            order_id = str(order.order_id)  # Ensure order_id is a string for dict key
             # status = order.status # Not directly used here, update handles status
             if order_id in data:
                 update_data = data.get(order_id)
-                if update_data: # Ensure there's data to update with
-                    update_status = order.update(update_data) # order.update returns bool
+                if update_data:  # Ensure there's data to update with
+                    update_status = order.update(
+                        update_data
+                    )  # order.update returns bool
                     dct[order_id] = update_status
                 else:
-                    dct[order_id] = False # No data provided for this order_id
+                    dct[order_id] = False  # No data provided for this order_id
             else:
                 # If order_id not in data, it means no update info for this pending order
                 dct[order_id] = False
@@ -920,8 +983,10 @@ class CompoundOrder(BaseModel):
         for order in self.orders:
             side = order.side.lower()
             symbol = order.symbol
-            quantity = abs(order.filled_quantity) # Use absolute for summing up quantities
-            if quantity > 0: # Only consider orders with actual filled quantity
+            quantity = abs(
+                order.filled_quantity
+            )  # Use absolute for summing up quantities
+            if quantity > 0:  # Only consider orders with actual filled quantity
                 if side == "buy":
                     buy_counter.update({symbol: quantity})
                 elif side == "sell":
@@ -963,10 +1028,12 @@ class CompoundOrder(BaseModel):
             The updated `ltp` defaultdict of the `CompoundOrder`.
         """
         for symbol, ltp_val in last_price.items():
-            if isinstance(ltp_val, (int, float)): # Basic validation for LTP
+            if isinstance(ltp_val, (int, float)):  # Basic validation for LTP
                 self.ltp[symbol] = float(ltp_val)
             else:
-                logging.warning(f"Invalid LTP value {ltp_val} for symbol {symbol}. Must be number.")
+                logging.warning(
+                    f"Invalid LTP value {ltp_val} for symbol {symbol}. Must be number."
+                )
         return self.ltp
 
     @property
@@ -996,7 +1063,9 @@ class CompoundOrder(BaseModel):
             if order.filled_quantity > 0 and order.average_price is not None:
                 symbol = order.symbol
                 side = str(order.side).lower()
-                sign = -1 if side == "sell" else 1 # Cash flow: buy is negative, sell is positive
+                sign = (
+                    -1 if side == "sell" else 1
+                )  # Cash flow: buy is negative, sell is positive
                 # To align with standard portfolio value where assets are positive:
                 # sign = 1 for buy, -1 for sell IF we are calculating cost basis in a way that selling reduces it.
                 # The current sign convention seems to be for cash flow relative to the portfolio.
@@ -1025,24 +1094,32 @@ class CompoundOrder(BaseModel):
             A `collections.Counter` {symbol: mtm_value}.
         """
         c: Counter = Counter()
-        net_value_map = self.net_value # Cost basis: positive for buy cost, negative for sell cost reduction
-        positions_map = self.positions # Net quantity: positive for long, negative for short
+        net_value_map = (
+            self.net_value
+        )  # Cost basis: positive for buy cost, negative for sell cost reduction
+        positions_map = (
+            self.positions
+        )  # Net quantity: positive for long, negative for short
 
         # Add the negative of the net traded value (cost basis)
         for symbol, value_at_trade_price in net_value_map.items():
-            c.update({symbol: -value_at_trade_price}) # So, MTM starts as -cost_basis
+            c.update({symbol: -value_at_trade_price})  # So, MTM starts as -cost_basis
 
         # Add the current market value of the positions
         for symbol, quantity in positions_map.items():
             ltp_val = self.ltp.get(symbol)
             if ltp_val is not None:
                 current_market_value = quantity * ltp_val
-                c.update({symbol: current_market_value}) # MTM = current_market_value - cost_basis
+                c.update(
+                    {symbol: current_market_value}
+                )  # MTM = current_market_value - cost_basis
             else:
                 # If LTP is not available, MTM for that symbol might be incomplete or based on trade price only.
                 # Current logic implies MTM relative to zero if LTP is missing for a position.
                 # Or, if only net_value contributed, it's unrealized P/L against zero market value.
-                logging.debug(f"LTP not available for symbol {symbol} during MTM calculation. MTM for this symbol might be partial.")
+                logging.debug(
+                    f"LTP not available for symbol {symbol} during MTM calculation. MTM for this symbol might be partial."
+                )
         return c
 
     @property
@@ -1070,12 +1147,15 @@ class CompoundOrder(BaseModel):
         for order in self.orders:
             # Ensure order_args is a dict; deepcopy to prevent modification of CompoundOrder's defaults
             current_order_args = deepcopy(self.order_args) if self.order_args else {}
-            current_order_args.update(kwargs) # User-provided kwargs for this specific call take precedence
+            current_order_args.update(
+                kwargs
+            )  # User-provided kwargs for this specific call take precedence
             try:
                 order.execute(broker=self.broker, **current_order_args)
             except Exception as e:
-                logging.error(f"Error executing order {order.id or 'N/A'}: {e}", exc_info=True)
-
+                logging.error(
+                    f"Error executing order {order.id or 'N/A'}: {e}", exc_info=True
+                )
 
     def check_flags(self) -> None:
         """
@@ -1085,21 +1165,26 @@ class CompoundOrder(BaseModel):
         - If `convert_to_market_after_expiry` is True, modifies the order to 'MARKET'.
         - Else if `cancel_after_expiry` is True, cancels the order.
         """
-        for order in self.orders: # Iterate through all orders, not just pending_orders directly
+        for (
+            order
+        ) in (
+            self.orders
+        ):  # Iterate through all orders, not just pending_orders directly
             if order.is_pending and order.has_expired:
                 try:
                     if order.convert_to_market_after_expiry:
                         logging.info(f"Order {order.id} expired, converting to MARKET.")
                         order.order_type = "MARKET"
-                        order.price = None # Market orders typically don't have a price
-                        order.trigger_price = 0.0 # Reset trigger price
+                        order.price = None  # Market orders typically don't have a price
+                        order.trigger_price = 0.0  # Reset trigger price
                         order.modify(self.broker)
                     elif order.cancel_after_expiry:
                         logging.info(f"Order {order.id} expired, cancelling.")
                         order.cancel(broker=self.broker)
                 except Exception as e:
-                    logging.error(f"Error processing expired order {order.id}: {e}", exc_info=True)
-
+                    logging.error(
+                        f"Error processing expired order {order.id}: {e}", exc_info=True
+                    )
 
     @property
     def completed_orders(self) -> List[Order]:
@@ -1154,11 +1239,11 @@ class CompoundOrder(BaseModel):
         if not (order.connection):
             order.connection = self.connection
         if not (order.id):
-            order.id = uuid.uuid4().hex # Ensure order has an ID
+            order.id = uuid.uuid4().hex  # Ensure order has an ID
 
         if index is None:
             index = self._get_next_index()
-        index = int(index) # Ensure index is an integer
+        index = int(index)  # Ensure index is an integer
 
         if index in self._index:
             raise IndexError(f"Order already assigned to this index: {index}")
@@ -1170,7 +1255,7 @@ class CompoundOrder(BaseModel):
         self._index[index] = order
         if key:
             self._keys[key] = order
-        order.save_to_db() # save_to_db handles no connection
+        order.save_to_db()  # save_to_db handles no connection
         return order.id
 
     def save(self) -> None:
@@ -1184,8 +1269,10 @@ class CompoundOrder(BaseModel):
             saved_count = 0
             for order_to_save in self.orders:
                 if order_to_save.save_to_db():
-                    saved_count +=1
-            logging.debug(f"Attempted to save {self.count} orders. {saved_count} reported success.")
+                    saved_count += 1
+            logging.debug(
+                f"Attempted to save {self.count} orders. {saved_count} reported success."
+            )
         else:
             logging.debug("No orders in CompoundOrder to save.")
 
@@ -1205,7 +1292,7 @@ class OrderStrategy(BaseModel):
         orders: A list of `CompoundOrder` objects that make up this strategy.
     """
 
-    broker: Any = None # Should ideally be a specific Broker type
+    broker: Any = None  # Should ideally be a specific Broker type
     id: Optional[str] = None
     ltp: Dict[str, float] = Field(default_factory=dict)
     orders: List[CompoundOrder] = Field(default_factory=list)
@@ -1215,7 +1302,6 @@ class OrderStrategy(BaseModel):
         validate_assignment=True,
         arbitrary_types_allowed=True,
     )
-
 
     def __init__(self, **data) -> None:
         """
@@ -1262,10 +1348,12 @@ class OrderStrategy(BaseModel):
             if isinstance(ltp_val, (int, float)):
                 self.ltp[symbol] = float(ltp_val)
             else:
-                logging.warning(f"Strategy: Invalid LTP value {ltp_val} for symbol {symbol}.")
+                logging.warning(
+                    f"Strategy: Invalid LTP value {ltp_val} for symbol {symbol}."
+                )
 
         for compound_order in self.orders:
-            compound_order.update_ltp(last_price) # Propagate LTP update
+            compound_order.update_ltp(last_price)  # Propagate LTP update
         return self.ltp
 
     def update_orders(self, data: Dict[str, Dict[str, Any]]) -> None:
@@ -1305,7 +1393,6 @@ class OrderStrategy(BaseModel):
         """
         return sum(self.mtm.values())
 
-
     def run(self, ltp: Optional[Dict[str, float]] = None) -> None:
         """
         Execute the `run` method of each `CompoundOrder` in the strategy.
@@ -1319,15 +1406,19 @@ class OrderStrategy(BaseModel):
                  to pass to the compound orders.
         """
         for compound_order in self.orders:
-            if hasattr(compound_order, "run") and callable(getattr(compound_order, "run")):
+            if hasattr(compound_order, "run") and callable(
+                getattr(compound_order, "run")
+            ):
                 try:
                     if ltp is not None:
-                        compound_order.run(ltp=ltp) # type: ignore
+                        compound_order.run(ltp=ltp)  # type: ignore
                     else:
-                        compound_order.run() # type: ignore
+                        compound_order.run()  # type: ignore
                 except Exception as e:
-                    logging.error(f"Error running compound_order {compound_order.id}: {e}", exc_info=True)
-
+                    logging.error(
+                        f"Error running compound_order {compound_order.id}: {e}",
+                        exc_info=True,
+                    )
 
     def add(self, compound_order: CompoundOrder) -> None:
         """
@@ -1348,8 +1439,14 @@ class OrderStrategy(BaseModel):
         # Ensure the compound order has the same broker if strategy enforces this
         if self.broker and not compound_order.broker:
             compound_order.broker = self.broker
-        elif self.broker and compound_order.broker and compound_order.broker is not self.broker:
-            logging.warning(f"CompoundOrder {compound_order.id} has a different broker than Strategy {self.id}.")
+        elif (
+            self.broker
+            and compound_order.broker
+            and compound_order.broker is not self.broker
+        ):
+            logging.warning(
+                f"CompoundOrder {compound_order.id} has a different broker than Strategy {self.id}."
+            )
 
         self.orders.append(compound_order)
 
@@ -1364,5 +1461,8 @@ class OrderStrategy(BaseModel):
             try:
                 compound_order.save()
             except Exception as e:
-                logging.error(f"Error saving compound_order {compound_order.id} within strategy {self.id}: {e}", exc_info=True)
-        pass # Original pass statement, can be removed if no other logic.
+                logging.error(
+                    f"Error saving compound_order {compound_order.id} within strategy {self.id}: {e}",
+                    exc_info=True,
+                )
+        pass  # Original pass statement, can be removed if no other logic.
