@@ -8,7 +8,7 @@ readme = "README.md"
 repository = "https://github.com/uberdeveloper/omspy"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 pendulum = {extras = ["test"], version = "^3.0.0"}
 pydantic = "^2.0.0"
 PyYAML = "^6.0.0"
@@ -22,7 +22,6 @@ fastapi = "^0.104.0"
 [tool.poetry.group.test.dependencies]
 coverage = "^6.0.2"
 pytest-watch = "^4.2.0"
-pre-commit = "^2.17.0"
 httpx = "^0.23.3"
 pytest = "^8.3.3"
 
@@ -30,7 +29,7 @@ pytest = "^8.3.3"
 kiteconnect = "^5.0.0"
 requests = "^2.25.0"
 ks-api-client = {git = "https://github.com/osparamatrix/ks-orderapi-python.git"}
-nodriver = "^0.37"
+nodriver = "^0.48"
 requests-oauthlib = "^2.0.0"
 pandas = "^2.2.3"
 numpy = "<2.0.0"
