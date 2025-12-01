@@ -1,3 +1,34 @@
+### 0.20.0
+### Breaking Changes
+* **Pydantic 2.x upgrade** - Major compatibility upgrade with breaking changes
+* Migrated from deprecated `@validator` to `@field_validator` decorators
+* Updated `Config` classes to `model_config` with `ConfigDict`
+* Replaced `.dict()` method calls with `.model_dump()` throughout codebase
+* Changed `JSON` field type to `Dict[str, Any]` for better type safety
+* Updated `order_id` field to string type for consistency across models
+* Removed deprecated `__fields__` and `underscore_attrs_are_private` attributes
+* Updated default `OrderLock` PrivateAttr initialization
+
+### Features
+* Full Pydantic v2 compatibility with enhanced validation capabilities
+* Improved type hints with `Dict` instead of `defaultdict` imports
+* Enhanced error handling with `ValueError` instead of `TypeError` in custom validators
+* Better support for Optional fields with default None values
+* Updated `breeze-connect` dependency version for Pydantic 2.x compatibility
+
+### Improvements
+* `arbitrary_types_allowed=True` added to ConfigDict for pendulum DateTime compatibility
+* Fixed validator method signatures for Pydantic v2 strict validation
+* Enhanced model configuration with modern Pydantic patterns
+* All 149 simulation tests passing with zero warnings
+* Maintained full backward compatibility while upgrading to Pydantic v2
+
+### Fixes
+* Eliminated all `pydantic_core._pydantic_core.ValidationError` across entire codebase
+* Fixed validation errors in order management, multi-user system, candlestick models, and straddle algorithms
+* Updated all model definitions, test files, and deprecated method calls
+* Fixed Optional field validation with proper default values
+
 ### 0.19.1
 ### Fixes
 * Same memory id for `PegExisting` order. See #21
